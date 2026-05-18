@@ -1,4 +1,4 @@
-## PackageScrubber - MVP
+## ParcelScrubber - MVP
 
 ### Główny problem
 Zamawiam sporo paczek głównie na Allegro i Aliexpress. Chce stworzyć aplikację, która będzie listować wszystkie moje paczki. Paczki pobierane będą przez skanowanie Gmaila poprzez GmailAPI (lub ręcznie). Statusy w MVP mogą działać jako samo pokazanie linka do trackingu.

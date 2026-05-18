@@ -1,5 +1,5 @@
 ---
-project: PackageScrubber
+project: ParcelScrubber
 context_type: greenfield
 created: 2026-05-18
 updated: 2026-05-18
@@ -35,7 +35,7 @@ checkpoint:
   quality_check_status: accepted
 ---
 
-# Shape notes — PackageScrubber
+# Shape notes — ParcelScrubber
 
 Seed: `idea-notes.md` (2026-05-18). Revised 2026-05-18: order date, rolling 1-month active list, archive semantics.
 
