@@ -13,6 +13,9 @@
     "build": "npm run build -w @parcel-scrubber/web && npm run build -w @parcel-scrubber/api",
     "build:web": "npm run build -w @parcel-scrubber/web",
     "build:api": "npm run build -w @parcel-scrubber/api",
+    "lint": "concurrently -n web,api -c blue,green \"npm run lint:web\" \"npm run lint:api\"",
+    "lint:web": "npm run lint -w @parcel-scrubber/web",
+    "lint:api": "npm run lint -w @parcel-scrubber/api",
     "test": "concurrently -n web,api -c blue,green \"npm run test:web\" \"npm run test:api\"",
     "test:web": "npm run test -w @parcel-scrubber/web",
     "test:api": "npm run test -w @parcel-scrubber/api"
