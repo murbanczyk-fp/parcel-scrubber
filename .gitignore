@@ -41,6 +41,11 @@ testem.log
 /typings
 __screenshots__/
 
+# 10x workflow (private — do not commit)
+.cursor/.10x-cli-manifest.json
+.cursor/rules/10x-*
+.cursor/skills/10x-*/
+
 # System files
 .DS_Store
 Thumbs.db
