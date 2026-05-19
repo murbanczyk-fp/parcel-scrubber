@@ -120,6 +120,8 @@ Manual follow-up after the initial Angular bootstrap (not a second bootstrapper 
 | 2026-05-19 | NestJS API | Scaffolded `apps/api` (`@parcel-scrubber/api`) via `@nestjs/cli`; default listen port **4201** (`PORT` env override). |
 | 2026-05-19 | API prefix | `app.setGlobalPrefix('api')` in `apps/api/src/main.ts`. |
 | 2026-05-19 | Dev proxy | `apps/web/proxy.conf.json` + `angular.json` `serve.options.proxyConfig`; browser calls `/api/*` on 4200 → API on 4201. |
+| 2026-05-19 | Lint & test | Root `lint` / `test` scripts; web: `angular-eslint` + Vitest (`ng test`); api: ESLint + Jest. |
+| 2026-05-19 | CI | `.github/workflows/lint-and-test.yml` — self-hosted, Node 24, parallel web/api jobs (lint + UT, no build). |
 
 **Current layout:**
 
@@ -129,7 +131,7 @@ apps/api/   — NestJS
 context/    — preserved at repo root
 ```
 
-**Root scripts:** `npm run dev`, `start:web`, `start:api`, `build`, `build:web`, `build:api`.
+**Root scripts:** `dev`, `start:web`, `start:api`, `build`, `build:web`, `build:api`, `lint`, `lint:web`, `lint:api`, `test`, `test:web`, `test:api`.
 
 **Post-evolution audit:** not re-run; run `npm audit` at repo root when dependencies change.
 

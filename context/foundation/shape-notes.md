@@ -2,8 +2,8 @@
 project: ParcelScrubber
 context_type: greenfield
 created: 2026-05-18
-updated: 2026-05-18
-revision: 2026-05-18 — restore from archive allowed only when order date within last month
+updated: 2026-05-19
+revision: 2026-05-19 — checkpoint reflects monorepo + CI; 2026-05-18 restore-from-archive rule unchanged
 product_type: web-app
 target_scale:
   users: small
@@ -16,7 +16,7 @@ checkpoint:
   phases_completed: [1, 2, 3, 4, 5, 6, 7]
   gray_areas_resolved:
     - topic: context type
-      decision: greenfield — new app; repo is workflow scaffold only
+      decision: greenfield product; repo has Angular + Nest monorepo scaffold (2026-05-19) — Postgres/OAuth/Gmail domain not built yet
     - topic: pain category
       decision: workflow friction (parcel facts scattered across order emails)
     - topic: primary persona scope

@@ -165,4 +165,4 @@ The application classifies order emails from known Allegro and AliExpress sender
 
 ## Open Questions
 
-1. **target_scale ballparks (qps, data_volume)** — Not specified in shape-notes. Owner: user. By: before tech-stack selection. Block: no.
+1. **target_scale ballparks (qps, data_volume)** — Not specified in shape-notes. Owner: user. Tech stack chosen 2026-05-19 (`context/foundation/tech-stack.md`); ballparks still optional for solo/local MVP. Block: no.
