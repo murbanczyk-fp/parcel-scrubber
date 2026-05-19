@@ -368,7 +368,7 @@ starters:
     tags: [angular, enterprise]
     toolchain:
       package_manager: npm
-    cmd_template: "npx @angular/cli new {name} --defaults --routing --style scss --skip-tests --ssr false"
+    cmd_template: "npx @angular/cli new {name} --defaults --routing --style scss --ssr false"
     deployment_defaults: [self-host, vercel, cloudflare-pages]
     bootstrapper_confidence: verified
     alternatives_to_consider: [next, vite-react]
