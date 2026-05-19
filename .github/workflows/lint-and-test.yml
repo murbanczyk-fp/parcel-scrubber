@@ -1,0 +1,45 @@
+name: Lint and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: lint-and-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: web (lint & test)
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint -w @parcel-scrubber/web
+
+      - run: npm run test -w @parcel-scrubber/web -- --watch=false
+
+  api:
+    name: api (lint & test)
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint -w @parcel-scrubber/api
+
+      - run: npm run test -w @parcel-scrubber/api
