@@ -1,0 +1,33 @@
+name: Deploy to Unraid
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy (branch, tag, or SHA)
+        required: false
+        default: main
+
+concurrency:
+  group: deploy-unraid
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: docker compose up
+    runs-on: self-hosted
+    steps:
+      - name: Deploy stack
+        env:
+          DEPLOY_PATH: ${{ vars.PARCEL_SCRUBBER_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPLOY_PATH:-}" ]; then
+            echo "Set repository variable PARCEL_SCRUBBER_DEPLOY_PATH (e.g. /mnt/user/appdata/parcel-scrubber/app)"
+            exit 1
+          fi
+          cd "$DEPLOY_PATH"
+          git fetch origin
+          git checkout "${{ inputs.ref }}"
+          git pull --ff-only origin "${{ inputs.ref }}"
+          docker compose up -d --build
