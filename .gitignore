@@ -46,6 +46,10 @@ __screenshots__/
 .cursor/rules/10x-*
 .cursor/skills/10x-*/
 
+# Local secrets (use .env.example as template)
+.env
+.env.local
+
 # System files
 .DS_Store
 Thumbs.db
