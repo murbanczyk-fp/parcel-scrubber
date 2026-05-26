@@ -26,6 +26,16 @@ jobs:
             echo "Set repository variable PARCEL_SCRUBBER_DEPLOY_PATH (e.g. /mnt/user/appdata/parcel-scrubber/app)"
             exit 1
           fi
+          if [ ! -d "$DEPLOY_PATH" ]; then
+            echo "Deploy path does not exist inside the runner: $DEPLOY_PATH"
+            echo "If the runner is a Docker container, bind-mount the host app dir at the same path"
+            echo "(see docs/deploy-unraid.md — GitHub Actions runner)."
+            exit 1
+          fi
+          if ! docker info >/dev/null 2>&1; then
+            echo "Docker is not available in this runner (mount /var/run/docker.sock?)."
+            exit 1
+          fi
           cd "$DEPLOY_PATH"
           git fetch origin
           git checkout "${{ inputs.ref }}"

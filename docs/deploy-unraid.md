@@ -92,11 +92,35 @@ Migrations run automatically when the `api` container starts (`prisma migrate de
 Workflow: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) (`workflow_dispatch` only).
 
 1. In GitHub → **Settings** → **Secrets and variables** → **Actions** → **Variables**, add:
-   - `PARCEL_SCRUBBER_DEPLOY_PATH` = `/mnt/user/appdata/parcel-scrubber/app`
+   - `PARCEL_SCRUBBER_DEPLOY_PATH` = path to the clone **as seen inside the runner** (usually `/mnt/user/appdata/parcel-scrubber/app` on Unraid).
 2. Ensure `.env` exists on the server at that path (not in git).
 3. Run **Deploy to Unraid** from the Actions tab after merging to `main`.
 
 The job runs on your self-hosted runner and executes `docker compose up -d --build` in that directory.
+
+### Self-hosted runner in Docker (common on Unraid)
+
+The workflow does **not** SSH to the host. It `cd`s into `PARCEL_SCRUBBER_DEPLOY_PATH` on whatever machine (or container) runs the runner. If the runner is itself a container, Unraid paths like `/mnt/user/appdata/...` exist on the **host**, not automatically inside the runner — you will see `No such file or directory` until you bind-mount them.
+
+Configure the runner container with at least:
+
+| Mount (host → container) | Purpose |
+|--------------------------|---------|
+| `/mnt/user/appdata/parcel-scrubber` → same path | Git clone + `.env` visible to the job |
+| `/var/run/docker.sock` → `/var/run/docker.sock` | `docker compose` controls host Docker |
+
+Use the **same path inside the container** as on the host when setting `PARCEL_SCRUBBER_DEPLOY_PATH`, or set the variable to whatever path you mounted (e.g. `/deploy/app` if you mapped the host dir there).
+
+Example extra args for a `ghcr.io/actions/actions-runner` (or similar) container:
+
+```text
+-v /mnt/user/appdata/parcel-scrubber:/mnt/user/appdata/parcel-scrubber
+-v /var/run/docker.sock:/var/run/docker.sock
+```
+
+The runner image must include `git` and the Docker CLI (`docker compose`). After changing mounts, recreate the runner container and re-run the workflow.
+
+**Alternative:** install the runner directly on the Unraid host (not in Docker) so host paths and Docker work without extra mounts.
 
 ## Local development (without Docker)
 
