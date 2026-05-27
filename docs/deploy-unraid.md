@@ -33,15 +33,26 @@ Edit `.env`:
 
 Never commit `.env`.
 
-### Optional: bind-mount Postgres data
+### Postgres data location
 
-By default, Compose uses a named volume `parcel_pg_data`. To store data under appdata, add to `docker-compose.yml` under `postgres.volumes`:
+Current `docker-compose.yml` already uses an Unraid bind mount by default:
 
 ```yaml
 - /mnt/user/appdata/parcel-scrubber/postgres:/var/lib/postgresql/data
 ```
 
-(remove the named volume line for that path if you replace it entirely).
+If you prefer a Docker-managed named volume instead, replace that line with:
+
+```yaml
+- parcel_pg_data:/var/lib/postgresql/data
+```
+
+and add this top-level `volumes` section:
+
+```yaml
+volumes:
+  parcel_pg_data:
+```
 
 ## 2. Google Cloud OAuth (LAN HTTP)
 
@@ -96,7 +107,7 @@ Workflow: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) (`wo
 2. Ensure `.env` exists on the server at that path (not in git).
 3. Run **Deploy to Unraid** from the Actions tab after merging to `main`.
 
-The job runs on your self-hosted runner and executes `docker compose up -d --build` in that directory.
+The job runs on your self-hosted runner: `git fetch`, checkout the chosen **branch** (input `ref`, default `main`), `git pull --ff-only`, then `docker compose up -d --build` in that directory. Tags and commit SHAs are not supported — use a branch name only.
 
 ### Self-hosted runner in Docker (common on Unraid)
 
