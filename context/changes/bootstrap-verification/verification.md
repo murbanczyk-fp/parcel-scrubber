@@ -122,6 +122,7 @@ Manual follow-up after the initial Angular bootstrap (not a second bootstrapper 
 | 2026-05-19 | Dev proxy | `apps/web/proxy.conf.json` + `angular.json` `serve.options.proxyConfig`; browser calls `/api/*` on 4200 → API on 4201. |
 | 2026-05-19 | Lint & test | Root `lint` / `test` scripts; web: `angular-eslint` + Vitest (`ng test`); api: ESLint + Jest. |
 | 2026-05-19 | CI | `.github/workflows/lint-and-test.yml` — self-hosted, Node 24, parallel web/api jobs (lint + UT, no build). |
+| 2026-06-04 | Product docs | Roadmap + PRD v3: settings (FR-017), label-scoped sync, no age auto-archive, restore/undeliver any parcel; PrimeNG (F-01). |
 
 **Current layout:**
 
@@ -143,4 +144,4 @@ Useful manual steps in the meantime:
 - `git init` (if you have not already) to start your own repo history.
 - Review any `.scaffold` siblings the conflict policy created and decide which version of each file to keep (`README.md.scaffold` may still exist at repo root).
 - Address audit findings per your project's risk tolerance — re-audit after major dependency changes.
-- ~~Add a Node backend (e.g. NestJS)~~ — done (`apps/api`); still to do: **Postgres**, **Google OAuth**, **Gmail sync**, parcel domain modules.
+- ~~Add a Node backend (e.g. NestJS)~~ — done (`apps/api`); partial **Postgres** + **Google OAuth** on API; see `context/foundation/roadmap.md` for **PrimeNG shell**, **settings**, **parcel model**, and **Gmail sync** sequence.

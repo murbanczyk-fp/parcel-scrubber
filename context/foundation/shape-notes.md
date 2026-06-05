@@ -2,8 +2,8 @@
 project: ParcelScrubber
 context_type: greenfield
 created: 2026-05-18
-updated: 2026-05-19
-revision: 2026-05-19 — checkpoint reflects monorepo + CI; 2026-05-18 restore-from-archive rule unchanged
+updated: 2026-06-04
+revision: 2026-06-04 — lifecycle aligned with PRD v3 (no age auto-archive; restore/undeliver any parcel); 2026-06-04 roadmap; 2026-05-19 monorepo + CI
 product_type: web-app
 target_scale:
   users: small
@@ -28,10 +28,10 @@ checkpoint:
     - topic: data isolation
       decision: strict per-account parcel data if multiple logins ever added
     - topic: parcel lifecycle
-      decision: active list = last month by order date; remove and Delivered → archive; no hard delete in MVP
+      decision: active list until user marks Delivered or removes; no age-based auto-archive; no hard delete in MVP (PRD v3)
     - topic: restore from archive
-      decision: user can unarchive/restore to active only when order date is within the last month
-  frs_drafted: 16
+      decision: user can restore or undeliver any archived parcel regardless of order date (PRD v3)
+  frs_drafted: 17
   quality_check_status: accepted
 ---
 
@@ -96,7 +96,7 @@ The product treats Gmail as the source of truth for order notifications: it extr
 - FR-003: User can trigger an on-demand Gmail sync that scans messages from configured Allegro and AliExpress sender addresses. Priority: must-have
 - FR-004: System can extract tracking number, carrier, optional description, and **order date** from matching emails using template/heuristic rules (not LLM) in v1. Priority: must-have
 - FR-005: System sets each parcel's **order date** to the **oldest** Gmail message date associated with that order (first appearance in the mailbox). Priority: must-have
-- FR-006: System keeps only parcels whose order date falls within the **last calendar month** on the **active** list; parcels older than that are **moved to archive** automatically during sync. Priority: must-have
+- FR-006: System does not move parcels to archive automatically based on order date or age during sync; only explicit user actions (remove, mark Delivered) change list membership. Priority: must-have
 - FR-007: System does not promote **archived** parcels back to the active list on later Gmail syncs (manual restore is separate; see FR-016). Priority: must-have
 
 ### Active list, archive & editing
@@ -107,7 +107,7 @@ The product treats Gmail as the source of truth for order notifications: it extr
 - FR-011: User can manually add a parcel not found by sync (including order date). Priority: must-have
 - FR-012: User can **remove** a parcel from the active list, which **moves it to archive** (not a hard delete). Priority: must-have
 - FR-013: User can mark a parcel as **Delivered**, which **moves it to archive** (same outcome as remove). Priority: must-have
-- FR-016: User can **restore** (unarchive) an archived parcel to the active list when its **order date is within the last calendar month**; restore is **not available** when the order date is older than one month. Priority: must-have
+- FR-016: User can **restore** (unarchive) any archived parcel to the active list regardless of order date, and can **undeliver** (reverse Delivered). Priority: must-have
 
 ### Tracking links
 
@@ -148,34 +148,34 @@ Revision (2026-05-18): lifecycle update — FR-005–FR-015 (order date, active 
 - Delivered and remove are distinct actions in the UI but produce the same archival outcome
 - Archived parcel is still viewable in the archive view with its order date and tracking link
 
-### US-03: Restore a recent archived parcel
+### US-03: Restore or undeliver any archived parcel
 
-- **Given** an archived parcel whose order date is within the last calendar month
-- **When** the user chooses **Restore**
+- **Given** an archived parcel (removed or marked Delivered)
+- **When** the user chooses **Restore** or **Undeliver**
 - **Then** the parcel returns to the active list
 
 #### Acceptance Criteria
 
-- Restore is offered only when order date is within the last month; parcels older than that stay archive-only (no restore action, or disabled with clear reason)
-- After restore, the parcel behaves like any other active parcel (subject to auto-archive on sync if it ages out)
+- Restore and undeliver are available for any archived parcel regardless of order date
+- After restore or undeliver, the parcel behaves like any other active parcel until the user marks Delivered or removes it again
 
 ## Business Logic
 
-The application classifies order emails from known Allegro and AliExpress senders, extracts trackable shipments with an **order date** (oldest Gmail appearance), and routes each parcel to **active** or **archive** based on age and user intent.
+The application classifies order emails from known Allegro and AliExpress senders, extracts trackable shipments with an **order date** (oldest Gmail appearance), and routes each parcel to **active** or **archive** based on user intent only.
 
-**Inputs (user-facing):** mailbox messages from configured merchant senders; user edits and manual additions; user actions: remove, mark Delivered, restore (unarchive).
+**Inputs (user-facing):** mailbox messages from configured merchant senders; user edits and manual additions; user actions: remove, mark Delivered, restore (unarchive), undeliver.
 
 **Output:** a parcel record per shipment (tracking number, carrier, optional description, tracking URL, **order date**, **list membership: active | archive**).
 
 **Rules:**
 
 1. **Order date** — for each parcel, the order date is the date of the **first (oldest)** Gmail message that established that order.
-2. **Active window** — the active list includes only parcels whose order date is within the **last calendar month**; on sync, older active parcels are **auto-archived**.
+2. **No age-based auto-archive** — parcels remain on the active list until the user marks Delivered or removes them.
 3. **Archive, not delete** — remove and mark Delivered both **move to archive**; parcels are retained for lookup, not hard-deleted in MVP.
 4. **Sync idempotency** — archived parcels are **not** restored to the active list automatically on a later Gmail sync.
-5. **Manual restore** — user may **restore** an archived parcel to the active list **only if** its order date is still within the **last calendar month**; parcels older than that remain archive-only.
+5. **Manual restore / undeliver** — user may **restore** or **undeliver** any archived parcel regardless of order date.
 
-**Encounter in flow:** user triggers Sync → extraction assigns order dates → recent parcels land on active list, stale ones archive → user may edit, remove, mark Delivered, or restore eligible archived parcels → ineligible archived parcels stay in archive only.
+**Encounter in flow:** user triggers Sync → extraction assigns order dates → imported parcels land on active list → user may edit, remove, mark Delivered, restore, or undeliver → archive holds only user-dismissed parcels until restored.
 
 ## Non-Functional Requirements
 
@@ -193,7 +193,7 @@ The application classifies order emails from known Allegro and AliExpress sender
 - **LLM/AI extraction in v1** — heuristics/template parsing first; AI enrichment deferred.
 - **Multi-user collaboration** — no shared household views or team workspaces.
 - **Hard delete** — parcels are archived, not permanently erased, in MVP.
-- **Unbounded active history** — active list is capped at roughly one month by order date.
+- **Age-based auto-archive** — sync does not archive parcels by order date or age.
 
 ## Forward: tech-stack
 
@@ -203,6 +203,16 @@ Informational for downstream stack selection (not PRD):
 - **Google OAuth + Gmail API** required.
 - User preference from seed: AI for extraction explored later; v1 uses pattern/heuristic parsing.
 - Carriers in scope for link templates: InPost, Poczta Polska, DPD, DHL.
+
+## Forward: technical-roadmap
+
+Parked during shape; refined in `context/foundation/roadmap.md` (2026-06-04):
+
+- **UI:** PrimeNG layout scaffold (F-01); OAuth + session shell in one foundation (F-02), not a separate slice.
+- **Settings:** extensible per-user persistence (F-04); settings page (S-01) before sync — Gmail scan label (default `ParcelScrubber`) and scan period (default 30 days).
+- **Sync scope:** label + period filter, not whole mailbox; north star is label-scoped Gmail sync + active list (S-02, `gmail-sync-active-parcels`).
+- **Lifecycle (PRD v3):** no age-based auto-archive; restore/undeliver any archived parcel (S-05, `restore-undeliver-parcel`).
+- **Sequencing bias:** `main_goal: speed`, `top_blocker: time` — see roadmap frontmatter.
 
 ## Quality cross-check
 
