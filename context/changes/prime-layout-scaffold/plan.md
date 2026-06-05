@@ -350,13 +350,13 @@ Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/l
 
 #### Automated
 
-- [ ] 1.1 Dependencies install cleanly: `npm install` (repo root)
-- [ ] 1.2 Web lint passes: `npm run lint:web`
-- [ ] 1.3 Web build passes: `npm run build -w @parcel-scrubber/web`
+- [x] 1.1 Dependencies install cleanly: `npm install` (repo root)
+- [x] 1.2 Web lint passes: `npm run lint:web`
+- [x] 1.3 Web build passes: `npm run build -w @parcel-scrubber/web`
 
 #### Manual
 
-- [ ] 1.4 PrimeNG Aura styling visible on a component in the running dev app
+- [x] 1.4 PrimeNG Aura styling visible on a component in the running dev app
 
 ### Phase 2: App Shell and Stub Auth
 
