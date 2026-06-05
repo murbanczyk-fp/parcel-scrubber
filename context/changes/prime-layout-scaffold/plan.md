@@ -25,7 +25,7 @@ Running `npm run dev` and opening `http://localhost:4200` shows:
 
 1. **Logged out:** Landing hero at `/` with app branding and a prominent Login button. Header shows app name (left) and Login (right) only — no Active/Archive toggle, no Settings, no Logout.
 2. **Click Login:** Stub `isLoggedIn` becomes `true`; user navigates to `/active`. Header shows full chrome: app name, Active/Archive `SelectButton` (Active selected), placeholder avatar + display name, Settings cog, Logout.
-3. **SelectButton:** Switching Archive navigates to `/archive` and back to Active navigates to `/active`; URL and selection stay in sync on refresh and browser back.
+3. **SelectButton:** Switching Archive navigates to `/archive` and back to Active navigates to `/active`; URL and selection stay in sync during in-session navigation and browser back (refresh persistence deferred to F-02 session cookies).
 4. **Settings cog:** Navigates to `/settings` (SelectButton shows no selection while on settings).
 5. **Click Logout:** Stub `isLoggedIn` becomes `false`; user returns to `/` landing. Direct navigation to `/active` while logged out redirects to `/`.
 6. `npm run lint`, `npm run test:web`, and `npm run build` pass.
@@ -67,15 +67,15 @@ Add PrimeNG packages and application-level theme/animation providers so componen
 
 **Intent**: Add PrimeNG, theme preset package, icons, and animations peer required by PrimeNG components.
 
-**Contract**: `dependencies` gains `primeng`, `@primeuix/themes`, `primeicons`, and `@angular/animations` at versions compatible with Angular 21.2.x. Run `npm install` from repo root.
+**Contract**: `dependencies` gains `primeng`, `@primeuix/themes`, and `primeicons` at versions compatible with Angular 21.2.x. Add `@angular/animations` only if a component errors without it at implement time (follow https://primeng.org/installation). Run `npm install` from repo root.
 
 #### 2. Application config — theme and animations
 
 **File**: `apps/web/src/app/app.config.ts`
 
-**Intent**: Register PrimeNG Aura theme and async animations so interactive components (SelectButton, Button) work.
+**Intent**: Register PrimeNG Aura theme so interactive components (SelectButton, Button) work.
 
-**Contract**: `providers` array adds `provideAnimationsAsync()` and `providePrimeNG({ theme: { preset: Aura } })` with imports from `@angular/platform-browser/animations/async`, `primeng/config`, and `@primeuix/themes/aura`. Existing `provideRouter` and error listeners remain.
+**Contract**: `providers` array adds `providePrimeNG({ theme: { preset: Aura } })` with imports from `primeng/config` and `@primeuix/themes/aura`. Add `provideAnimationsAsync()` from `@angular/platform-browser/animations/async` only if required per official install docs at implement time. Existing `provideRouter` and error listeners remain.
 
 #### 3. Global styles
 
@@ -153,7 +153,7 @@ No HttpClient, no persistence across refresh (acceptable for F-01 stub).
 
 **Intent**: Single persistent chrome: conditional header + main `<router-outlet>`.
 
-**Contract**: Standalone component importing PrimeNG modules needed for header (`ToolbarModule` or plain flex layout with `ButtonModule`, `SelectButtonModule`, `AvatarModule`). Template structure:
+**Contract**: Standalone component importing PrimeNG modules needed for header (`ToolbarModule` or plain flex layout with `ButtonModule`, `SelectButtonModule`, `AvatarModule`) and `FormsModule` from `@angular/forms` (required for `p-selectButton` binding). Template structure:
 
 - **Left:** App name text (`Parcel Scrubber`); optional commented logo `<img>` slot
 - **Center** (`@if (auth.isLoggedIn())`): `p-selectButton` with options Active / Archive; bound per Critical Implementation Details
@@ -182,7 +182,6 @@ SCSS: flex header row (space-between), full-width main region. PrimeNG-only spac
 
 - Login toggles header from minimal to full chrome
 - Logout restores minimal header
-- SelectButton switches routes when logged in
 - Settings cog visible only when logged in
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
@@ -259,11 +258,11 @@ Use dynamic `import()` for each feature component. Default authenticated entry i
 
 #### 7. Routing and auth smoke tests
 
-**Files**: `apps/web/src/app/layout/app-shell/app-shell.component.spec.ts`, optional `apps/web/src/app/app.routes.spec.ts` or guard unit specs
+**Files**: `apps/web/src/app/layout/app-shell/app-shell.component.spec.ts`, `apps/web/src/app/core/auth/stub-auth.guard.spec.ts`, `apps/web/src/app/core/auth/stub-guest.guard.spec.ts`, `apps/web/src/app/core/auth/stub-auth.service.spec.ts`
 
 **Intent**: Catch routing/auth wiring regressions without exhaustive PrimeNG DOM tests.
 
-**Contract**: Tests cover:
+**Contract**: Required tests cover:
 - `StubAuthService.login()` / `logout()` flip `isLoggedIn`
 - `stubAuthGuard` redirects when logged out
 - `stubGuestGuard` redirects when logged in
@@ -288,6 +287,7 @@ Use dynamic `import()` for each feature component. Default authenticated entry i
 - Logout → `/` landing
 - Direct `/active` while logged out → redirected to `/`
 - Direct `/` while logged in → redirected to `/active`
+- SelectButton switches routes when logged in
 - Page refresh resets to logged out (stub does not persist — expected)
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
@@ -332,6 +332,8 @@ No data migration. F-02 migration steps:
 
 Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/layout phases when F-02 implementation starts.
 
+**F-02 prerequisite:** Do not run `/10x-implement web-oauth-app-shell` until F-01 is merged. Rewrite the F-02 plan first — it still assumes F-02 builds the shell, routes, and scaffold cleanup. F-02 should only wire OAuth/session into F-01's existing shell (Login/Logout slots, `AuthService` replacing `StubAuthService`, real guards). Align OAuth callback redirect with F-01 route map (`/` landing, not `/login`).
+
 ## References
 
 - Roadmap F-01: `context/foundation/roadmap.md`
@@ -367,8 +369,7 @@ Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/l
 
 - [ ] 2.3 Login toggles header from minimal to full chrome
 - [ ] 2.4 Logout restores minimal header
-- [ ] 2.5 SelectButton switches routes when logged in
-- [ ] 2.6 Settings cog visible only when logged in
+- [ ] 2.5 Settings cog visible only when logged in
 
 ### Phase 3: Routes, Landing, Placeholders, and Tests
 
@@ -383,3 +384,4 @@ Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/l
 
 - [ ] 3.5 Logged-out landing and logged-in navigation flow verified end-to-end
 - [ ] 3.6 Stub guards redirect correctly for protected routes and landing
+- [ ] 3.7 SelectButton switches routes when logged in
