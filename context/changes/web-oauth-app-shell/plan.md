@@ -305,13 +305,13 @@ Deploy note: production `GOOGLE_CALLBACK_URL` must match nginx-exposed origin (s
 
 #### Automated
 
-- [ ] 1.1 Lint passes: `npm run lint:web`
-- [ ] 1.2 Unit tests pass: `npm run test:web`
-- [ ] 1.3 TypeScript build passes: `npm run build:web`
+- [x] 1.1 Lint passes: `npm run lint:web`
+- [x] 1.2 Unit tests pass: `npm run test:web`
+- [x] 1.3 TypeScript build passes: `npm run build:web`
 
 #### Manual
 
-- [ ] 1.4 App boots without console errors
+- [x] 1.4 App boots without console errors
 
 ### Phase 2: Wire OAuth Into F-01 Shell
 
