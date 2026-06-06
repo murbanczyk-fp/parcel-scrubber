@@ -44,9 +44,24 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  parcels Parcel[]
+  parcels  Parcel[]
+  settings UserSetting[]
 
   @@map("users")
+}
+
+model UserSetting {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  settingKey   String   @map("setting_key")
+  settingValue String   @map("setting_value") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, settingKey])
+  @@map("user_settings")
 }
 
 // Partial unique index on (user_id, tracking_number) WHERE tracking_number IS NOT NULL
