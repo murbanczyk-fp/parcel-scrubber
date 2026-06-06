@@ -333,9 +333,9 @@ Downstream slices consume this schema as-is:
 
 #### Automated
 
-- [x] 3.1 E2e passes locally: `npm run test:e2e -w @parcel-scrubber/api`
-- [x] 3.2 Full API suite: `npm run lint:api && npm run test:api && npm run test:e2e -w @parcel-scrubber/api`
-- [x] 3.3 Monorepo lint and unit tests pass: `npm run lint && npm run test`
+- [x] 3.1 E2e passes locally: `npm run test:e2e -w @parcel-scrubber/api` — 2048627
+- [x] 3.2 Full API suite: `npm run lint:api && npm run test:api && npm run test:e2e -w @parcel-scrubber/api` — 2048627
+- [x] 3.3 Monorepo lint and unit tests pass: `npm run lint && npm run test` — 2048627
 
 #### Manual
 
