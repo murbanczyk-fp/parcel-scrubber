@@ -303,15 +303,15 @@ Downstream slices consume this schema as-is:
 
 #### Automated
 
-- [ ] 1.1 Schema validates: `npx prisma validate --schema apps/api/prisma/schema.prisma`
-- [ ] 1.2 Migration applies: `npm run prisma:migrate:dev -w @parcel-scrubber/api`
-- [ ] 1.3 Client generates: `npm run prisma:generate -w @parcel-scrubber/api`
-- [ ] 1.4 API lint passes: `npm run lint:api`
-- [ ] 1.5 Existing unit tests pass: `npm run test:api`
+- [x] 1.1 Schema validates: `npx prisma validate --schema apps/api/prisma/schema.prisma`
+- [x] 1.2 Migration applies: `npm run prisma:migrate:dev -w @parcel-scrubber/api`
+- [x] 1.3 Client generates: `npm run prisma:generate -w @parcel-scrubber/api`
+- [x] 1.4 API lint passes: `npm run lint:api`
+- [x] 1.5 Existing unit tests pass: `npm run test:api`
 
 #### Manual
 
-- [ ] 1.6 Migration SQL includes partial unique index; `order_date` is `date` type
+- [x] 1.6 Migration SQL includes partial unique index; `order_date` is `date` type
 
 ### Phase 2: Domain Helpers
 

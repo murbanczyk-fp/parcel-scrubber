@@ -7,6 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ParcelSource {
+  GMAIL  @map("gmail")
+  MANUAL @map("manual")
+}
+
+enum Carrier {
+  INPOST        @map("inpost")
+  POCZTA_POLSKA @map("poczta_polska")
+  DPD           @map("dpd")
+  DHL           @map("dhl")
+  CUSTOM        @map("custom")
+}
+
+enum ParcelStatus {
+  NEW         @map("new")
+  IN_TRANSIT  @map("in_transit")
+  IN_DELIVERY @map("in_delivery")
+  DELIVERED   @map("delivered")
+  REMOVED     @map("removed")
+}
+
+enum StatusEventSource {
+  USER   @map("user")
+  SYNC   @map("sync")
+  SYSTEM @map("system")
+}
+
 model User {
   id           String   @id @default(cuid())
   googleSub    String   @unique @map("google_sub")
@@ -17,5 +44,43 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  parcels Parcel[]
+
   @@map("users")
+}
+
+model Parcel {
+  id                 String       @id @default(cuid())
+  userId             String       @map("user_id")
+  store              String?
+  description        String?
+  customCarrierLabel String?      @map("custom_carrier_label")
+  carrier            Carrier      @default(CUSTOM)
+  trackingNumber     String?      @map("tracking_number")
+  trackingUrl        String?      @map("tracking_url")
+  orderDate          DateTime     @map("order_date") @db.Date
+  status             ParcelStatus @default(NEW)
+  source             ParcelSource @default(GMAIL)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statusEvents ParcelStatusEvent[]
+
+  @@index([userId, status])
+  @@map("parcels")
+}
+
+model ParcelStatusEvent {
+  id         String            @id @default(cuid())
+  parcelId   String            @map("parcel_id")
+  fromStatus ParcelStatus      @map("from_status")
+  toStatus   ParcelStatus      @map("to_status")
+  source     StatusEventSource
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  parcel Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@index([parcelId, createdAt])
+  @@map("parcel_status_events")
 }
