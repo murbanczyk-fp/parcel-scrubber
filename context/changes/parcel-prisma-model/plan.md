@@ -303,27 +303,27 @@ Downstream slices consume this schema as-is:
 
 #### Automated
 
-- [x] 1.1 Schema validates: `npx prisma validate --schema apps/api/prisma/schema.prisma`
-- [x] 1.2 Migration applies: `npm run prisma:migrate:dev -w @parcel-scrubber/api`
-- [x] 1.3 Client generates: `npm run prisma:generate -w @parcel-scrubber/api`
-- [x] 1.4 API lint passes: `npm run lint:api`
-- [x] 1.5 Existing unit tests pass: `npm run test:api`
+- [x] 1.1 Schema validates: `npx prisma validate --schema apps/api/prisma/schema.prisma` — f7b4553
+- [x] 1.2 Migration applies: `npm run prisma:migrate:dev -w @parcel-scrubber/api` — f7b4553
+- [x] 1.3 Client generates: `npm run prisma:generate -w @parcel-scrubber/api` — f7b4553
+- [x] 1.4 API lint passes: `npm run lint:api` — f7b4553
+- [x] 1.5 Existing unit tests pass: `npm run test:api` — f7b4553
 
 #### Manual
 
-- [x] 1.6 Migration SQL includes partial unique index; `order_date` is `date` type
+- [x] 1.6 Migration SQL includes partial unique index; `order_date` is `date` type — f7b4553
 
 ### Phase 2: Domain Helpers
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm run test:api`
-- [ ] 2.2 Lint passes: `npm run lint:api`
-- [ ] 2.3 API build passes: `npm run build:api`
+- [x] 2.1 Unit tests pass: `npm run test:api`
+- [x] 2.2 Lint passes: `npm run lint:api`
+- [x] 2.3 API build passes: `npm run build:api`
 
 #### Manual
 
-- [ ] 2.4 Spot-check one generated carrier tracking URL format
+- [x] 2.4 Spot-check one generated carrier tracking URL format
 
 ### Phase 3: Schema Integration E2e & CI
 
