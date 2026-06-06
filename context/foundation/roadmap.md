@@ -3,7 +3,7 @@ project: ParcelScrubber
 version: 1
 status: draft
 created: 2026-06-04
-updated: 2026-06-04
+updated: 2026-06-06
 prd_version: 3
 main_goal: speed
 top_blocker: time
@@ -29,7 +29,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 
 | ID | Change ID | Outcome (user can …) | Prerequisites | PRD refs | Status |
 |---|---|---|---|---|---|
-| F-01 | prime-layout-scaffold | (foundation) PrimeNG and base app layout with routing stubs landed in Angular | — | NFR (desktop browsers) | proposed |
+| F-01 | prime-layout-scaffold | (foundation) PrimeNG and base app layout with routing stubs landed in Angular | — | NFR (desktop browsers) | done |
 | F-02 | web-oauth-app-shell | (foundation) sign in with Google; JWT session works in dev; lands on layout placeholder (not a parcel list) | F-01 | FR-001, FR-008, US-01, NFR (local session) | proposed |
 | F-03 | parcel-prisma-model | (foundation) Parcel records with active/archive membership persisted in PostgreSQL | — | FR-008, FR-009 | proposed |
 | F-04 | user-settings-model | (foundation) extensible per-user settings persisted (Gmail scan label default `ParcelScrubber`, scan period default 30 days; room for more) | — | FR-017, FR-003, FR-006, NFR (local session) | proposed |
@@ -76,7 +76,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Tailwind for layout utilities vs PrimeNG theming/layout alone — Owner: user. Block: no.
 - **Risk:** First UI foundation — default to PrimeNG-first (components + layout primitives); add Tailwind only if `/10x-plan` confirms gaps PrimeNG does not cover.
-- **Status:** proposed
+- **Status:** done
 
 ### F-02: Web OAuth and session shell
 
@@ -216,4 +216,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ## Done
 
-(Empty on first generation.)
+- **F-01: (foundation) PrimeNG installed and configured; base app layout (header, main content region, optional nav) and routing stubs landed so feature slices plug into a consistent shell.** — Archived 2026-06-06 → `context/archive/2026-06-05-prime-layout-scaffold/`. Lesson: —.

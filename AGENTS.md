@@ -16,7 +16,7 @@ Run from repo root after `npm install`: `npm run dev` (web :4200, API :4201), `n
 
 ## Coding style
 
-TypeScript throughout; 2-space indent (`@apps/web/.editorconfig`). Lint via `@apps/web/eslint.config.js` and `@apps/api/eslint.config.mjs`. API Prettier: single quotes, trailing commas (`@apps/api/.prettierrc`). Place Nest modules under `apps/api/src/<feature>/`; Angular code under `apps/web/src/app/`.
+TypeScript throughout; 2-space indent (`@apps/web/.editorconfig`). Prefer `type` aliases over `interface` for object shapes (enforced by `@typescript-eslint/consistent-type-definitions` in both workspaces). Lint via `@apps/web/eslint.config.js` and `@apps/api/eslint.config.mjs`. API Prettier: single quotes, trailing commas (`@apps/api/.prettierrc`). Place Nest modules under `apps/api/src/<feature>/`; Angular code under `apps/web/src/app/`.
 
 ## Testing
 
@@ -25,3 +25,5 @@ Web: Vitest through `ng test`, `*.spec.ts` co-located (see `@apps/web/src/app/ap
 ## Commit and pull requests
 
 Recent commits use short imperative subjects without a fixed `type:` prefix. Base branch `main` on `murbanczyk-fp/parcel-scrubber`. PRs must pass `.github/workflows/lint-and-test.yml` (Node 24, `npm ci`, workspace lint + test). Production deploy is manual via `deploy.yml` and Unraid path variable `PARCEL_SCRUBBER_DEPLOY_PATH`.
+
+When opening a PR for a roadmap slice, link it to the existing GitHub issue (already on **ParcelScrubber Roadmap**): find via `gh issue list --search "F-NN OR <change-id>"` (roadmap items map 1:1 — e.g. F-01 → `prime-layout-scaffold` → issue `#10`), put `Closes #<number>` in the PR body (closes the issue on merge; the issue card shows the linked PR). Do **not** `--add-project` the PR — that duplicates the slice on the board. Title pattern: `F-NN: <slice title>` matching the issue.

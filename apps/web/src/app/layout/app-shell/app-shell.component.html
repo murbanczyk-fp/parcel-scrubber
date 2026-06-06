@@ -1,0 +1,48 @@
+<div class="app-shell">
+  <header class="app-shell__header">
+    <div class="app-shell__brand">Parcel Scrubber</div>
+    <!-- <img src="assets/logo.svg" alt="Parcel Scrubber" class="app-shell__logo" /> -->
+
+    <div class="app-shell__center">
+      @if (auth.isLoggedIn()) {
+        <p-selectButton
+          [options]="viewOptions"
+          [(ngModel)]="selectedView"
+          optionLabel="label"
+          optionValue="value"
+          size="small"
+          (ngModelChange)="onViewChange($event)"
+        />
+      }
+    </div>
+
+    <div class="app-shell__actions">
+      @if (auth.isLoggedIn()) {
+        <p-avatar [label]="userInitials()" shape="circle" />
+        <span class="app-shell__username">{{ auth.user()?.displayName }}</span>
+        <p-button
+          icon="pi pi-cog"
+          size="small"
+          [text]="true"
+          [rounded]="true"
+          ariaLabel="Settings"
+          routerLink="/settings"
+        />
+        <p-button
+          icon="pi pi-sign-out"
+          size="small"
+          [text]="true"
+          [rounded]="true"
+          ariaLabel="Logout"
+          (onClick)="onLogout()"
+        />
+      } @else {
+        <p-button label="Login" size="small" (onClick)="onLogin()" />
+      }
+    </div>
+  </header>
+
+  <main class="app-shell__main">
+    <router-outlet />
+  </main>
+</div>
