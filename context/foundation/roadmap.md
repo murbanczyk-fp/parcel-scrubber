@@ -32,7 +32,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | F-01 | prime-layout-scaffold | (foundation) PrimeNG and base app layout with routing stubs landed in Angular | — | NFR (desktop browsers) | done |
 | F-02 | web-oauth-app-shell | (foundation) sign in with Google; JWT session works in dev; lands on layout placeholder (not a parcel list) | F-01 | FR-001, FR-008, US-01, NFR (local session) | done |
 | F-03 | parcel-prisma-model | (foundation) Parcel records with active/archive membership persisted in PostgreSQL | — | FR-008, FR-009 | done |
-| F-04 | user-settings-model | (foundation) extensible per-user settings persisted (Gmail scan label default `ParcelScrubber`, scan period default 30 days; room for more) | — | FR-017, FR-003, FR-006, NFR (local session) | proposed |
+| F-04 | user-settings-model | (foundation) extensible per-user settings persisted (Gmail scan label default `ParcelScrubber`, scan period default 30 days; room for more) | — | FR-017, FR-003, FR-006, NFR (local session) | done |
 | S-01 | user-settings-page | open settings and configure Gmail scan label (default `ParcelScrubber`) and scan period (default last 30 days) | F-01, F-02, F-04 | FR-017, FR-003, FR-006, NFR (local session) | proposed |
 | S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | proposed |
 | S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | proposed |
@@ -115,7 +115,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Introduced before settings UI and sync so scoped import is not retrofitted; v1 ships two known settings but avoids one-off columns that block future settings.
-- **Status:** proposed
+- **Status:** done
 
 ## Slices
 
@@ -219,3 +219,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-01: (foundation) PrimeNG installed and configured; base app layout (header, main content region, optional nav) and routing stubs landed so feature slices plug into a consistent shell.** — Archived 2026-06-06 → `context/archive/2026-06-05-prime-layout-scaffold/`. Lesson: —.
 - **F-02: (foundation) user can sign in with Google (Gmail read scope granted); JWT session cookie works via dev proxy; authenticated session lands on a placeholder inside the F-01 layout — not a real active parcel list yet.** — Archived 2026-06-06 → `context/archive/2026-06-06-web-oauth-app-shell/`. Lesson: —.
 - **F-03: (foundation) Prisma `Parcel` (and related fields) migrated; API can persist active vs archive membership per authenticated user.** — Archived 2026-06-06 → `context/archive/2026-06-06-parcel-prisma-model/`. Lesson: —.
+- **F-04: (foundation) extensible per-user settings storage landed (e.g. dedicated settings row or structured fields on `User`); v1 fields are Gmail scan label (default `ParcelScrubber`) and scan period in days (default 30); schema/API contract allows adding more settings without redesign.** — Archived 2026-06-06 → `context/archive/2026-06-06-user-settings-model/`. Lesson: —.
