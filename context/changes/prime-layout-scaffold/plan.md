@@ -375,13 +375,13 @@ Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/l
 
 #### Automated
 
-- [x] 3.1 Web lint passes: `npm run lint:web`
-- [x] 3.2 Web tests pass: `npm run test:web`
-- [x] 3.3 Web build passes: `npm run build -w @parcel-scrubber/web`
-- [x] 3.4 Root test suite passes: `npm run test`
+- [x] 3.1 Web lint passes: `npm run lint:web` — 99f7964
+- [x] 3.2 Web tests pass: `npm run test:web` — 99f7964
+- [x] 3.3 Web build passes: `npm run build -w @parcel-scrubber/web` — 99f7964
+- [x] 3.4 Root test suite passes: `npm run test` — 99f7964
 
 #### Manual
 
-- [x] 3.5 Logged-out landing and logged-in navigation flow verified end-to-end
-- [x] 3.6 Stub guards redirect correctly for protected routes and landing
-- [x] 3.7 SelectButton switches routes when logged in
+- [x] 3.5 Logged-out landing and logged-in navigation flow verified end-to-end — 99f7964
+- [x] 3.6 Stub guards redirect correctly for protected routes and landing — 99f7964
+- [x] 3.7 SelectButton switches routes when logged in — 99f7964
