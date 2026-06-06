@@ -31,10 +31,10 @@ export class AuthService {
   }
 
   logout(): Promise<void> {
-    return firstValueFrom(this.http.post<{ ok: true }>('/api/auth/logout', null)).then(
-      () => {
+    return firstValueFrom(this.http.post<{ ok: true }>('/api/auth/logout', null))
+      .catch(() => undefined)
+      .then(() => {
         this.session.set(null);
-      },
-    );
+      });
   }
 }

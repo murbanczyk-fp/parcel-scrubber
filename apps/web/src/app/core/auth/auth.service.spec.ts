@@ -92,6 +92,20 @@ describe('AuthService', () => {
     expect(service.session()).toBeNull();
   });
 
+  it('logout clears session on network failure', async () => {
+    service.session.set(testUser);
+    service.loading.set(false);
+
+    const promise = service.logout();
+
+    const req = httpMock.expectOne('/api/auth/logout');
+    req.error(new ProgressEvent('error'));
+
+    await promise;
+
+    expect(service.session()).toBeNull();
+  });
+
   it('signIn redirects to Google OAuth', () => {
     const assignMock = vi.fn();
     vi.stubGlobal('location', { assign: assignMock });

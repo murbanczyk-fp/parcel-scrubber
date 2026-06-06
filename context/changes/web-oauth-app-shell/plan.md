@@ -343,3 +343,12 @@ Deploy note: production `GOOGLE_CALLBACK_URL` must match nginx-exposed origin (s
 #### Manual
 
 - [x] 3.4 Re-run OAuth round-trip after test changes — d1b79cb
+
+## Addendum: User avatar in session (2026-06-06, impl-review F1)
+
+During Phase 2 wiring, `avatarUrl` was added end-to-end (not in original plan scope):
+
+- **API:** `User.avatarUrl` column + migration; `GoogleProfile` / `SessionUser` include `avatarUrl`; `google.strategy.ts` reads `profile.photos?.[0]?.value`; persisted in `upsertGoogleUser`, returned by `/api/auth/status`.
+- **Web:** `SessionUser.avatarUrl` in `session-user.ts`; shell header shows `p-avatar [image]` when present, initials fallback otherwise.
+
+Rationale: richer header UX for manual criterion 2.7 without changing auth flow. No parcel or Gmail-sync scope added.

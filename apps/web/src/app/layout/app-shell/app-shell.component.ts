@@ -59,8 +59,11 @@ export class AppShellComponent implements OnInit {
   }
 
   protected async onLogout(): Promise<void> {
-    await this.auth.logout();
-    void this.router.navigate(['/']);
+    try {
+      await this.auth.logout();
+    } finally {
+      void this.router.navigate(['/']);
+    }
   }
 
   protected userInitials(): string {
