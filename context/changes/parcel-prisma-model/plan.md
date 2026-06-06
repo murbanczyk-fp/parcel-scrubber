@@ -52,6 +52,8 @@ Extend `schema.prisma` following existing conventions (camelCase fields, `@map` 
 
 **Integration test isolation:** E2e spec should use a dedicated test database (`parcel_scrubber_test`), run `migrate deploy` in `beforeAll`, and truncate/delete test rows in `afterEach` or `afterAll`. Never point at production `DATABASE_URL`.
 
+**Local test database:** `docker-compose.yml` defaults to `POSTGRES_DB=parcel_scrubber`. For e2e, create `parcel_scrubber_test` (e.g. `POSTGRES_DB=parcel_scrubber_test docker compose up -d postgres`, or `CREATE DATABASE parcel_scrubber_test` against an existing instance). CI provisions the test DB via the Postgres service container (Phase 3).
+
 ## Phase 1: Prisma Schema & Migration
 
 ### Overview
@@ -68,7 +70,7 @@ Add all F-03 enums and models, wire `User.parcels` relation, and ship a forward 
 
 **Contract**:
 - Enums: `ParcelSource` (`GMAIL`, `MANUAL`), `Carrier` (`INPOST`, `POCZTA_POLSKA`, `DPD`, `DHL`, `CUSTOM`), `ParcelStatus` (`NEW`, `IN_TRANSIT`, `IN_DELIVERY`, `DELIVERED`, `REMOVED`), `StatusEventSource` (`USER`, `SYNC`, `SYSTEM`) — all with `@map` lowercase snake_case values.
-- `Parcel`: fields per research §Recommended Prisma schema; `orderDate DateTime @map("order_date") @db.Date`; `status @default(NEW)`; `source @default(GMAIL)`; `carrier @default(CUSTOM)`; `@@index([userId, status])`; `@@map("parcels")`.
+- `Parcel`: `id`, `userId`, `store String?`, `description String?`, `customCarrierLabel String?`, `carrier @default(CUSTOM)`, `trackingNumber String?`, `trackingUrl String?`, `orderDate DateTime @map("order_date") @db.Date`, `status @default(NEW)`, `source @default(GMAIL)`, `createdAt`, `updatedAt`; `user User @relation(..., onDelete: Cascade)`; `statusEvents ParcelStatusEvent[]`; **no** `messages ParcelEmail[]` (S-02); `@@index([userId, status])`; `@@map("parcels")`.
 - `ParcelStatusEvent`: `fromStatus`, `toStatus`, `source StatusEventSource`, FK to `Parcel` with `onDelete: Cascade`; `@@index([parcelId, createdAt])`; `@@map("parcel_status_events")`.
 - `User`: add `parcels Parcel[]` relation field.
 
@@ -145,8 +147,8 @@ Add pure TypeScript helpers encoding PRD contracts for archive membership, track
 
 **Contract**:
 - `buildCarrierUrl(carrier: Carrier, trackingNumber: string): string | null` — templates for `INPOST`, `POCZTA_POLSKA`, `DPD`, `DHL`; returns `null` for `CUSTOM`.
-- `resolveTrackingUrl(parcel: Pick<Parcel, 'trackingUrl' | 'carrier' | 'trackingNumber'>): string | null` — override first, then `null` for CUSTOM without override, else `buildCarrierUrl`.
-- URL patterns should encode the tracking number (URL-encoded where needed); exact template strings are implementation detail — verify manually against one known tracking number per carrier.
+- `resolveTrackingUrl(parcel: Pick<Parcel, 'trackingUrl' | 'carrier' | 'trackingNumber'>): string | null` — override first, then `null` for CUSTOM without override, else `buildCarrierUrl` with `normalizeTrackingNumber(trackingNumber)` applied internally (return `null` if normalization yields `null`).
+- URL patterns should encode the tracking number (URL-encoded where needed). **`carrier-url-templates.ts` must document the chosen v1 URL pattern per carrier inline** (comment + reference tracking number used in unit tests). PRD does not specify concrete patterns — templates are expected to need adjustment after live-site verification (Phase 2 manual check).
 
 #### 4. Barrel export (optional)
 
@@ -211,7 +213,7 @@ Prove database constraints and relations with a real Postgres instance; wire CI 
 
 **Intent**: Document local prerequisite: Postgres running, `DATABASE_URL` for test DB.
 
-**Contract**: Note that `npm run test:e2e -w @parcel-scrubber/api` requires reachable Postgres; suggest docker or local instance.
+**Contract**: Note that `npm run test:e2e -w @parcel-scrubber/api` requires reachable Postgres with database `parcel_scrubber_test` (not the default `parcel_scrubber` dev DB); suggest docker or local instance and how to create the test database.
 
 #### 3. CI workflow — Postgres + e2e
 
@@ -219,7 +221,21 @@ Prove database constraints and relations with a real Postgres instance; wire CI 
 
 **Intent**: Run parcel schema e2e in CI so partial index regressions are caught.
 
-**Contract**: In `api` job, add Postgres service container (user/db/password matching test `DATABASE_URL`), set `DATABASE_URL` env var, run `npm run test:e2e -w @parcel-scrubber/api` after unit tests. Existing `npm run test:api` step unchanged.
+**Contract**: In `api` job, add Postgres service container with explicit env aligned to e2e:
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    env:
+      POSTGRES_USER: parcel
+      POSTGRES_PASSWORD: parcel
+      POSTGRES_DB: parcel_scrubber_test
+```
+
+Set job env `DATABASE_URL=postgresql://parcel:parcel@localhost:5432/parcel_scrubber_test` (same credentials as `app.e2e-spec.ts`). Run `npm run test:e2e -w @parcel-scrubber/api` after unit tests. Existing `npm run test:api` step unchanged.
+
+**Runner validation:** Self-hosted runner must support GHA service containers (Linux + Docker). If service containers fail on a runner-in-Docker setup, fallback: `docker compose up -d postgres` with `POSTGRES_DB=parcel_scrubber_test` before the e2e step (document outcome in PR).
 
 ### Success Criteria:
 
