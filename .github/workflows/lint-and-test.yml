@@ -43,3 +43,33 @@ jobs:
       - run: npm run lint -w @parcel-scrubber/api
 
       - run: npm run test -w @parcel-scrubber/api
+
+      # Self-hosted runners often run job steps inside a container while `docker run`
+      # publishes ports on the Docker host. Use the host gateway IP, not 127.0.0.1.
+      - name: Start Postgres for e2e
+        id: postgres
+        run: |
+          docker rm -f parcel-scrubber-ci-postgres 2>/dev/null || true
+          docker run -d --name parcel-scrubber-ci-postgres \
+            -e POSTGRES_USER=parcel \
+            -e POSTGRES_PASSWORD=parcel \
+            -e POSTGRES_DB=parcel_scrubber_test \
+            -p 5433:5432 \
+            postgres:16-alpine
+          for i in $(seq 1 30); do
+            docker exec parcel-scrubber-ci-postgres pg_isready -U parcel -d parcel_scrubber_test && break
+            sleep 1
+          done
+          docker exec parcel-scrubber-ci-postgres pg_isready -U parcel -d parcel_scrubber_test
+          DOCKER_HOST_IP=$(docker run --rm alpine ip route | awk '/default/ { print $3; exit }')
+          echo "host_ip=${DOCKER_HOST_IP}" >> "$GITHUB_OUTPUT"
+          echo "Postgres reachable at ${DOCKER_HOST_IP}:5433"
+
+      - name: Run e2e tests
+        env:
+          E2E_DATABASE_URL: postgresql://parcel:parcel@${{ steps.postgres.outputs.host_ip }}:5433/parcel_scrubber_test
+        run: npm run test:e2e -w @parcel-scrubber/api
+
+      - name: Stop Postgres
+        if: always()
+        run: docker rm -f parcel-scrubber-ci-postgres
