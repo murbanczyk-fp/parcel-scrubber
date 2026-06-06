@@ -1,10 +1,10 @@
 ---
 change_id: web-oauth-app-shell
 title: Web OAuth and session shell
-status: impl_reviewed
+status: archived
 created: 2026-06-06
 updated: 2026-06-06
-archived_at: null
+archived_at: 2026-06-06T12:00:00Z
 ---
 
 ## Notes
