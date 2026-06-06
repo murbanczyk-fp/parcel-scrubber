@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 
 import { StubAuthService } from '../../core/auth/stub-auth.service';
@@ -56,12 +57,10 @@ describe('AppShellComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const loginButton = (fixture.nativeElement as HTMLElement).querySelector(
-      'p-button[label="Login"], .p-button',
-    );
+    const loginButton = fixture.debugElement.query(By.css('.app-shell__actions p-button'));
     expect(loginButton).toBeTruthy();
 
-    fixture.componentInstance['onLogin']();
+    loginButton.triggerEventHandler('onClick', null);
     fixture.detectChanges();
     await fixture.whenStable();
 

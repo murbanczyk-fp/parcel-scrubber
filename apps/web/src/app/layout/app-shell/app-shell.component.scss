@@ -5,13 +5,11 @@
 }
 
 .app-shell__header {
-  --app-shell-header-height: 3.25rem;
-
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 1rem;
-  height: var(--app-shell-header-height);
+  height: var(--app-header-height);
   padding: 0 1.5rem;
   box-sizing: border-box;
   background: var(--p-content-background);

@@ -1,7 +1,7 @@
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet, ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
@@ -27,6 +27,7 @@ type ParcelView = 'active' | 'archive';
 export class AppShellComponent implements OnInit {
   protected readonly auth = inject(StubAuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly viewOptions = [
@@ -37,14 +38,14 @@ export class AppShellComponent implements OnInit {
   protected selectedView: ParcelView | null = null;
 
   ngOnInit(): void {
-    this.syncSelectionFromUrl(this.router.url);
+    this.syncSelectionFromRoute();
 
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((event) => this.syncSelectionFromUrl(event.urlAfterRedirects));
+      .subscribe(() => this.syncSelectionFromRoute());
   }
 
   protected onViewChange(value: ParcelView | null): void {
@@ -77,10 +78,15 @@ export class AppShellComponent implements OnInit {
       .toUpperCase();
   }
 
-  private syncSelectionFromUrl(url: string): void {
-    if (url.includes('/archive')) {
+  private syncSelectionFromRoute(): void {
+    const childPath =
+      this.route.firstChild?.snapshot.url[0]?.path ??
+      this.route.firstChild?.snapshot.routeConfig?.path ??
+      '';
+
+    if (childPath === 'archive') {
       this.selectedView = 'archive';
-    } else if (url.includes('/active')) {
+    } else if (childPath === 'active') {
       this.selectedView = 'active';
     } else {
       this.selectedView = null;

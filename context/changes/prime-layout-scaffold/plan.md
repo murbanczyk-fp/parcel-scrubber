@@ -321,6 +321,8 @@ Import each feature component at the top of `app.routes.ts`. Default authenticat
 
 PrimeNG adds to initial bundle; feature placeholders are small enough to bundle eagerly for F-01 simplicity. SelectButton and header modules should be imported only in shell component. Monitor `ng build` initial bundle against existing 500 kB warning budget.
 
+**Measured (2026-06-06):** Production initial bundle **522.80 kB** (+22.80 kB over 500 kB warning). Accepted for F-01 scaffold; revisit lazy-loading or budget adjustment in F-02+ if growth continues.
+
 ## Migration Notes
 
 No data migration. F-02 migration steps:
@@ -341,6 +343,16 @@ Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/l
 - F-02 downstream plan: `context/changes/web-oauth-app-shell/plan-brief.md`
 - Current web entry: `apps/web/src/app/app.ts`
 - PrimeNG installation: https://primeng.org/installation
+
+## Implementation Addendum (2026-06-06, impl-review F1)
+
+Phase 1 theme contract intentionally extended during implementation:
+
+- **`apps/web/src/app/theme/parcel-scrubber.preset.ts`** — `definePreset(Aura, …)` with Soho surface palette and blue primary tokens; registered in `app.config.ts` instead of raw `Aura`.
+- **`apps/web/src/index.html`** — Google Fonts preconnect + Inter / Inter Tight stylesheet links for typography used in shell and landing.
+- **`apps/web/src/styles.scss`** — Beyond PrimeIcons + full-height baseline: Inter font stack, `--p-surface-50` page background, antialiasing.
+
+No dark-mode toggle; dark scheme tokens exist in preset only for PrimeNG theme completeness.
 
 ## Progress
 

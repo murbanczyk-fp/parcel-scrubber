@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 3.25rem);
+  min-height: calc(100vh - var(--app-header-height));
   padding: 3rem 1.5rem;
   box-sizing: border-box;
 }
