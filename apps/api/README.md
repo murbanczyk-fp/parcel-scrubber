@@ -50,12 +50,36 @@ $ npm run start:prod
 # unit tests
 $ npm run test
 
-# e2e tests
+# e2e tests (requires Postgres — see below)
 $ npm run test:e2e
 
 # test coverage
 $ npm run test:cov
 ```
+
+### E2e prerequisites
+
+Integration tests (`npm run test:e2e -w @parcel-scrubber/api`) connect to a real Postgres database named **`parcel_scrubber_test`** — not the default dev database `parcel_scrubber`.
+
+1. Start Postgres (e.g. `docker compose up -d postgres` from the repo root, or a local instance).
+2. Create the test database if it does not exist:
+
+   ```bash
+   # against docker-compose postgres (adjust user/host if needed)
+   docker compose exec postgres psql -U parcel -d parcel_scrubber -c "CREATE DATABASE parcel_scrubber_test;"
+   ```
+
+   Or start a dedicated instance: `POSTGRES_DB=parcel_scrubber_test docker compose up -d postgres`.
+
+3. Set `E2E_DATABASE_URL` in repo-root `.env.local` (same load order as the Nest app). Example:
+
+   ```
+   E2E_DATABASE_URL=postgresql://parcel:your-password@localhost:5432/parcel_scrubber_test
+   ```
+
+   E2e Jest loads `.env.local` via `test/load-env.ts` before tests run. If unset, the default is `postgresql://parcel:parcel@localhost:5432/parcel_scrubber_test` (matches CI). You can still override per shell with `E2E_DATABASE_URL=... npm run test:e2e`.
+
+   The parcel schema e2e spec runs `prisma migrate deploy` against that URL in `beforeAll`.
 
 ## Deployment
 

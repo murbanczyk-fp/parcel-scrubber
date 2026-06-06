@@ -30,6 +30,15 @@ jobs:
   api:
     name: api (lint & test)
     runs-on: self-hosted
+    env:
+      DATABASE_URL: postgresql://parcel:parcel@localhost:5432/parcel_scrubber_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: parcel
+          POSTGRES_PASSWORD: parcel
+          POSTGRES_DB: parcel_scrubber_test
     steps:
       - uses: actions/checkout@v4
 
@@ -43,3 +52,5 @@ jobs:
       - run: npm run lint -w @parcel-scrubber/api
 
       - run: npm run test -w @parcel-scrubber/api
+
+      - run: npm run test:e2e -w @parcel-scrubber/api

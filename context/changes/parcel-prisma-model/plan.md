@@ -317,21 +317,21 @@ Downstream slices consume this schema as-is:
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm run test:api`
-- [x] 2.2 Lint passes: `npm run lint:api`
-- [x] 2.3 API build passes: `npm run build:api`
+- [x] 2.1 Unit tests pass: `npm run test:api` — b27418b
+- [x] 2.2 Lint passes: `npm run lint:api` — b27418b
+- [x] 2.3 API build passes: `npm run build:api` — b27418b
 
 #### Manual
 
-- [x] 2.4 Spot-check one generated carrier tracking URL format
+- [x] 2.4 Spot-check one generated carrier tracking URL format — b27418b
 
 ### Phase 3: Schema Integration E2e & CI
 
 #### Automated
 
-- [ ] 3.1 E2e passes locally: `npm run test:e2e -w @parcel-scrubber/api`
-- [ ] 3.2 Full API suite passes: lint + unit + e2e
-- [ ] 3.3 Monorepo lint and unit tests pass: `npm run lint && npm run test`
+- [x] 3.1 E2e passes locally: `npm run test:e2e -w @parcel-scrubber/api`
+- [x] 3.2 Full API suite passes: lint + unit + e2e
+- [x] 3.3 Monorepo lint and unit tests pass: `npm run lint && npm run test`
 
 #### Manual
 
