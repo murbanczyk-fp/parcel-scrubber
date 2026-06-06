@@ -2,7 +2,7 @@
 
 ## Overview
 
-Install and configure PrimeNG on the Angular 21 web app, replace the CLI welcome scaffold with an auth-aware app shell, and land lazy-loaded routing stubs with a stub `isLoggedIn` toggle so both logged-in and logged-out header states are testable without OAuth. F-02 replaces the stub auth service with real session management; feature slices (S-01–S-03) replace placeholder page content.
+Install and configure PrimeNG on the Angular 21 web app, replace the CLI welcome scaffold with an auth-aware app shell, and land routing stubs with a stub `isLoggedIn` toggle so both logged-in and logged-out header states are testable without OAuth. F-02 replaces the stub auth service with real session management; feature slices (S-01–S-03) replace placeholder page content.
 
 ## Current State Analysis
 
@@ -200,21 +200,21 @@ Wire the route tree, landing hero page, feature placeholders, and smoke tests. V
 
 **File**: `apps/web/src/app/app.routes.ts`
 
-**Intent**: Define full route tree with lazy-loaded feature components under shell.
+**Intent**: Define full route tree with eagerly imported feature components under shell.
 
 **Contract**:
 
 ```
 { path: '', component: AppShellComponent, children: [
-    { path: '', pathMatch: 'full', loadComponent: landing, canActivate: [stubGuestGuard] },
-    { path: 'active', loadComponent: activePlaceholder, canActivate: [stubAuthGuard] },
-    { path: 'archive', loadComponent: archivePlaceholder, canActivate: [stubAuthGuard] },
-    { path: 'settings', loadComponent: settingsPlaceholder, canActivate: [stubAuthGuard] },
+    { path: '', pathMatch: 'full', component: LandingComponent, canActivate: [stubGuestGuard] },
+    { path: 'active', component: ActivePlaceholderComponent, canActivate: [stubAuthGuard] },
+    { path: 'archive', component: ArchivePlaceholderComponent, canActivate: [stubAuthGuard] },
+    { path: 'settings', component: SettingsPlaceholderComponent, canActivate: [stubAuthGuard] },
   ]},
 { path: '**', redirectTo: '' }
 ```
 
-Use dynamic `import()` for each feature component. Default authenticated entry is `/active` via guest guard + login navigation.
+Import each feature component at the top of `app.routes.ts`. Default authenticated entry is `/active` via guest guard + login navigation.
 
 #### 2. Landing feature
 
@@ -319,7 +319,7 @@ Use dynamic `import()` for each feature component. Default authenticated entry i
 
 ## Performance Considerations
 
-PrimeNG adds to initial bundle; lazy-loaded feature routes keep feature chunks separate. SelectButton and header modules should be imported only in shell component. Monitor `ng build` initial bundle against existing 500 kB warning budget.
+PrimeNG adds to initial bundle; feature placeholders are small enough to bundle eagerly for F-01 simplicity. SelectButton and header modules should be imported only in shell component. Monitor `ng build` initial bundle against existing 500 kB warning budget.
 
 ## Migration Notes
 
@@ -375,13 +375,13 @@ Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/l
 
 #### Automated
 
-- [ ] 3.1 Web lint passes: `npm run lint:web`
-- [ ] 3.2 Web tests pass: `npm run test:web`
-- [ ] 3.3 Web build passes: `npm run build -w @parcel-scrubber/web`
-- [ ] 3.4 Root test suite passes: `npm run test`
+- [x] 3.1 Web lint passes: `npm run lint:web`
+- [x] 3.2 Web tests pass: `npm run test:web`
+- [x] 3.3 Web build passes: `npm run build -w @parcel-scrubber/web`
+- [x] 3.4 Root test suite passes: `npm run test`
 
 #### Manual
 
-- [ ] 3.5 Logged-out landing and logged-in navigation flow verified end-to-end
-- [ ] 3.6 Stub guards redirect correctly for protected routes and landing
-- [ ] 3.7 SelectButton switches routes when logged in
+- [x] 3.5 Logged-out landing and logged-in navigation flow verified end-to-end
+- [x] 3.6 Stub guards redirect correctly for protected routes and landing
+- [x] 3.7 SelectButton switches routes when logged in
