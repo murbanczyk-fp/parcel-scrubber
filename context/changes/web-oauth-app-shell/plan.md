@@ -336,10 +336,10 @@ Deploy note: production `GOOGLE_CALLBACK_URL` must match nginx-exposed origin (s
 
 #### Automated
 
-- [x] 3.1 `npm run test:web` passes with new auth specs
-- [x] 3.2 `npm run lint:web` passes
-- [x] 3.3 `npm run test` (full monorepo) passes
+- [x] 3.1 `npm run test:web` passes with new auth specs — d1b79cb
+- [x] 3.2 `npm run lint:web` passes — d1b79cb
+- [x] 3.3 `npm run test` (full monorepo) passes — d1b79cb
 
 #### Manual
 
-- [x] 3.4 Re-run OAuth round-trip after test changes
+- [x] 3.4 Re-run OAuth round-trip after test changes — d1b79cb
