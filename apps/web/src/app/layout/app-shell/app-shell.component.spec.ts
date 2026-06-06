@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { AppShellComponent } from './app-shell.component';
@@ -71,5 +71,29 @@ describe('AppShellComponent', () => {
     await fixture.whenStable();
 
     expect(signInSpy).toHaveBeenCalled();
+  });
+
+  it('should call logout and navigate home when Logout is clicked', async () => {
+    const fixture = TestBed.createComponent(AppShellComponent);
+    const auth = TestBed.inject(AuthService);
+    auth.session.set(testUser);
+    auth.loading.set(false);
+
+    const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate');
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const logoutButton = fixture.debugElement.query(
+      By.css('.app-shell__actions p-button[icon="pi pi-sign-out"]'),
+    );
+    expect(logoutButton).toBeTruthy();
+
+    logoutButton.triggerEventHandler('onClick', null);
+    await fixture.whenStable();
+
+    expect(logoutSpy).toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith(['/']);
   });
 });

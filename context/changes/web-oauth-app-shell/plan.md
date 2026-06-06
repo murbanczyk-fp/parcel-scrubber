@@ -317,29 +317,29 @@ Deploy note: production `GOOGLE_CALLBACK_URL` must match nginx-exposed origin (s
 
 #### Automated
 
-- [x] 2.1 Lint passes: `npm run lint`
-- [x] 2.2 Web tests pass: `npm run test:web`
-- [x] 2.3 API tests pass: `npm run test:api`
-- [x] 2.4 Build passes: `npm run build`
+- [x] 2.1 Lint passes: `npm run lint` — 98c39e9
+- [x] 2.2 Web tests pass: `npm run test:web` — 98c39e9
+- [x] 2.3 API tests pass: `npm run test:api` — 98c39e9
+- [x] 2.4 Build passes: `npm run build` — 98c39e9
 
 #### Manual
 
-- [x] 2.5 Visit localhost:4200 → landing visible
-- [x] 2.6 Login → Google OAuth → lands on `/active`
-- [x] 2.7 Header shows user display name; active placeholder visible
-- [x] 2.8 Refresh `/active` → still authenticated
-- [x] 2.9 Sign out → `/`; `/active` redirects to landing
-- [x] 2.10 Visit `/` while authenticated → redirects to `/active`
-- [x] 2.11 Cookie visible in DevTools (httpOnly `session` on localhost)
+- [x] 2.5 Visit localhost:4200 → landing visible — 98c39e9
+- [x] 2.6 Login → Google OAuth → lands on `/active` — 98c39e9
+- [x] 2.7 Header shows user display name; active placeholder visible — 98c39e9
+- [x] 2.8 Refresh `/active` → still authenticated — 98c39e9
+- [x] 2.9 Sign out → `/`; `/active` redirects to landing — 98c39e9
+- [x] 2.10 Visit `/` while authenticated → redirects to `/active` — 98c39e9
+- [x] 2.11 Cookie visible in DevTools (httpOnly `session` on localhost) — 98c39e9
 
 ### Phase 3: Auth Unit Tests
 
 #### Automated
 
-- [ ] 3.1 `npm run test:web` passes with new auth specs
-- [ ] 3.2 `npm run lint:web` passes
-- [ ] 3.3 `npm run test` (full monorepo) passes
+- [x] 3.1 `npm run test:web` passes with new auth specs
+- [x] 3.2 `npm run lint:web` passes
+- [x] 3.3 `npm run test` (full monorepo) passes
 
 #### Manual
 
-- [ ] 3.4 Re-run OAuth round-trip after test changes
+- [x] 3.4 Re-run OAuth round-trip after test changes
