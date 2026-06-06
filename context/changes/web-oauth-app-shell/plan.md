@@ -305,32 +305,32 @@ Deploy note: production `GOOGLE_CALLBACK_URL` must match nginx-exposed origin (s
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint:web`
-- [x] 1.2 Unit tests pass: `npm run test:web`
-- [x] 1.3 TypeScript build passes: `npm run build:web`
+- [x] 1.1 Lint passes: `npm run lint:web` — 479f64d
+- [x] 1.2 Unit tests pass: `npm run test:web` — 479f64d
+- [x] 1.3 TypeScript build passes: `npm run build:web` — 479f64d
 
 #### Manual
 
-- [x] 1.4 App boots without console errors
+- [x] 1.4 App boots without console errors — 479f64d
 
 ### Phase 2: Wire OAuth Into F-01 Shell
 
 #### Automated
 
-- [ ] 2.1 Lint passes: `npm run lint`
-- [ ] 2.2 Web tests pass: `npm run test:web`
-- [ ] 2.3 API tests pass: `npm run test:api`
-- [ ] 2.4 Build passes: `npm run build`
+- [x] 2.1 Lint passes: `npm run lint`
+- [x] 2.2 Web tests pass: `npm run test:web`
+- [x] 2.3 API tests pass: `npm run test:api`
+- [x] 2.4 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 2.5 Visit localhost:4200 → landing visible
-- [ ] 2.6 Login → Google OAuth → lands on `/active`
-- [ ] 2.7 Header shows user display name; active placeholder visible
-- [ ] 2.8 Refresh `/active` → still authenticated
-- [ ] 2.9 Sign out → `/`; `/active` redirects to landing
-- [ ] 2.10 Visit `/` while authenticated → redirects to `/active`
-- [ ] 2.11 Cookie visible in DevTools (httpOnly `session` on localhost)
+- [x] 2.5 Visit localhost:4200 → landing visible
+- [x] 2.6 Login → Google OAuth → lands on `/active`
+- [x] 2.7 Header shows user display name; active placeholder visible
+- [x] 2.8 Refresh `/active` → still authenticated
+- [x] 2.9 Sign out → `/`; `/active` redirects to landing
+- [x] 2.10 Visit `/` while authenticated → redirects to `/active`
+- [x] 2.11 Cookie visible in DevTools (httpOnly `session` on localhost)
 
 ### Phase 3: Auth Unit Tests
 

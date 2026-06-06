@@ -1,11 +1,18 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 
-import { StubAuthService } from '../../core/auth/stub-auth.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { AppShellComponent } from './app-shell.component';
 
 describe('AppShellComponent', () => {
+  const testUser = {
+    id: 'user-1',
+    email: 'dev@local',
+    displayName: 'Dev User',
+    avatarUrl: null,
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppShellComponent],
@@ -16,6 +23,10 @@ describe('AppShellComponent', () => {
         ]),
       ],
     }).compileComponents();
+
+    const auth = TestBed.inject(AuthService);
+    auth.loading.set(false);
+    auth.session.set(null);
   });
 
   it('should create', () => {
@@ -25,8 +36,6 @@ describe('AppShellComponent', () => {
 
   it('should show Login when logged out', async () => {
     const fixture = TestBed.createComponent(AppShellComponent);
-    const auth = TestBed.inject(StubAuthService);
-    auth.logout();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -36,9 +45,8 @@ describe('AppShellComponent', () => {
   });
 
   it('should show Logout and Settings when logged in', async () => {
+    TestBed.inject(AuthService).session.set(testUser);
     const fixture = TestBed.createComponent(AppShellComponent);
-    const auth = TestBed.inject(StubAuthService);
-    auth.login();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -47,13 +55,11 @@ describe('AppShellComponent', () => {
     expect(compiled.querySelector('[aria-label="Settings"]')).toBeTruthy();
   });
 
-  it('should navigate to /active when Login is clicked', async () => {
+  it('should call signIn when Login is clicked', async () => {
     const fixture = TestBed.createComponent(AppShellComponent);
-    const auth = TestBed.inject(StubAuthService);
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate');
+    const auth = TestBed.inject(AuthService);
+    const signInSpy = vi.spyOn(auth, 'signIn');
 
-    auth.logout();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -64,7 +70,6 @@ describe('AppShellComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(auth.isLoggedIn()).toBe(true);
-    expect(navigateSpy).toHaveBeenCalledWith(['/active']);
+    expect(signInSpy).toHaveBeenCalled();
   });
 });

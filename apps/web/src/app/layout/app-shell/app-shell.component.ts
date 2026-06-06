@@ -7,7 +7,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
 
-import { StubAuthService } from '../../core/auth/stub-auth.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 type ParcelView = 'active' | 'archive';
 
@@ -25,7 +25,7 @@ type ParcelView = 'active' | 'archive';
   styleUrl: './app-shell.component.scss',
 })
 export class AppShellComponent implements OnInit {
-  protected readonly auth = inject(StubAuthService);
+  protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -55,22 +55,22 @@ export class AppShellComponent implements OnInit {
   }
 
   protected onLogin(): void {
-    this.auth.login();
-    void this.router.navigate(['/active']);
+    this.auth.signIn();
   }
 
-  protected onLogout(): void {
-    this.auth.logout();
+  protected async onLogout(): Promise<void> {
+    await this.auth.logout();
     void this.router.navigate(['/']);
   }
 
   protected userInitials(): string {
     const user = this.auth.user();
-    if (!user?.displayName) {
+    const label = user?.displayName ?? user?.email;
+    if (!label) {
       return '?';
     }
 
-    return user.displayName
+    return label
       .split(' ')
       .map((part) => part[0])
       .join('')

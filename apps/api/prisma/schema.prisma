@@ -12,6 +12,7 @@ model User {
   googleSub    String   @unique @map("google_sub")
   email        String
   displayName  String?  @map("display_name")
+  avatarUrl    String?  @map("avatar_url")
   refreshToken String?  @map("refresh_token") @db.Text
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
