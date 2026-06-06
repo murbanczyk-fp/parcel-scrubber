@@ -18,8 +18,14 @@
 
     <div class="app-shell__actions">
       @if (auth.isLoggedIn()) {
-        <p-avatar [label]="userInitials()" shape="circle" />
-        <span class="app-shell__username">{{ auth.user()?.displayName }}</span>
+        @if (auth.user()?.avatarUrl) {
+          <p-avatar [image]="auth.user()!.avatarUrl!" shape="circle" />
+        } @else {
+          <p-avatar [label]="userInitials()" shape="circle" />
+        }
+        <span class="app-shell__username">{{
+          auth.user()?.displayName ?? auth.user()?.email
+        }}</span>
         <p-button
           icon="pi pi-cog"
           size="small"

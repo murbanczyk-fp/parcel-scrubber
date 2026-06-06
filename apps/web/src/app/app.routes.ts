@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 
-import { stubAuthGuard } from './core/auth/stub-auth.guard';
-import { stubGuestGuard } from './core/auth/stub-guest.guard';
+import { authGuard } from './core/auth/auth.guard';
+import { guestGuard } from './core/auth/guest.guard';
 import { ActivePlaceholderComponent } from './features/active/active-placeholder.component';
 import { ArchivePlaceholderComponent } from './features/archive/archive-placeholder.component';
 import { LandingComponent } from './features/landing/landing.component';
@@ -17,22 +17,22 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         component: LandingComponent,
-        canActivate: [stubGuestGuard],
+        canActivate: [guestGuard],
       },
       {
         path: 'active',
         component: ActivePlaceholderComponent,
-        canActivate: [stubAuthGuard],
+        canActivate: [authGuard],
       },
       {
         path: 'archive',
         component: ArchivePlaceholderComponent,
-        canActivate: [stubAuthGuard],
+        canActivate: [authGuard],
       },
       {
         path: 'settings',
         component: SettingsPlaceholderComponent,
-        canActivate: [stubAuthGuard],
+        canActivate: [authGuard],
       },
     ],
   },

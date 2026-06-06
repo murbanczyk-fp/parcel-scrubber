@@ -24,11 +24,13 @@ export class AuthService {
         googleSub: profile.googleSub,
         email: profile.email,
         displayName: profile.displayName,
+        avatarUrl: profile.avatarUrl,
         refreshToken: profile.refreshToken ?? null,
       },
       update: {
         email: profile.email,
         displayName: profile.displayName,
+        avatarUrl: profile.avatarUrl,
         ...(profile.refreshToken ? { refreshToken: profile.refreshToken } : {}),
       },
     });
@@ -37,6 +39,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
     };
   }
 
@@ -58,6 +61,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
       };
     } catch {
       return null;

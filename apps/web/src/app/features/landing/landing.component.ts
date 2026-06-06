@@ -1,8 +1,7 @@
 import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 
-import { StubAuthService } from '../../core/auth/stub-auth.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-landing',
@@ -11,11 +10,9 @@ import { StubAuthService } from '../../core/auth/stub-auth.service';
   styleUrl: './landing.component.scss',
 })
 export class LandingComponent {
-  private readonly auth = inject(StubAuthService);
-  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   protected onLogin(): void {
-    this.auth.login();
-    void this.router.navigate(['/active']);
+    this.auth.signIn();
   }
 }

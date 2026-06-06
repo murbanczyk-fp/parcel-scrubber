@@ -1,10 +1,10 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
-import { StubAuthService } from './stub-auth.service';
+import { AuthService } from './auth.service';
 
-export const stubGuestGuard: CanActivateFn = () => {
-  const auth = inject(StubAuthService);
+export const guestGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
   const router = inject(Router);
 
   if (auth.isLoggedIn()) {

@@ -1,12 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 
-import { stubAuthGuard } from './stub-auth.guard';
-import { StubAuthService } from './stub-auth.service';
+import { authGuard } from './auth.guard';
+import { AuthService } from './auth.service';
 
-describe('stubAuthGuard', () => {
+describe('authGuard', () => {
   const route = {} as ActivatedRouteSnapshot;
   const state = {} as RouterStateSnapshot;
+
+  const testUser = {
+    id: 'user-1',
+    email: 'dev@local',
+    displayName: 'Dev User',
+    avatarUrl: null,
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -18,13 +25,15 @@ describe('stubAuthGuard', () => {
       ],
     }).compileComponents();
 
-    TestBed.inject(StubAuthService).logout();
+    const auth = TestBed.inject(AuthService);
+    auth.loading.set(false);
+    auth.session.set(null);
   });
 
   it('allows access when logged in', () => {
-    TestBed.inject(StubAuthService).login();
+    TestBed.inject(AuthService).session.set(testUser);
 
-    const result = TestBed.runInInjectionContext(() => stubAuthGuard(route, state));
+    const result = TestBed.runInInjectionContext(() => authGuard(route, state));
 
     expect(result).toBe(true);
   });
@@ -33,7 +42,7 @@ describe('stubAuthGuard', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigate');
 
-    const result = TestBed.runInInjectionContext(() => stubAuthGuard(route, state));
+    const result = TestBed.runInInjectionContext(() => authGuard(route, state));
 
     expect(result).toBe(false);
     expect(navigateSpy).toHaveBeenCalledWith(['/']);
