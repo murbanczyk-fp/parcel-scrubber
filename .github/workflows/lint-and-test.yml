@@ -31,7 +31,7 @@ jobs:
     name: api (lint & test)
     runs-on: self-hosted
     env:
-      DATABASE_URL: postgresql://parcel:parcel@postgres:5432/parcel_scrubber_test
+      E2E_DATABASE_URL: postgresql://parcel:parcel@postgres:5432/parcel_scrubber_test
     services:
       postgres:
         image: postgres:16-alpine
