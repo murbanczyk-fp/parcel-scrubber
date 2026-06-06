@@ -362,14 +362,14 @@ Update `context/changes/web-oauth-app-shell/plan.md` to remove duplicate shell/l
 
 #### Automated
 
-- [x] 2.1 Web lint passes: `npm run lint:web`
-- [x] 2.2 Shell component spec passes: `npm run test:web`
+- [x] 2.1 Web lint passes: `npm run lint:web` — d852212
+- [x] 2.2 Shell component spec passes: `npm run test:web` — d852212
 
 #### Manual
 
-- [x] 2.3 Login toggles header from minimal to full chrome
-- [x] 2.4 Logout restores minimal header
-- [x] 2.5 Settings cog visible only when logged in
+- [x] 2.3 Login toggles header from minimal to full chrome — d852212
+- [x] 2.4 Logout restores minimal header — d852212
+- [x] 2.5 Settings cog visible only when logged in — d852212
 
 ### Phase 3: Routes, Landing, Placeholders, and Tests
 
