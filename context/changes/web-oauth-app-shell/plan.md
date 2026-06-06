@@ -1,67 +1,79 @@
 # Web OAuth and App Shell Implementation Plan
 
-> **⚠️ Stale — requires rewrite before implementation.** This plan was written before F-01 (`prime-layout-scaffold`) owned the PrimeNG shell, routes, and scaffold cleanup. **Prerequisite:** merge F-01 first, then rewrite this plan to wire OAuth/session only — do not recreate `AppShellComponent`, `app.routes.ts`, or landing layout. See `context/changes/prime-layout-scaffold/plan.md` Migration Notes.
+> **Rewritten 2026-06-06** after F-01 (`prime-layout-scaffold`) landed. This plan wires real Google OAuth + JWT session into the existing PrimeNG shell — it does **not** recreate `AppShellComponent`, `app.routes.ts` structure, landing layout, or placeholders.
 
 ## Overview
 
-Wire the Angular web app to the existing NestJS Google OAuth + JWT session-cookie auth layer, add routed shell layout with sign-in/logout, and show a minimal empty active-list placeholder at `/active`. This is roadmap **F-02** — auth plumbing on top of the F-01 layout shell; unlocks **S-01**.
+Replace F-01 stub auth with the NestJS Google OAuth + JWT session-cookie layer, bootstrap session state before routing, and land authenticated users on `/active` after OAuth callback. Roadmap **F-02** — auth plumbing on the F-01 layout shell; unlocks **S-01**.
 
 ## Current State Analysis
 
-**API (ready):** Nest auth module exposes `GET /api/auth/google`, `GET /api/auth/google/callback` (sets httpOnly `session` cookie, redirects to `/`), `GET /api/auth/status`, `GET /api/auth/me`, `POST /api/auth/logout`. JWT is stateless (no server session store); cookie options: `httpOnly`, `sameSite: 'lax'`, 7-day TTL (`apps/api/src/auth/auth.controller.ts`).
+**API (ready):** Nest auth module exposes `GET /api/auth/google`, `GET /api/auth/google/callback` (sets httpOnly `session` cookie, redirects to `/`), `GET /api/auth/status`, `GET /api/auth/me`, `POST /api/auth/logout`. JWT is stateless; cookie options: `httpOnly`, `sameSite: 'lax'`, 7-day TTL (`apps/api/src/auth/auth.controller.ts`).
 
-**Web (blank):** Angular 21 scaffold with empty `app.routes.ts`, no `HttpClient`, no auth code, CLI placeholder template in `app.html`. Dev proxy forwards `/api` → `localhost:4201` (`apps/web/proxy.conf.json`).
+**Web (F-01 shell, stub auth):** PrimeNG `AppShellComponent` with header nav, `LandingComponent` at `/`, placeholder routes at `/active`, `/archive`, `/settings`. `StubAuthService` toggles a fake `Dev User`; `stubAuthGuard` / `stubGuestGuard` gate routes. No `HttpClient`, no `APP_INITIALIZER`, no real session probe. Dev proxy forwards `/api` → `localhost:4201` (`apps/web/proxy.conf.json`). Root `App` is already a bare `<router-outlet />`.
 
-**Gap:** No web-side session probe, sign-in entry, route protection, or app shell. OAuth callback lands at `/` but product default should be `/active`.
+**Gap:** Stub auth must become real OAuth + cookie session. Sign-in must hit `/api/auth/google` (full-page redirect). OAuth callback still redirects to `/` instead of `/active`.
 
 ### Key Discoveries:
 
 - Sign-in must use **full-page navigation** to `/api/auth/google` — not `HttpClient` (Passport redirect flow).
 - Session probe uses `GET /api/auth/status` returning `SessionUser | { authenticated: false }` — no 401 on logged-out state.
 - `SessionUser` shape: `{ id, email, displayName }` (`apps/api/src/auth/types.ts`).
+- F-01 uses **landing at `/`** for guests, not a `/login` route — keep that map; guards redirect to `/` when unauthenticated.
+- `StubAuthService` API surface (`isLoggedIn`, `user`, `login`, `logout`) is already consumed by shell, landing, and guards — real `AuthService` should preserve those names where possible to minimize template churn.
 - Same-origin relative `/api/...` URLs only — no `localhost:4201` in browser code (AGENTS.md).
-- Only auth e2e test today: logged-out `/auth/status` (`apps/api/test/app.e2e-spec.ts`).
 
 ## Desired End State
 
-A developer runs `npm run dev`, opens `http://localhost:4200`, is redirected to `/login`, clicks Sign in, completes Google OAuth, lands on `/active` with JWT cookie set via proxy, sees header with email + Sign out, and an empty active list message. Logout clears session and returns to `/login`. `npm run lint` and `npm run test` pass.
+A developer runs `npm run dev`, opens `http://localhost:4200`, sees the F-01 landing page, clicks Login, completes Google OAuth, lands on `/active` with JWT cookie set via proxy, sees header with display name + Sign out, and the existing active placeholder. Logout clears session and returns to `/`. Refresh on `/active` stays authenticated. `npm run lint` and `npm run test` pass.
 
 ### Verification checklist:
 
-1. Unauthenticated visit to `/active` → redirect to `/login`
-2. Sign in → Google consent → lands on `/active` with user email in header
+1. Unauthenticated visit to `/active` → redirect to `/` (landing)
+2. Login on landing → Google consent → lands on `/active` with user display name in header
 3. Page refresh on `/active` → still authenticated (cookie persists)
-4. Sign out → `/login`, `/active` blocked again
+4. Sign out → `/`; `/active` blocked again
 5. `GET /api/auth/status` returns user when cookie present
+6. Authenticated visit to `/` → redirect to `/active` (guest guard)
 
 ## What We're NOT Doing
 
+- Recreating `AppShellComponent`, route table shape, landing layout, or placeholder components (F-01 owns these)
+- Adding a `/login` route (F-01 landing is the sign-in entry)
 - Gmail sync UI or Sync button (S-02)
-- Parcel data, list rendering, or Prisma `Parcel` model (F-02, S-02)
-- Archive route or navigation tab (S-03)
+- Parcel data, list rendering, or Prisma `Parcel` model (F-03, S-02)
 - FR-002 disconnect / Gmail token revocation flow (parked)
 - Logout `clearCookie` `secure`/`sameSite` mirror fix (defer to deploy hardening)
 - OAuth e2e automation against real Google
-- UI component library / design system
 - Bearer-token interceptors (cookie auth only)
 
 ## Implementation Approach
 
-Establish auth state first (`AuthService` + `APP_INITIALIZER`), then layer routing with a functional `authGuard` and shell parent component. Sign-in is a dedicated `/login` page with a button that navigates to `/api/auth/google`. Protected routes live under an `AppShellComponent` with child routes starting at `/active`. Replace the CLI scaffold in root `App` with a bare `<router-outlet>`. One API change: OAuth callback redirects to `/active`.
+Add `AuthService` + `APP_INITIALIZER` session probe first, then swap stub guards/service for real implementations in existing touchpoints (`app.routes.ts`, `LandingComponent`, `AppShellComponent`). Delete stub files after migration. One API change: OAuth callback redirects to `/active`. Preserve F-01 route map and PrimeNG shell markup — only change auth behavior.
 
 ## Critical Implementation Details
 
-**Sign-in transport:** `window.location.assign('/api/auth/google')` (or `href`) — never `HttpClient.get` for the OAuth start endpoint. Passport issues a 302 redirect chain that XHR cannot follow correctly.
+**Sign-in transport:** `window.location.assign('/api/auth/google')` — never `HttpClient.get` for the OAuth start endpoint.
 
-**APP_INITIALIZER:** Call `AuthService.loadSession()` during bootstrap before first route render. The guard reads the cached signal; avoid duplicate status calls on every navigation. On network failure, treat as unauthenticated and let the guard redirect to `/login`.
+**APP_INITIALIZER:** Call `AuthService.loadSession()` during bootstrap before first route render. Guards read cached state after initializer completes. On network failure, treat as unauthenticated.
 
-**Route map:** `/login` (public) → `AppShellComponent` (guarded) → child `active` at path `active`. Root path `''` redirects to `active` when authenticated context is handled by guard/redirect logic.
+**Stub → real mapping:**
+
+| Stub (F-01) | Real (F-02) |
+|---|---|
+| `StubAuthService.login()` sets fake user | `signIn()` → `window.location.assign('/api/auth/google')` |
+| `StubAuthService.logout()` clears signal | `logout()` → `POST /api/auth/logout`, clear session signal |
+| `stubAuthGuard` → `/` when logged out | `authGuard` — same redirect target |
+| `stubGuestGuard` → `/active` when logged in | `guestGuard` — same redirect target |
+| `user()` returns `StubUser` | `user()` returns `SessionUser \| null` from status probe |
+
+**Header login button:** When logged out, shell header still shows Login — wire to `signIn()` (OAuth redirect), not stub toggle + navigate.
 
 ## Phase 1: Auth Infrastructure
 
 ### Overview
 
-Add HttpClient, session types, `AuthService`, and bootstrap session loading so the rest of the app has a single auth signal.
+Add HttpClient, session types, `AuthService`, and bootstrap session loading. **Keep all stub auth files** — guards, landing, and shell still import `StubAuthService` until Phase 2 rewires them.
 
 ### Changes Required:
 
@@ -69,40 +81,33 @@ Add HttpClient, session types, `AuthService`, and bootstrap session loading so t
 
 **File**: `apps/web/src/app/app.config.ts`
 
-**Intent**: Register `provideHttpClient()` and an `APP_INITIALIZER` that calls `AuthService.loadSession()` before routing starts.
+**Intent**: Register `provideHttpClient()` and `provideAppInitializer(() => inject(AuthService).loadSession())`.
 
-**Contract**: `ApplicationConfig.providers` gains `provideHttpClient()` and `provideAppInitializer(() => inject(AuthService).loadSession())` (or equivalent factory). Initializer must return a Promise/Observable that resolves when status probe completes.
+**Contract**: Initializer returns a Promise that resolves when the status probe completes (success or failure).
 
 #### 2. Session types
 
-**File**: `apps/web/src/app/auth/session-user.ts` (new)
+**File**: `apps/web/src/app/core/auth/session-user.ts` (new)
 
-**Intent**: Mirror API `SessionUser` and status response union on the web client.
+**Intent**: Mirror API `SessionUser` and status response union.
 
-**Contract**: Export `SessionUser` (`id`, `email`, `displayName: string | null`) and `AuthStatus` as `SessionUser | { authenticated: false }`. Type guard `isAuthenticated(status)` optional but useful in guard/service.
+**Contract**: Export `SessionUser` (`id`, `email`, `displayName: string | null`) and `AuthStatus` as `SessionUser | { authenticated: false }`. Type guard `isAuthenticatedStatus(status)` optional.
 
 #### 3. AuthService
 
-**File**: `apps/web/src/app/auth/auth.service.ts` (new)
+**File**: `apps/web/src/app/core/auth/auth.service.ts` (new — coexists with stubs until Phase 2)
 
-**Intent**: Centralize session state, status probe, sign-in redirect, and logout.
+**Intent**: Centralize session state, status probe, sign-in redirect, and logout. Wired via `APP_INITIALIZER` only; no component or guard imports yet.
 
 **Contract**:
 - `readonly session = signal<SessionUser | null>(null)`
 - `readonly loading = signal(true)` until first probe completes
-- `loadSession(): Promise<void>` — `GET /api/auth/status`, sets session signal
+- `readonly isLoggedIn = computed(() => this.session() !== null)` — keeps F-01 template API
+- `readonly user = computed(() => this.session())` — keeps F-01 template API
+- `loadSession(): Promise<void>` — `GET /api/auth/status`, sets session signal, clears `loading`
 - `signIn(): void` — `window.location.assign('/api/auth/google')`
 - `logout(): Promise<void>` — `POST /api/auth/logout`, clear session signal
-- `isAuthenticated(): boolean` — derived from session signal
 - All HTTP calls use relative `/api/auth/...` paths
-
-#### 4. Auth guard
-
-**File**: `apps/web/src/app/auth/auth.guard.ts` (new)
-
-**Intent**: Block unauthenticated access to shell routes; send users to `/login`.
-
-**Contract**: Functional guard (`CanActivateFn`) injects `AuthService` and `Router`. If `!auth.isAuthenticated()`, return `router.createUrlTree(['/login'])`. Wait for `loading()` to be false if initializer still running (use `toObservable` + `filter` or check signal synchronously after initializer guarantee).
 
 ### Success Criteria:
 
@@ -114,86 +119,64 @@ Add HttpClient, session types, `AuthService`, and bootstrap session loading so t
 
 #### Manual Verification:
 
-- App boots without console errors (auth files exist but routing not wired yet — may show empty outlet)
+- App boots without console errors; stub auth UX unchanged (real session loads in background via initializer)
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
 
 ---
 
-## Phase 2: Routes, Shell & Placeholder
+## Phase 2: Wire OAuth Into F-01 Shell
 
 ### Overview
 
-Wire routes, login page, app shell with header, empty active list, replace CLI scaffold, update API OAuth redirect.
+Replace stub guards, connect landing + shell to real auth, update API OAuth redirect. **Do not** restructure routes or recreate layout components.
 
 ### Changes Required:
 
-#### 1. Route table
+#### 1. Guards — rename and rewire
 
-**File**: `apps/web/src/app/app.routes.ts`
+**Files**:
+- `apps/web/src/app/core/auth/auth.guard.ts` (new — replaces `stub-auth.guard.ts`)
+- `apps/web/src/app/core/auth/guest.guard.ts` (new — replaces `stub-guest.guard.ts`)
+- `apps/web/src/app/app.routes.ts` (update imports only)
 
-**Intent**: Define public login route, guarded shell parent, and active child; redirect root appropriately.
+**Intent**: Same guard behavior as stubs, backed by `AuthService`.
 
 **Contract**:
-- `{ path: 'login', loadComponent: ... LoginComponent }`
-- `{ path: '', component: AppShellComponent, canActivate: [authGuard], children: [{ path: '', pathMatch: 'full', redirectTo: 'active' }, { path: 'active', loadComponent: ... ActiveListComponent }] }`
-- `{ path: '**', redirectTo: '' }` (or `active`)
+- `authGuard`: if `!auth.isLoggedIn()`, `void router.navigate(['/']); return false` (match stub pattern)
+- `guestGuard`: if `auth.isLoggedIn()`, `void router.navigate(['/active']); return false` (match stub pattern)
+- Route table paths and components **unchanged** from F-01
 
-#### 2. Root app component
+#### 2. Landing sign-in
 
-**Files**: `apps/web/src/app/app.ts`, `apps/web/src/app/app.html`, `apps/web/src/app/app.scss`
+**File**: `apps/web/src/app/features/landing/landing.component.ts`
 
-**Intent**: Strip CLI placeholder; root is only `<router-outlet />`.
+**Intent**: Login button triggers OAuth, not stub toggle.
 
-**Contract**: Remove inline styles and welcome content from `app.html`. Update `app.spec.ts` to match (create test only, no h1 title assertion).
+**Contract**: `onLogin()` calls `auth.signIn()` only — remove `router.navigate(['/active'])` (OAuth callback handles landing).
 
-#### 3. Login page
+#### 3. App shell auth actions
 
-**File**: `apps/web/src/app/auth/login/login.component.ts` (new, standalone)
+**File**: `apps/web/src/app/layout/app-shell/app-shell.component.ts`
 
-**Intent**: Public entry point with Sign in button triggering `AuthService.signIn()`.
+**Intent**: Header Login/Logout use real auth.
 
-**Contract**: Minimal template — app name/title, paragraph, button `(click)="auth.signIn()"`. No auto-redirect to Google.
+**Contract**:
+- `onLogin()` → `auth.signIn()` (remove stub login + navigate)
+- `onLogout()` → `await auth.logout()` then `router.navigate(['/'])`
+- Template: username span shows `auth.user()?.displayName ?? auth.user()?.email` (satisfies manual criterion 2.7 when Google omits display name)
 
-#### 4. App shell
-
-**File**: `apps/web/src/app/layout/app-shell.component.ts` (new, standalone)
-
-**Intent**: Authenticated layout wrapper with header and child outlet.
-
-**Contract**: Template includes app title ("Parcel Scrubber" or similar), user email from `AuthService.session()`, Sign out button calling `auth.logout()` then `router.navigate(['/login'])`, and `<router-outlet />` for children. SCSS in component `styleUrl` — move away from inline template styles.
-
-#### 5. Active list placeholder
-
-**File**: `apps/web/src/app/parcels/active-list/active-list.component.ts` (new, standalone)
-
-**Intent**: Minimal empty state for F-01; real list comes in S-02.
-
-**Contract**: `<h1>Active parcels</h1>` and one line e.g. "No parcels yet." No Sync button, no table skeleton.
-
-#### 6. Global styles baseline
-
-**File**: `apps/web/src/styles.scss`
-
-**Intent**: Minimal reset/typography so shell is readable (not CLI defaults).
-
-**Contract**: Basic font stack, margin reset, header spacing tokens — keep under style budget.
-
-#### 7. Index title
-
-**File**: `apps/web/src/index.html`
-
-**Intent**: Update page title from scaffold default.
-
-**Contract**: `<title>Parcel Scrubber</title>`
-
-#### 8. API OAuth callback redirect
+#### 4. API OAuth callback redirect
 
 **File**: `apps/api/src/auth/auth.controller.ts`
 
 **Intent**: Land authenticated users on `/active` after Google callback.
 
 **Contract**: Change `res.redirect('/')` to `res.redirect('/active')` in `googleCallback`.
+
+**Testing note:** No `auth.controller` spec exists today — criterion 2.3 passes vacuously. Callback redirect is manual-only in F-02; add a controller spec when auth e2e coverage grows.
+
+**Note:** Stub files remain until Phase 3 so `npm run test:web` stays green after the shell spec is rewired. Dead stub code is harmless once nothing imports it.
 
 ### Success Criteria:
 
@@ -206,11 +189,12 @@ Wire routes, login page, app shell with header, empty active list, replace CLI s
 
 #### Manual Verification:
 
-- Visit `http://localhost:4200` → redirected to `/login`
-- Click Sign in → Google OAuth → lands on `/active`
-- Header shows user email; empty list message visible
+- Visit `http://localhost:4200` → landing visible
+- Click Login → Google OAuth → lands on `/active`
+- Header shows user display name (or email fallback); active placeholder visible
 - Refresh `/active` → still authenticated
-- Sign out → `/login`; `/active` redirects to login
+- Sign out → `/`; `/active` redirects to landing
+- Visit `/` while authenticated → redirects to `/active`
 - Cookie visible in DevTools (httpOnly `session` on `localhost`)
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
@@ -221,33 +205,43 @@ Wire routes, login page, app shell with header, empty active list, replace CLI s
 
 ### Overview
 
-Add focused unit tests for `AuthService` and `authGuard`; update root component test.
+Replace stub auth specs with tests for `AuthService`, `authGuard`, and `guestGuard`; update shell/landing specs.
 
 ### Changes Required:
 
 #### 1. AuthService tests
 
-**File**: `apps/web/src/app/auth/auth.service.spec.ts` (new)
+**File**: `apps/web/src/app/core/auth/auth.service.spec.ts` (new)
 
-**Intent**: Verify status parsing, session signal updates, logout clears state.
+**Contract**: Mock `HttpClient` with `HttpTestingController`. Cases: authenticated status sets session; `{ authenticated: false }` clears session; logout POST to `/api/auth/logout` clears session; `loading` flag lifecycle.
 
-**Contract**: Mock `HttpClient` with `HttpTestingController`. Cases: authenticated status sets session; `{ authenticated: false }` clears session; logout POST to `/api/auth/logout` clears session.
+#### 2. Guard tests
 
-#### 2. Auth guard tests
+**Files**:
+- `apps/web/src/app/core/auth/auth.guard.spec.ts` (new)
+- `apps/web/src/app/core/auth/guest.guard.spec.ts` (new)
 
-**File**: `apps/web/src/app/auth/auth.guard.spec.ts` (new)
+**Contract**: Mock `AuthService` with controllable session/loading. `authGuard` → `/` when logged out; `guestGuard` → `/active` when logged in.
 
-**Intent**: Verify guard allows authenticated users and redirects unauthenticated to `/login`.
+#### 3. Shell spec update
 
-**Contract**: Provide mock `AuthService` with controllable `session`/`loading` signals. Assert `UrlTree` to `/login` when logged out; `true` when logged in.
+**File**: `apps/web/src/app/layout/app-shell/app-shell.component.spec.ts`
 
-#### 3. Root app spec update
+**Intent**: Use `AuthService` mock instead of `StubAuthService`. Login click should call `signIn()` (spy), not toggle + navigate. Logout should call `logout()`.
 
-**File**: `apps/web/src/app/app.spec.ts`
+#### 4. Landing spec (if present)
 
-**Intent**: Align with stripped root template.
+**File**: `apps/web/src/app/features/landing/landing.component.spec.ts` (create or update)
 
-**Contract**: Provide `RouterTestingModule` or mock router; remove h1 title assertion; test creates component with router-outlet.
+**Contract**: Login button calls `signIn()`, not navigate.
+
+#### 5. Remove stub files (after steps 1–4 and tests pass)
+
+**Files** (delete only after guards, landing, shell, and specs no longer reference stubs):
+- `stub-auth.service.ts`, `stub-auth.guard.ts`, `stub-guest.guard.ts`
+- `stub-auth.service.spec.ts`, `stub-auth.guard.spec.ts`, `stub-guest.guard.spec.ts`
+
+**Intent**: Single cutover after replacements exist — no file still imports stub symbols.
 
 ### Success Criteria:
 
@@ -270,19 +264,20 @@ Add focused unit tests for `AuthService` and `authGuard`; update root component 
 ### Unit Tests:
 
 - `AuthService`: status response mapping, logout, loading flag lifecycle
-- `authGuard`: redirect vs allow based on session signal
-- `App`: smoke create with router
+- `authGuard` / `guestGuard`: redirect vs allow based on session
+- `AppShellComponent`: header states with mocked `AuthService`
 
 ### Integration Tests:
 
-- None in F-01 (API e2e OAuth not worth automating for foundation slice)
+- None in F-02 (API e2e OAuth not worth automating for foundation slice)
 
 ### Manual Testing Steps:
 
 1. Start `npm run dev` with valid `.env.local` Google credentials
 2. Confirm `GOOGLE_CALLBACK_URL=http://localhost:4200/api/auth/google/callback`
 3. Full sign-in → `/active` → refresh → sign-out cycle
-4. Direct navigate to `/active` while logged out → `/login`
+4. Direct navigate to `/active` while logged out → `/`
+5. Direct navigate to `/` while logged in → `/active`
 
 ## Performance Considerations
 
@@ -290,12 +285,14 @@ Single `GET /api/auth/status` on app bootstrap — negligible. No polling. Sign-
 
 ## Migration Notes
 
-No data migration. Deploy note: production `GOOGLE_CALLBACK_URL` must match nginx-exposed origin (see `docs/deploy-unraid.md`). Angular nginx already proxies `/api/` to Nest.
+No data migration. F-01 stub auth files are deleted in Phase 3 after replacement specs land — no runtime feature flag needed.
+
+Deploy note: production `GOOGLE_CALLBACK_URL` must match nginx-exposed origin (see `docs/deploy-unraid.md`). Angular nginx already proxies `/api/` to Nest.
 
 ## References
 
-- Change brief: `context/changes/web-oauth-app-shell/change.md`
-- Roadmap F-01: `context/foundation/roadmap.md`
+- F-01 change: `context/changes/prime-layout-scaffold/`
+- Roadmap F-02: `context/foundation/roadmap.md`
 - API auth: `apps/api/src/auth/auth.controller.ts`
 - Web proxy: `apps/web/proxy.conf.json`
 - PRD FR-001: `context/foundation/prd.md`
@@ -316,7 +313,7 @@ No data migration. Deploy note: production `GOOGLE_CALLBACK_URL` must match ngin
 
 - [ ] 1.4 App boots without console errors
 
-### Phase 2: Routes, Shell & Placeholder
+### Phase 2: Wire OAuth Into F-01 Shell
 
 #### Automated
 
@@ -327,12 +324,13 @@ No data migration. Deploy note: production `GOOGLE_CALLBACK_URL` must match ngin
 
 #### Manual
 
-- [ ] 2.5 Visit localhost:4200 → redirected to `/login`
-- [ ] 2.6 Sign in → Google OAuth → lands on `/active`
-- [ ] 2.7 Header shows user email; empty list message visible
+- [ ] 2.5 Visit localhost:4200 → landing visible
+- [ ] 2.6 Login → Google OAuth → lands on `/active`
+- [ ] 2.7 Header shows user display name; active placeholder visible
 - [ ] 2.8 Refresh `/active` → still authenticated
-- [ ] 2.9 Sign out → `/login`; `/active` redirects to login
-- [ ] 2.10 Cookie visible in DevTools (httpOnly `session` on localhost)
+- [ ] 2.9 Sign out → `/`; `/active` redirects to landing
+- [ ] 2.10 Visit `/` while authenticated → redirects to `/active`
+- [ ] 2.11 Cookie visible in DevTools (httpOnly `session` on localhost)
 
 ### Phase 3: Auth Unit Tests
 
