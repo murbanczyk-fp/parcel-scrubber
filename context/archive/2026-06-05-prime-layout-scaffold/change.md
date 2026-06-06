@@ -1,10 +1,10 @@
 ---
 change_id: prime-layout-scaffold
 title: Bootstrap PrimeNG and base app layout
-status: impl_reviewed
+status: archived
 created: 2026-06-05
 updated: 2026-06-06
-archived_at: null
+archived_at: 2026-06-06T09:12:02Z
 ---
 
 ## Notes
