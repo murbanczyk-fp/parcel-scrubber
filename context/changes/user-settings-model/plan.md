@@ -339,4 +339,4 @@ Downstream slices consume this schema as-is:
 
 #### Manual
 
-- [ ] 3.4 CI green on PR branch
+- [x] 3.4 CI green on PR branch

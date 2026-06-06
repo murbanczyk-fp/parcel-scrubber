@@ -1,7 +1,7 @@
 ---
 change_id: user-settings-model
 title: User settings model
-status: implementing
+status: implemented
 created: 2026-06-06
 updated: 2026-06-06
 
