@@ -39,6 +39,8 @@ jobs:
           POSTGRES_USER: parcel
           POSTGRES_PASSWORD: parcel
           POSTGRES_DB: parcel_scrubber_test
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
 
