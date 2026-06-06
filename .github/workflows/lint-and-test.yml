@@ -30,15 +30,6 @@ jobs:
   api:
     name: api (lint & test)
     runs-on: self-hosted
-    env:
-      DATABASE_URL: postgresql://parcel:parcel@localhost:5432/parcel_scrubber_test
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: parcel
-          POSTGRES_PASSWORD: parcel
-          POSTGRES_DB: parcel_scrubber_test
     steps:
       - uses: actions/checkout@v4
 
@@ -53,4 +44,30 @@ jobs:
 
       - run: npm run test -w @parcel-scrubber/api
 
-      - run: npm run test:e2e -w @parcel-scrubber/api
+      # Self-hosted runners often run job steps on the host while GHA service
+      # containers stay on an isolated network without localhost port mapping.
+      - name: Start Postgres for e2e
+        run: |
+          docker rm -f parcel-scrubber-ci-postgres 2>/dev/null || true
+          docker run -d --name parcel-scrubber-ci-postgres \
+            -e POSTGRES_USER=parcel \
+            -e POSTGRES_PASSWORD=parcel \
+            -e POSTGRES_DB=parcel_scrubber_test \
+            -p 127.0.0.1:5433:5432 \
+            postgres:16-alpine
+          for i in $(seq 1 30); do
+            docker exec parcel-scrubber-ci-postgres pg_isready -U parcel -d parcel_scrubber_test && exit 0
+            sleep 1
+          done
+          echo "Postgres did not become ready in time"
+          docker logs parcel-scrubber-ci-postgres
+          exit 1
+
+      - name: Run e2e tests
+        env:
+          E2E_DATABASE_URL: postgresql://parcel:parcel@127.0.0.1:5433/parcel_scrubber_test
+        run: npm run test:e2e -w @parcel-scrubber/api
+
+      - name: Stop Postgres
+        if: always()
+        run: docker rm -f parcel-scrubber-ci-postgres
