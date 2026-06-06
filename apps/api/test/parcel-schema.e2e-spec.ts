@@ -15,6 +15,15 @@ const DEFAULT_TEST_DATABASE_URL =
 const TEST_DATABASE_URL =
   process.env.E2E_DATABASE_URL ?? DEFAULT_TEST_DATABASE_URL;
 
+function assertE2eDatabaseUrl(url: string): void {
+  const dbName = new URL(url).pathname.replace(/^\//, '');
+  if (!dbName.endsWith('_test')) {
+    throw new Error(
+      `E2E_DATABASE_URL must point at a test database (name ending in _test); got "${dbName}"`,
+    );
+  }
+}
+
 async function truncateAppTables(client: PrismaClient): Promise<void> {
   await client.$executeRawUnsafe(
     'TRUNCATE TABLE "parcel_status_events", "parcels", "users" CASCADE',
@@ -26,6 +35,7 @@ describe('Parcel schema (e2e)', () => {
   let userCounter = 0;
 
   beforeAll(async () => {
+    assertE2eDatabaseUrl(TEST_DATABASE_URL);
     process.env.DATABASE_URL = TEST_DATABASE_URL;
     execSync('npx prisma migrate deploy', {
       cwd: path.join(__dirname, '..'),

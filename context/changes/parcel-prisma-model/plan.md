@@ -295,6 +295,16 @@ Downstream slices consume this schema as-is:
 - Current schema: `apps/api/prisma/schema.prisma`
 - Prisma service: `apps/api/src/prisma/prisma.service.ts`
 
+## Addendum: CI Postgres (self-hosted runner)
+
+Phase 3 originally specified GHA `services.postgres` on `localhost:5432` with job env `DATABASE_URL`. On the project's self-hosted runner (job steps run inside a container while `docker run` publishes ports on the Docker host), service containers were replaced with:
+
+- `docker run` provisioning `postgres:16-alpine` on host port **5433** with `POSTGRES_DB=parcel_scrubber_test`
+- Host gateway IP via `docker run --rm alpine ip route` (not `127.0.0.1`)
+- E2e step env **`E2E_DATABASE_URL`** (preserves dev `DATABASE_URL` in `.env.local`; spec sets `DATABASE_URL` only in `beforeAll`)
+
+Validated green on PR #21 (`7eded2a`, `fa44513`).
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands.
@@ -335,4 +345,4 @@ Downstream slices consume this schema as-is:
 
 #### Manual
 
-- [ ] 3.4 CI api job green with Postgres service and e2e step
+- [x] 3.4 CI api job green with Postgres service and e2e step — 7eded2a

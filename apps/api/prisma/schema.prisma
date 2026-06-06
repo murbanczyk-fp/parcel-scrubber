@@ -49,6 +49,9 @@ model User {
   @@map("users")
 }
 
+// Partial unique index on (user_id, tracking_number) WHERE tracking_number IS NOT NULL
+// is defined in migration 20260606130352_add_parcel_models (Prisma DSL cannot express it).
+// App layer (S-02/S-04) must call normalizeTrackingNumber before insert/update — index is case-sensitive.
 model Parcel {
   id                 String       @id @default(cuid())
   userId             String       @map("user_id")
