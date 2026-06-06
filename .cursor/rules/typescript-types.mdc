@@ -1,0 +1,27 @@
+---
+description: Prefer TypeScript type aliases over interfaces for object shapes
+globs: **/*.{ts,mts}
+alwaysApply: false
+---
+
+# TypeScript: prefer `type` over `interface`
+
+Use `type` aliases for object shapes, unions, and most structural definitions:
+
+```typescript
+// Preferred
+export type StubUser = {
+  displayName: string;
+  email: string;
+};
+
+// Avoid unless interface-specific features are required (declaration merging, implements on classes)
+export interface StubUser {
+  displayName: string;
+  email: string;
+}
+```
+
+Reach for `interface` only when you need declaration merging or a class `implements` clause that benefits from interface semantics.
+
+Enforced in `@apps/web/eslint.config.js` and `@apps/api/eslint.config.mjs` via `@typescript-eslint/consistent-type-definitions: ['error', 'type']`.

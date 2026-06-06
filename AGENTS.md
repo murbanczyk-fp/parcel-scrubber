@@ -16,7 +16,7 @@ Run from repo root after `npm install`: `npm run dev` (web :4200, API :4201), `n
 
 ## Coding style
 
-TypeScript throughout; 2-space indent (`@apps/web/.editorconfig`). Lint via `@apps/web/eslint.config.js` and `@apps/api/eslint.config.mjs`. API Prettier: single quotes, trailing commas (`@apps/api/.prettierrc`). Place Nest modules under `apps/api/src/<feature>/`; Angular code under `apps/web/src/app/`.
+TypeScript throughout; 2-space indent (`@apps/web/.editorconfig`). Prefer `type` aliases over `interface` for object shapes (enforced by `@typescript-eslint/consistent-type-definitions` in both workspaces). Lint via `@apps/web/eslint.config.js` and `@apps/api/eslint.config.mjs`. API Prettier: single quotes, trailing commas (`@apps/api/.prettierrc`). Place Nest modules under `apps/api/src/<feature>/`; Angular code under `apps/web/src/app/`.
 
 ## Testing
 
