@@ -321,21 +321,21 @@ Downstream slices consume this schema as-is:
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm run test:api`
-- [x] 2.2 Lint passes: `npm run lint:api`
-- [x] 2.3 API build passes: `npm run build:api`
+- [x] 2.1 Unit tests pass: `npm run test:api` — 23262da
+- [x] 2.2 Lint passes: `npm run lint:api` — 23262da
+- [x] 2.3 API build passes: `npm run build:api` — 23262da
 
 #### Manual
 
-- [x] 2.4 `DEFAULT_USER_SETTINGS` matches PRD defaults
+- [x] 2.4 `DEFAULT_USER_SETTINGS` matches PRD defaults — 23262da
 
 ### Phase 3: Schema Integration E2e
 
 #### Automated
 
-- [ ] 3.1 E2e passes locally: `npm run test:e2e -w @parcel-scrubber/api`
-- [ ] 3.2 Full API suite: `npm run lint:api && npm run test:api && npm run test:e2e -w @parcel-scrubber/api`
-- [ ] 3.3 Monorepo lint and unit tests pass: `npm run lint && npm run test`
+- [x] 3.1 E2e passes locally: `npm run test:e2e -w @parcel-scrubber/api`
+- [x] 3.2 Full API suite: `npm run lint:api && npm run test:api && npm run test:e2e -w @parcel-scrubber/api`
+- [x] 3.3 Monorepo lint and unit tests pass: `npm run lint && npm run test`
 
 #### Manual
 

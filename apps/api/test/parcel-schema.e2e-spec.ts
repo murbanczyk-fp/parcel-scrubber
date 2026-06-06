@@ -9,6 +9,8 @@ import {
   StatusEventSource,
 } from '@prisma/client';
 
+import { truncateAppTables } from './truncate-app-tables';
+
 const DEFAULT_TEST_DATABASE_URL =
   'postgresql://parcel:parcel@localhost:5432/parcel_scrubber_test';
 
@@ -22,12 +24,6 @@ function assertE2eDatabaseUrl(url: string): void {
       `E2E_DATABASE_URL must point at a test database (name ending in _test); got "${dbName}"`,
     );
   }
-}
-
-async function truncateAppTables(client: PrismaClient): Promise<void> {
-  await client.$executeRawUnsafe(
-    'TRUNCATE TABLE "parcel_status_events", "parcels", "users" CASCADE',
-  );
 }
 
 describe('Parcel schema (e2e)', () => {

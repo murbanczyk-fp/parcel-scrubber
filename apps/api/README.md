@@ -79,7 +79,7 @@ Integration tests (`npm run test:e2e -w @parcel-scrubber/api`) connect to a real
 
    E2e Jest loads `.env.local` via `test/load-env.ts` before tests run. If unset, the default is `postgresql://parcel:parcel@localhost:5432/parcel_scrubber_test` (matches CI). You can still override per shell with `E2E_DATABASE_URL=... npm run test:e2e`.
 
-   The parcel schema e2e spec runs `prisma migrate deploy` against that URL in `beforeAll`.
+   The parcel schema e2e spec (`test/parcel-schema.e2e-spec.ts`) and user settings schema e2e spec (`test/user-settings-schema.e2e-spec.ts`) run `prisma migrate deploy` against that URL in `beforeAll`.
 
 ## Deployment
 
