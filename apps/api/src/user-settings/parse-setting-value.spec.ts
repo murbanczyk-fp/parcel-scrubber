@@ -38,6 +38,18 @@ describe('parseSettingValue', () => {
     ).toBe(30);
   });
 
+  it('falls back to default for partial numeric scan period', () => {
+    expect(parseSettingValue(USER_SETTING_KEYS.SCAN_PERIOD_DAYS, '90abc')).toBe(
+      30,
+    );
+  });
+
+  it('falls back to default for decimal scan period', () => {
+    expect(parseSettingValue(USER_SETTING_KEYS.SCAN_PERIOD_DAYS, '30.5')).toBe(
+      30,
+    );
+  });
+
   it('falls back to default for out-of-range scan period', () => {
     expect(parseSettingValue(USER_SETTING_KEYS.SCAN_PERIOD_DAYS, '0')).toBe(30);
     expect(parseSettingValue(USER_SETTING_KEYS.SCAN_PERIOD_DAYS, '366')).toBe(

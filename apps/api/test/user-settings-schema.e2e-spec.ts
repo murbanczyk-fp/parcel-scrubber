@@ -62,9 +62,11 @@ describe('User settings schema (e2e)', () => {
   }
 
   it('returns PRD defaults when user has no settings rows', async () => {
-    await createTestUser();
+    const user = await createTestUser();
 
-    const rows = await prisma.userSetting.findMany();
+    const rows = await prisma.userSetting.findMany({
+      where: { userId: user.id },
+    });
     expect(rows).toHaveLength(0);
     expect(resolveEffectiveSettings(rows)).toEqual({
       gmailScanLabel: 'ParcelScrubber',

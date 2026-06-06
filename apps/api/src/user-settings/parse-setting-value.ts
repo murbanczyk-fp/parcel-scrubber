@@ -20,13 +20,15 @@ function parseGmailScanLabel(raw: string): string {
 }
 
 function parseScanPeriodDays(raw: string): number {
-  const parsed = Number.parseInt(raw, 10);
+  const trimmed = raw.trim();
 
-  if (
-    !Number.isInteger(parsed) ||
-    parsed < SCAN_PERIOD_DAYS_MIN ||
-    parsed > SCAN_PERIOD_DAYS_MAX
-  ) {
+  if (!/^\d+$/.test(trimmed)) {
+    return DEFAULT_USER_SETTINGS.scanPeriodDays;
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+
+  if (parsed < SCAN_PERIOD_DAYS_MIN || parsed > SCAN_PERIOD_DAYS_MAX) {
     return DEFAULT_USER_SETTINGS.scanPeriodDays;
   }
 
@@ -45,6 +47,7 @@ export function parseSettingValue(
   }
 }
 
+/** Caller must validate via `normalizeGmailScanLabel` or `validateScanPeriodDays` before persisting. */
 export function serializeSettingValue(
   key: UserSettingKey,
   value: string | number,
