@@ -1,0 +1,58 @@
+import { GMAIL_SCAN_LABEL_MAX_LENGTH } from './normalize-gmail-scan-label';
+import {
+  DEFAULT_USER_SETTINGS,
+  USER_SETTING_KEYS,
+  type UserSettingKey,
+} from './user-setting-keys';
+import {
+  SCAN_PERIOD_DAYS_MAX,
+  SCAN_PERIOD_DAYS_MIN,
+} from './validate-scan-period-days';
+
+function parseGmailScanLabel(raw: string): string {
+  const trimmed = raw.trim();
+
+  if (trimmed.length === 0 || trimmed.length > GMAIL_SCAN_LABEL_MAX_LENGTH) {
+    return DEFAULT_USER_SETTINGS.gmailScanLabel;
+  }
+
+  return trimmed;
+}
+
+function parseScanPeriodDays(raw: string): number {
+  const parsed = Number.parseInt(raw, 10);
+
+  if (
+    !Number.isInteger(parsed) ||
+    parsed < SCAN_PERIOD_DAYS_MIN ||
+    parsed > SCAN_PERIOD_DAYS_MAX
+  ) {
+    return DEFAULT_USER_SETTINGS.scanPeriodDays;
+  }
+
+  return parsed;
+}
+
+export function parseSettingValue(
+  key: UserSettingKey,
+  raw: string,
+): string | number {
+  switch (key) {
+    case USER_SETTING_KEYS.GMAIL_SCAN_LABEL:
+      return parseGmailScanLabel(raw);
+    case USER_SETTING_KEYS.SCAN_PERIOD_DAYS:
+      return parseScanPeriodDays(raw);
+  }
+}
+
+export function serializeSettingValue(
+  key: UserSettingKey,
+  value: string | number,
+): string {
+  switch (key) {
+    case USER_SETTING_KEYS.GMAIL_SCAN_LABEL:
+      return String(value);
+    case USER_SETTING_KEYS.SCAN_PERIOD_DAYS:
+      return String(value);
+  }
+}
