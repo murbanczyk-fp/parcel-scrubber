@@ -41,3 +41,6 @@ jobs:
           git checkout "${{ inputs.ref }}"
           git pull --ff-only origin "${{ inputs.ref }}"
           docker compose up -d --build
+      - name: Clean Docker build cache
+        if: always()
+        run: docker builder prune -af
