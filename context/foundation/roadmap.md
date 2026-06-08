@@ -34,7 +34,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | F-03 | parcel-prisma-model | (foundation) Parcel records with active/archive membership persisted in PostgreSQL | — | FR-008, FR-009 | done |
 | F-04 | user-settings-model | (foundation) extensible per-user settings persisted (Gmail scan label default `ParcelScrubber`, scan period default 30 days; room for more) | — | FR-017, FR-003, FR-006, NFR (local session) | done |
 | S-01 | user-settings-page | open settings and configure Gmail scan label (default `ParcelScrubber`) and scan period (default last 30 days) | F-01, F-02, F-04 | FR-017, FR-003, FR-006, NFR (local session) | done |
-| F-05 | gmail-message-retrieval | (foundation) list Gmail message metadata by label + scan period; fetch full message body by id (separate methods) | F-02 | FR-003, FR-017 | proposed |
+| F-05 | gmail-message-retrieval | (foundation) list Gmail message metadata by label + scan period; fetch full message body by id (separate methods) | F-02 | FR-003, FR-017 | done |
 | F-06 | ai-email-parcel-extraction | (foundation) extract tracking number, carrier, and description from email body via OpenRouter | F-05 | FR-003, FR-004, FR-005 | proposed |
 | S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03, F-05, F-06 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | proposed |
 | S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | proposed |
@@ -130,7 +130,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Gmail API pagination and token refresh — scope is retrieval only; no extraction, parcel writes, or UI. If the configured label does not exist in the user's mailbox, list returns **zero results** (no auto-create, no error). Label and scan period are caller-supplied params.
-- **Status:** proposed
+- **Status:** done
 
 ### F-06: AI parcel extraction from email
 
@@ -249,3 +249,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-03: (foundation) Prisma `Parcel` (and related fields) migrated; API can persist active vs archive membership per authenticated user.** — Archived 2026-06-06 → `context/archive/2026-06-06-parcel-prisma-model/`. Lesson: —.
 - **F-04: (foundation) extensible per-user settings storage landed (e.g. dedicated settings row or structured fields on `User`); v1 fields are Gmail scan label (default `ParcelScrubber`) and scan period in days (default 30); schema/API contract allows adding more settings without redesign.** — Archived 2026-06-06 → `context/archive/2026-06-06-user-settings-model/`. Lesson: —.
 - **S-01: user can open a settings page and configure Gmail scan label and scan period (how far back sync searches); defaults are label `ParcelScrubber` and last 30 days when unset.** — Archived 2026-06-08 → `context/archive/2026-06-08-user-settings-page/`. Lesson: —.
+- **F-05: (foundation) Nest Gmail service exposes two methods for the authenticated user: list message metadata filtered by label name and scan period (method params — not read from settings), and get full message body by message id. Metadata list returns ids and headers only; body fetch is a separate call so sync can skip messages already scanned.** — Archived 2026-06-08 → `context/archive/2026-06-08-gmail-message-retrieval/`. Lesson: —.
