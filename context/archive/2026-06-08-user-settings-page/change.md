@@ -1,10 +1,10 @@
 ---
 change_id: user-settings-page
 title: User settings page
-status: impl_reviewed
+status: archived
 created: 2026-06-08
 updated: 2026-06-08
-archived_at: null
+archived_at: 2026-06-08T07:43:08Z
 ---
 
 ## Notes
