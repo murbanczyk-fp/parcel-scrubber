@@ -416,7 +416,7 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Manual
 
-- [ ] 2.3 Test route returns matching email ids for labeled mail in scope (after Phase 4 wiring, or via direct service call)
+- [x] 2.3 Test route returns matching email ids for labeled mail in scope (after Phase 4 wiring, or via direct service call)
 
 ### Phase 3: Body retrieval
 
@@ -427,7 +427,7 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Manual
 
-- [ ] 3.3 Test route returns readable body for known message id
+- [x] 3.3 Test route returns readable body for known message id
 
 ### Phase 4: Module wiring and test routes
 
@@ -440,6 +440,6 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Manual
 
-- [ ] 4.5 `GET /api/test/matching-email-ids` works with session cookie
-- [ ] 4.6 `GET /api/test/email?id=` returns body for listed message
-- [ ] 4.7 Nonexistent label returns `[]`; logged-out returns 401
+- [x] 4.5 `GET /api/test/matching-email-ids` works with session cookie
+- [x] 4.6 `GET /api/test/email?id=` returns body for listed message
+- [x] 4.7 Nonexistent label returns `[]`; logged-out returns 401
