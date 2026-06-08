@@ -354,15 +354,15 @@ No schema changes. Deploy requires only API + web code; F-04 migration must alre
 
 #### Automated
 
-- [x] 1.1 API unit tests pass: `npm run test:api`
-- [x] 1.2 API lint passes: `npm run lint:api`
-- [x] 1.3 API build passes: `npm run build:api`
-- [x] 1.4 Existing e2e suite still passes: `npm run test:e2e -w @parcel-scrubber/api`
+- [x] 1.1 API unit tests pass: `npm run test:api` — 8a9c1be
+- [x] 1.2 API lint passes: `npm run lint:api` — 8a9c1be
+- [x] 1.3 API build passes: `npm run build:api` — 8a9c1be
+- [x] 1.4 Existing e2e suite still passes: `npm run test:e2e -w @parcel-scrubber/api` — 8a9c1be
 
 #### Manual
 
-- [x] 1.5 Authenticated GET returns PRD defaults for user with zero rows
-- [x] 1.6 PATCH invalid input returns structured field errors
+- [x] 1.5 Authenticated GET returns PRD defaults for user with zero rows — 8a9c1be
+- [x] 1.6 PATCH invalid input returns structured field errors — 8a9c1be
 
 ### Phase 2: Settings Page UI
 

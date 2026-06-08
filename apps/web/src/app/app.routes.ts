@@ -5,7 +5,7 @@ import { guestGuard } from './core/auth/guest.guard';
 import { ActivePlaceholderComponent } from './features/active/active-placeholder.component';
 import { ArchivePlaceholderComponent } from './features/archive/archive-placeholder.component';
 import { LandingComponent } from './features/landing/landing.component';
-import { SettingsPlaceholderComponent } from './features/settings/settings-placeholder.component';
+import { SettingsPageComponent } from './features/settings/settings-page.component';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
 
 export const routes: Routes = [
@@ -31,7 +31,7 @@ export const routes: Routes = [
       },
       {
         path: 'settings',
-        component: SettingsPlaceholderComponent,
+        component: SettingsPageComponent,
         canActivate: [authGuard],
       },
     ],

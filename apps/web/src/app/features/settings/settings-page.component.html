@@ -1,0 +1,67 @@
+<section class="settings-page">
+  <p-card>
+    <ng-template #header>
+      <h1 class="settings-page__title">Settings</h1>
+    </ng-template>
+
+    @if (loading()) {
+      <p class="settings-page__status">Loading settings…</p>
+    } @else if (loadError()) {
+      <p-message severity="error" [text]="loadError()!" />
+    } @else {
+      <form class="settings-page__form" [formGroup]="form" (ngSubmit)="onSave()">
+        <div class="settings-page__field">
+          <label class="settings-page__label" for="gmailScanLabel">
+            Gmail scan label
+          </label>
+          <input
+            id="gmailScanLabel"
+            type="text"
+            pInputText
+            formControlName="gmailScanLabel"
+            autocomplete="off"
+          />
+          @if (showFieldError('gmailScanLabel')) {
+            <p-message
+              severity="error"
+              [text]="fieldErrorMessage('gmailScanLabel')!"
+            />
+          }
+        </div>
+
+        <div class="settings-page__field">
+          <label class="settings-page__label" for="scanPeriodDays">
+            Scan period (days)
+          </label>
+          <p-inputNumber
+            inputId="scanPeriodDays"
+            formControlName="scanPeriodDays"
+            [min]="1"
+            [max]="365"
+            [useGrouping]="false"
+          />
+          <p class="settings-page__help">
+            How far back Gmail is searched on sync — does not remove parcels from
+            your lists.
+          </p>
+          @if (showFieldError('scanPeriodDays')) {
+            <p-message
+              severity="error"
+              [text]="fieldErrorMessage('scanPeriodDays')!"
+            />
+          }
+        </div>
+
+        <div class="settings-page__actions">
+          <p-button
+            type="submit"
+            label="Save"
+            data-testid="save-settings"
+            [disabled]="!canSave()"
+            [loading]="saving()"
+          />
+        </div>
+      </form>
+    }
+  </p-card>
+</section>
