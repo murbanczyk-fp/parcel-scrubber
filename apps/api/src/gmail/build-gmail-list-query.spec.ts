@@ -7,9 +7,9 @@ describe('buildGmailListQuery', () => {
     );
   });
 
-  it('preserves label name casing and spacing', () => {
+  it('quotes multi-word label names for Gmail search', () => {
     expect(buildGmailListQuery('My Custom Label', 7)).toBe(
-      'label:My Custom Label newer_than:7d',
+      'label:"My Custom Label" newer_than:7d',
     );
   });
 });

@@ -391,6 +391,10 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 - Settings pattern: `apps/api/src/settings/settings.controller.ts`
 - Archived parcel/Gmail research: `context/archive/2026-06-06-parcel-prisma-model/research.md`
 
+### Addendum: Auth prerequisite (260e358)
+
+During F-05 manual verification, offline refresh tokens were not issued because `passport-google-oauth20` ignores constructor `accessType`/`prompt`. Fixed via `OfflineGoogleOAuthStrategy.authorizationParams()`, `GoogleAuthGuard.getAuthenticateOptions()`, and `refreshToken ?? params.refresh_token` in `google.strategy.ts` validate. Required for F-05 verification checklist items 1, 4, and 5.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands.

@@ -89,13 +89,24 @@ describe('GmailTestController', () => {
       });
       gmailService.listMatchingEmailIds.mockResolvedValue([]);
 
-      await controller.matchingEmailIds(sessionUser, 'CustomLabel', '7');
+      await controller.matchingEmailIds(sessionUser, '  CustomLabel  ', '7');
 
       expect(gmailService.listMatchingEmailIds).toHaveBeenCalledWith(
         sessionUser.id,
         'CustomLabel',
         7,
       );
+    });
+
+    it('rejects invalid label query param', async () => {
+      settingsService.getEffectiveSettings.mockResolvedValue({
+        gmailScanLabel: 'ParcelScrubber',
+        scanPeriodDays: 30,
+      });
+
+      await expect(
+        controller.matchingEmailIds(sessionUser, '   '),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('rejects invalid scanPeriodDays', async () => {

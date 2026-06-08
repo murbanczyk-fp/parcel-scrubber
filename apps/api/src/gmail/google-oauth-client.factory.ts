@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +11,8 @@ type GaxiosLikeError = {
 
 @Injectable()
 export class GoogleOAuthClientFactory {
+  private readonly logger = new Logger(GoogleOAuthClientFactory.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -38,14 +40,28 @@ export class GoogleOAuthClientFactory {
 
     client.on('tokens', (tokens) => {
       if (tokens.refresh_token) {
-        void this.prisma.user.update({
-          where: { id: userId },
-          data: { refreshToken: tokens.refresh_token },
-        });
+        void this.persistRotatedRefreshToken(userId, tokens.refresh_token);
       }
     });
 
     return client;
+  }
+
+  private async persistRotatedRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to persist rotated refresh token for user ${userId}`,
+        error,
+      );
+    }
   }
 
   async ensureAccessToken(userId: string, client: OAuth2Client): Promise<void> {
@@ -82,8 +98,5 @@ function isInvalidGrantError(error: unknown): boolean {
     return true;
   }
 
-  return (
-    typeof gaxiosError.message === 'string' &&
-    gaxiosError.message.includes('invalid_grant')
-  );
+  return false;
 }

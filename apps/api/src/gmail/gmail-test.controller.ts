@@ -10,7 +10,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { SessionUser } from '../auth/types';
 import { SettingsService } from '../settings/settings.service';
-import { validateScanPeriodDays } from '../user-settings';
+import {
+  normalizeGmailScanLabel,
+  validateScanPeriodDays,
+} from '../user-settings';
 import { GmailService } from './gmail.service';
 import { GmailAuthError, type GmailMessageBody } from './types';
 
@@ -29,7 +32,10 @@ export class GmailTestController {
     @Query('scanPeriodDays') scanPeriodDaysRaw?: string,
   ): Promise<string[]> {
     const effective = await this.settings.getEffectiveSettings(user.id);
-    const resolvedLabel = label ?? effective.gmailScanLabel;
+    const resolvedLabel =
+      label !== undefined
+        ? this.resolveLabelQueryParam(label)
+        : effective.gmailScanLabel;
     const scanPeriodDays = this.resolveScanPeriodDays(
       scanPeriodDaysRaw,
       effective.scanPeriodDays,
@@ -59,6 +65,16 @@ export class GmailTestController {
       return await this.gmail.getMessageBody(user.id, messageId);
     } catch (error) {
       this.rethrowGmailAuthError(error);
+    }
+  }
+
+  private resolveLabelQueryParam(raw: string): string {
+    try {
+      return normalizeGmailScanLabel(raw);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Invalid Gmail scan label';
+      throw new BadRequestException(message);
     }
   }
 
