@@ -354,37 +354,37 @@ No schema changes. Deploy requires only API + web code; F-04 migration must alre
 
 #### Automated
 
-- [ ] 1.1 API unit tests pass: `npm run test:api`
-- [ ] 1.2 API lint passes: `npm run lint:api`
-- [ ] 1.3 API build passes: `npm run build:api`
-- [ ] 1.4 Existing e2e suite still passes: `npm run test:e2e -w @parcel-scrubber/api`
+- [x] 1.1 API unit tests pass: `npm run test:api`
+- [x] 1.2 API lint passes: `npm run lint:api`
+- [x] 1.3 API build passes: `npm run build:api`
+- [x] 1.4 Existing e2e suite still passes: `npm run test:e2e -w @parcel-scrubber/api`
 
 #### Manual
 
-- [ ] 1.5 Authenticated GET returns PRD defaults for user with zero rows
-- [ ] 1.6 PATCH invalid input returns structured field errors
+- [x] 1.5 Authenticated GET returns PRD defaults for user with zero rows
+- [x] 1.6 PATCH invalid input returns structured field errors
 
 ### Phase 2: Settings Page UI
 
 #### Automated
 
-- [ ] 2.1 Web unit tests pass: `npm run test:web`
-- [ ] 2.2 Web lint passes: `npm run lint:web`
-- [ ] 2.3 Web build passes: `npm run build:web`
+- [x] 2.1 Web unit tests pass: `npm run test:web`
+- [x] 2.2 Web lint passes: `npm run lint:web`
+- [x] 2.3 Web build passes: `npm run build:web`
 
 #### Manual
 
-- [ ] 2.4 Settings form loads, validates live, saves dirty fields only
-- [ ] 2.5 API 400 errors display under matching fields
+- [x] 2.4 Settings form loads, validates live, saves dirty fields only
+- [x] 2.5 API 400 errors display under matching fields
 
 ### Phase 3: Toast & Verification
 
 #### Automated
 
-- [ ] 3.1 Full monorepo lint passes: `npm run lint`
-- [ ] 3.2 Full monorepo unit tests pass: `npm run test`
-- [ ] 3.3 API e2e still passes: `npm run test:e2e -w @parcel-scrubber/api`
+- [x] 3.1 Full monorepo lint passes: `npm run lint`
+- [x] 3.2 Full monorepo unit tests pass: `npm run test`
+- [x] 3.3 API e2e still passes: `npm run test:e2e -w @parcel-scrubber/api`
 
 #### Manual
 
-- [ ] 3.4 Save success shows toast; full sign-in → settings → save → refresh flow works
+- [x] 3.4 Save success shows toast; full sign-in → settings → save → refresh flow works
