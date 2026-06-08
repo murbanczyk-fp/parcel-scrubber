@@ -72,7 +72,7 @@ Add Nest `SettingsModule` with service and controller exposing authenticated `GE
 
 **Contract**:
 - `getEffectiveSettings(userId: string): Promise<EffectiveUserSettings>` — `prisma.userSetting.findMany({ where: { userId }, select: { settingKey, settingValue } })` → `resolveEffectiveSettings(rows)`.
-- `updateSettings(userId: string, patch: Partial<EffectiveUserSettings>): Promise<EffectiveUserSettings>` — for each key in `patch`, validate (`normalizeGmailScanLabel` / `validateScanPeriodDays`), `serializeSettingValue`, `prisma.userSetting.upsert` with `where: { userId_settingKey: { userId, settingKey } }`; re-fetch and return effective settings.
+- `updateSettings(userId: string, patch: Partial<EffectiveUserSettings>): Promise<EffectiveUserSettings>` — for each key in `patch`, validate (`normalizeGmailScanLabel` / `validateScanPeriodDays`); coerce `scanPeriodDays` with `Number(raw)` before validate and reject `NaN`; `serializeSettingValue`, `prisma.userSetting.upsert` with `where: { userId_settingKey: { userId, settingKey } }`; re-fetch and return effective settings.
 - Reject empty patch body with 400.
 - Reject unknown body keys (only `gmailScanLabel` and `scanPeriodDays` allowed).
 
@@ -157,7 +157,7 @@ Replace `SettingsPlaceholderComponent` with a real settings page: `SettingsServi
 
 **Intent**: Type the API contract on the web side without a shared package.
 
-**Contract**: `EffectiveUserSettings` type `{ gmailScanLabel: string; scanPeriodDays: number }`. `SettingsValidationErrorResponse` type `{ errors: { field: keyof EffectiveUserSettings; message: string }[] }`. `PatchUserSettings` as `Partial<EffectiveUserSettings>`.
+**Contract**: `EffectiveUserSettings` type `{ gmailScanLabel: string; scanPeriodDays: number }`. `SettingsValidationErrorResponse` type `{ errors: { field: keyof EffectiveUserSettings; message: string }[] }`. `PatchUserSettings` as `Partial<EffectiveUserSettings>`. Comment that validation bounds must stay aligned with API constants (`GMAIL_SCAN_LABEL_MAX_LENGTH`, `SCAN_PERIOD_DAYS_MIN`/`MAX` in `apps/api/src/user-settings/`).
 
 #### 2. Settings service
 
@@ -196,8 +196,8 @@ Replace `SettingsPlaceholderComponent` with a real settings page: `SettingsServi
   - `scanPeriodDays`: `Validators.required`, `Validators.min(1)`, `Validators.max(365)`, integer check (custom validator or `Validators.pattern` for whole numbers).
 - Live validation: validators evaluate on value changes; show inline error under each field when invalid and touched/dirty.
 - Help text under scan period: *"How far back Gmail is searched on sync — does not remove parcels from your lists."*
-- Save button: disabled when form invalid, pristine, or save in flight.
-- On Save: build partial patch from fields that differ from `savedSnapshot`; call `save(patch)`; on success update snapshot + `markAsPristine()`; on 400 map `errors[]` to control `setErrors`.
+- Save button: disabled when form invalid, pristine, computed patch is empty (user reverted edits — dirty form but values match `savedSnapshot`), or save in flight.
+- On Save: build partial patch from fields that differ from `savedSnapshot`; if patch is empty, do not call API (button should already be disabled); call `save(patch)`; on success update snapshot + `markAsPristine()`; on failure catch `HttpErrorResponse` — if `error.error?.errors` is an array, map each `{ field, message }` to the matching control via `setErrors({ server: message })` (NestJS 11 returns `{ errors: [...] }` at the top level of the 400 body).
 - Loading state while initial GET runs (simple message or disabled form).
 
 #### 5. Route wiring
@@ -222,7 +222,7 @@ Replace `SettingsPlaceholderComponent` with a real settings page: `SettingsServi
 
 **Intent**: Smoke-test form render, Save disabled when pristine, Save calls service with dirty patch.
 
-**Contract**: Mock `SettingsService`; verify validators reject out-of-range period.
+**Contract**: Mock `SettingsService`; verify validators reject out-of-range period; assert client bounds match API (`maxLength(100)`, `min(1)`, `max(365)`).
 
 ### Success Criteria:
 
