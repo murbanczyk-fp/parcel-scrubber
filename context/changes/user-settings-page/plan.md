@@ -368,14 +368,14 @@ No schema changes. Deploy requires only API + web code; F-04 migration must alre
 
 #### Automated
 
-- [x] 2.1 Web unit tests pass: `npm run test:web`
-- [x] 2.2 Web lint passes: `npm run lint:web`
-- [x] 2.3 Web build passes: `npm run build:web`
+- [x] 2.1 Web unit tests pass: `npm run test:web` — 5e89b94
+- [x] 2.2 Web lint passes: `npm run lint:web` — 5e89b94
+- [x] 2.3 Web build passes: `npm run build:web` — 5e89b94
 
 #### Manual
 
-- [x] 2.4 Settings form loads, validates live, saves dirty fields only
-- [x] 2.5 API 400 errors display under matching fields
+- [x] 2.4 Settings form loads, validates live, saves dirty fields only — 5e89b94
+- [x] 2.5 API 400 errors display under matching fields — 5e89b94
 
 ### Phase 3: Toast & Verification
 

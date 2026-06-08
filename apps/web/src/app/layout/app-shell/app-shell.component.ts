@@ -6,6 +6,7 @@ import { filter } from 'rxjs';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { ToastModule } from 'primeng/toast';
 
 import { AuthService } from '../../core/auth/auth.service';
 
@@ -20,6 +21,7 @@ type ParcelView = 'active' | 'archive';
     ButtonModule,
     SelectButtonModule,
     AvatarModule,
+    ToastModule,
   ],
   templateUrl: './app-shell.component.html',
   styleUrl: './app-shell.component.scss',

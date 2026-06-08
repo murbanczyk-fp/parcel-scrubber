@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { MessageService } from 'primeng/api';
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 
@@ -17,6 +18,7 @@ describe('AppShellComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppShellComponent],
       providers: [
+        MessageService,
         provideRouter([
           { path: '', component: AppShellComponent },
           { path: 'active', component: AppShellComponent },
