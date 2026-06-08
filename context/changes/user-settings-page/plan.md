@@ -381,10 +381,10 @@ No schema changes. Deploy requires only API + web code; F-04 migration must alre
 
 #### Automated
 
-- [x] 3.1 Full monorepo lint passes: `npm run lint`
-- [x] 3.2 Full monorepo unit tests pass: `npm run test`
-- [x] 3.3 API e2e still passes: `npm run test:e2e -w @parcel-scrubber/api`
+- [x] 3.1 Full monorepo lint passes: `npm run lint` — 18eefee
+- [x] 3.2 Full monorepo unit tests pass: `npm run test` — 18eefee
+- [x] 3.3 API e2e still passes: `npm run test:e2e -w @parcel-scrubber/api` — 18eefee
 
 #### Manual
 
-- [x] 3.4 Save success shows toast; full sign-in → settings → save → refresh flow works
+- [x] 3.4 Save success shows toast; full sign-in → settings → save → refresh flow works — 18eefee
