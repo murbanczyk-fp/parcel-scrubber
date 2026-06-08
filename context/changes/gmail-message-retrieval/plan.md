@@ -399,13 +399,13 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Automated
 
-- [ ] 1.1 API lint passes: `npm run lint:api`
-- [ ] 1.2 Unit tests pass: `npm run test:api`
-- [ ] 1.3 API build passes: `npm run build:api`
+- [x] 1.1 API lint passes: `npm run lint:api`
+- [x] 1.2 Unit tests pass: `npm run test:api`
+- [x] 1.3 API build passes: `npm run build:api`
 
 #### Manual
 
-- [ ] 1.4 Factory throws `GmailAuthError` when user has no refresh token in DB
+- [x] 1.4 Factory throws `GmailAuthError` when user has no refresh token in DB
 
 ### Phase 2: Matching email id listing
 
