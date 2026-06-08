@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { resolveEnvFilePaths } from './config/env-files';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { GmailModule } from './gmail/gmail.module';
 import { SettingsModule } from './settings/settings.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { SettingsModule } from './settings/settings.module';
     HealthModule,
     AuthModule,
     SettingsModule,
+    GmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
