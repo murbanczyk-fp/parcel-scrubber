@@ -422,8 +422,8 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm run test:api`
-- [x] 3.2 Lint passes: `npm run lint:api`
+- [x] 3.1 Unit tests pass: `npm run test:api` — 5040735
+- [x] 3.2 Lint passes: `npm run lint:api` — 5040735
 
 #### Manual
 
