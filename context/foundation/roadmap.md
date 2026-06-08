@@ -4,14 +4,14 @@ version: 1
 status: draft
 created: 2026-06-04
 updated: 2026-06-08
-prd_version: 3
+prd_version: 4
 main_goal: speed
 top_blocker: time
 ---
 
 # Roadmap: ParcelScrubber
 
-> Derived from `context/foundation/prd.md` (v3) + auto-researched codebase baseline.
+> Derived from `context/foundation/prd.md` (v4) + auto-researched codebase baseline.
 > Edit-in-place; archive when superseded.
 > Slices below are listed in dependency order. The "At a glance" table is the index.
 
@@ -23,7 +23,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 
 **S-02: Gmail sync and active parcels** — Trigger Sync and see imported active parcels with order dates and carrier tracking links; this is the validation milestone for the PRD’s primary success criteria (≥75% of real parcels in scan scope, working links for supported carriers).
 
-> **North star** here means the smallest end-to-end slice placed as early as prerequisites allow that proves the core product hypothesis — for ParcelScrubber that is label- and period-scoped Gmail import plus a populated active list. **F-01** through **F-04** and **S-01** (settings) ship first because S-02 depends on UI shell, sign-in, parcel persistence, and sync scope settings (Gmail label + scan period).
+> **North star** here means the smallest end-to-end slice placed as early as prerequisites allow that proves the core product hypothesis — for ParcelScrubber that is label- and period-scoped Gmail import plus a populated active list. **F-01** through **F-04**, **F-05** (Gmail retrieval), **F-06** (AI extraction), and **S-01** (settings) ship first because S-02 depends on UI shell, sign-in, parcel persistence, Gmail/AI services, and sync scope settings (Gmail label + scan period).
 
 ## At a glance
 
@@ -34,7 +34,9 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | F-03 | parcel-prisma-model | (foundation) Parcel records with active/archive membership persisted in PostgreSQL | — | FR-008, FR-009 | done |
 | F-04 | user-settings-model | (foundation) extensible per-user settings persisted (Gmail scan label default `ParcelScrubber`, scan period default 30 days; room for more) | — | FR-017, FR-003, FR-006, NFR (local session) | done |
 | S-01 | user-settings-page | open settings and configure Gmail scan label (default `ParcelScrubber`) and scan period (default last 30 days) | F-01, F-02, F-04 | FR-017, FR-003, FR-006, NFR (local session) | done |
-| S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | proposed |
+| F-05 | gmail-message-retrieval | (foundation) list Gmail message metadata by label + scan period; fetch full message body by id (separate methods) | F-02 | FR-003, FR-017 | proposed |
+| F-06 | ai-email-parcel-extraction | (foundation) extract tracking number, carrier, and description from email body via OpenRouter | F-05 | FR-003, FR-004, FR-005 | proposed |
+| S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03, F-05, F-06 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | proposed |
 | S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | proposed |
 | S-04 | manual-parcel-crud | manually add or edit parcels (including order date and tracking URL override) | S-02 | FR-010, FR-011, FR-015 | proposed |
 | S-05 | restore-undeliver-parcel | restore or undeliver any archived parcel back to the active list regardless of order date | S-03 | US-03, FR-016 | proposed |
@@ -45,8 +47,8 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 
 | Stream | Theme | Chain | Note |
 |---|---|---|---|
-| A | UI, auth & settings | `F-01` → `F-02` → `S-01` → `S-02` → `S-03` / `S-04` | North star **S-02** after settings; S-03 and S-04 branch after sync. |
-| B | Parcel persistence | `F-03` → joins Stream A at `S-02` | Parallel with F-01/F-02/F-04 until sync slice. |
+| A | UI, auth & settings | `F-01` → `F-02` → `S-01` → `S-02` → `S-03` / `S-04` | North star **S-02** after settings + Gmail/AI foundations; S-03 and S-04 branch after sync. |
+| B | Parcel persistence & Gmail pipeline | `F-03` + `F-05` → `F-06` → joins Stream A at `S-02` | F-05/F-06 parallel with Stream A until S-02; F-05 after F-02. |
 | C | User settings data | `F-04` → joins Stream A at `S-01` | Extensible settings schema before settings UI and sync. |
 | D | Restore | `S-05` | Continues Stream A after archive actions in `S-03`. |
 
@@ -83,7 +85,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Outcome:** (foundation) user can sign in with Google (Gmail read scope granted); JWT session cookie works via dev proxy; authenticated session lands on a placeholder inside the F-01 layout — not a real active parcel list yet.
 - **Change ID:** web-oauth-app-shell
 - **PRD refs:** FR-001, FR-008, US-01, NFR (local session boundary)
-- **Unlocks:** S-01
+- **Unlocks:** S-01, F-05
 - **Prerequisites:** F-01
 - **Parallel with:** F-03, F-04
 - **Blockers:** —
@@ -117,6 +119,32 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** Introduced before settings UI and sync so scoped import is not retrofitted; v1 ships two known settings but avoids one-off columns that block future settings.
 - **Status:** done
 
+### F-05: Gmail message retrieval service
+
+- **Outcome:** (foundation) Nest Gmail service exposes two methods for the authenticated user: **list message metadata** filtered by label name and scan period (method params — not read from settings), and **get full message body** by message id. Metadata list returns ids and headers only; body fetch is a separate call so sync can skip messages already scanned.
+- **Change ID:** gmail-message-retrieval
+- **PRD refs:** FR-003, FR-017
+- **Unlocks:** F-06, S-02
+- **Prerequisites:** F-02
+- **Parallel with:** F-03, S-01
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Gmail API pagination and token refresh — scope is retrieval only; no extraction, parcel writes, or UI. If the configured label does not exist in the user's mailbox, list returns **zero results** (no auto-create, no error). Label and scan period are caller-supplied params.
+- **Status:** proposed
+
+### F-06: AI parcel extraction from email
+
+- **Outcome:** (foundation) given email metadata plus body text (from F-05 `getMessage`), a service returns structured parcel fields — tracking number, carrier, optional description — via **OpenRouter** using `gpt-5.4-mini` or `gpt-5.4-nano`.
+- **Change ID:** ai-email-parcel-extraction
+- **PRD refs:** FR-003, FR-004, FR-005
+- **Unlocks:** S-02
+- **Prerequisites:** F-05
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Extraction quality spike — validates ≥75% recall hypothesis before north-star UI work; no dedupe, parcel persistence, tracking-link builder, or sync orchestration. Requires `OPENROUTER_API_KEY` in local env.
+- **Status:** proposed
+
 ## Slices
 
 ### S-01: User settings page
@@ -133,15 +161,14 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### S-02: Gmail sync and active parcels
 
-- **Outcome:** user can click Sync, see progress for long runs, and view imported parcels on the active list with order dates and generated tracking links for supported carriers; sync queries only messages with the configured Gmail label (default `ParcelScrubber`) within the configured scan period (default last 30 days), plus existing merchant-sender rules; imported parcels are not auto-archived by age (FR-006).
+- **Outcome:** user can click Sync, see progress for long runs, and view imported parcels on the active list with order dates and generated tracking links for supported carriers. Sync reads label and scan period from user settings, calls F-05 to list metadata, fetches full body via F-05 only for **new** message ids (already-scanned ids are skipped), runs F-06 extraction, dedupes, and upserts parcels. Merchant sender filter uses **hardcoded** Allegro/AliExpress addresses for v1. Imported parcels are not auto-archived by age (FR-006).
 - **Change ID:** gmail-sync-active-parcels
 - **PRD refs:** US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017
-- **Prerequisites:** S-01, F-03
+- **Prerequisites:** S-01, F-03, F-05, F-06
 - **Parallel with:** —
 - **Blockers:** —
-- **Unknowns:**
-  - Exact Allegro/AliExpress sender addresses and template heuristics for ≥75% recall — Owner: user. Block: no.
-- **Risk:** North star — extraction quality and sync progress NFR concentrate here; label and scan-period filters from S-01 bound Gmail scope before parsers run; FR-006 ensures sync never auto-archives by age.
+- **Unknowns:** —
+- **Risk:** North star — orchestration, dedupe, tracking-link generation, and sync progress UI concentrate here; Gmail retrieval and AI extraction are delegated to F-05/F-06. Missing Gmail label yields zero imports (F-05 returns empty list). FR-006 ensures sync never auto-archives by age.
 - **Status:** proposed
 
 ### S-03: Delivered, remove, and archive view
@@ -189,7 +216,9 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | F-03 | parcel-prisma-model | Add Parcel model and migration | no | Parallel; required before north star S-02 |
 | F-04 | user-settings-model | Extensible user settings persistence | no | Parallel; required before S-01 and S-02 |
 | S-01 | user-settings-page | Settings — Gmail label and scan period | no | Defaults: label `ParcelScrubber`, period 30 days |
-| S-02 | gmail-sync-active-parcels | Scoped Gmail sync and active parcel list | no | North star; after S-01 + F-03; no age auto-archive |
+| F-05 | gmail-message-retrieval | Gmail metadata list + body fetch by id | yes | After F-02; missing label → 0 results |
+| F-06 | ai-email-parcel-extraction | OpenRouter parcel extraction from email body | yes | After F-05; models: gpt-5.4-mini or gpt-5.4-nano |
+| S-02 | gmail-sync-active-parcels | Sync orchestration, dedupe, and active parcel list UI | no | North star; after S-01 + F-03 + F-05 + F-06 |
 | S-03 | deliver-remove-archive | Delivered/remove and archive view | no | After S-02 |
 | S-04 | manual-parcel-crud | Manual add/edit parcels and URL override | no | After S-02 |
 | S-05 | restore-undeliver-parcel | Restore or undeliver any archived parcel | no | After S-03; no order-date limit |
@@ -198,7 +227,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 1. **target_scale ballparks (qps, data_volume)** — Owner: user. Block: roadmap-wide (informational only; does not gate slices). From PRD Open Questions.
 2. **Tailwind for layout utilities vs PrimeNG-only styling** — Owner: user. Block: no (resolves during `/10x-plan prime-layout-scaffold`; PrimeNG-first is the default assumption).
-**Decided defaults (v1):** Gmail scan label `ParcelScrubber`; scan period 30 days (FR-017). **Decided lifecycle (PRD v3):** no age-based auto-archive; restore/undeliver any archived parcel.
+**Decided defaults (v1):** Gmail scan label `ParcelScrubber`; scan period 30 days (FR-017). **Decided lifecycle (PRD v4):** no age-based auto-archive; restore/undeliver any archived parcel. **Decided Gmail retrieval (F-05):** separate `listMetadata` and `getMessageBody` methods; label + scan period are method params; missing label → zero results. **Decided extraction (F-06):** OpenRouter with `gpt-5.4-mini` or `gpt-5.4-nano` (replaces deferred heuristic-only path). **Decided sync filter (S-02):** hardcoded Allegro/AliExpress sender addresses; skip body fetch for already-scanned message ids.
 
 ## Parked
 
@@ -209,7 +238,6 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Background Gmail polling** — Why parked: PRD Non-Goals.
 - **Mobile support** — Why parked: PRD Non-Goals.
 - **Public SaaS hosting** — Why parked: PRD Non-Goals (local deployment only).
-- **AI-assisted extraction** — Why parked: PRD Non-Goals for v1.
 - **Multi-user collaboration** — Why parked: PRD Non-Goals.
 - **Hard delete** — Why parked: PRD Non-Goals.
 - **Age-based auto-archive** — Why parked: PRD Non-Goals (PRD v3); archive is user-driven only.

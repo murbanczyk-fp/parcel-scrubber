@@ -24,7 +24,7 @@ context/ — product docs and agent context
 ## Environment variables (local dev)
 
 1. Copy [`.env.example`](.env.example) to **`.env.local`** at the repo root (already gitignored).
-2. Fill in at least `JWT_SECRET`, `DATABASE_URL`, and Google OAuth values.
+2. Fill in at least `JWT_SECRET`, `DATABASE_URL`, Google OAuth values, and `OPENROUTER_API_KEY` (parcel extraction from Gmail — see roadmap F-06).
 3. Run `npm run dev` from the repo root.
 
 | File | Used by |

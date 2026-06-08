@@ -1,9 +1,9 @@
 ---
 project: ParcelScrubber
-version: 3
+version: 4
 status: draft
 created: 2026-05-18
-updated: 2026-06-04
+updated: 2026-06-08
 context_type: greenfield
 product_type: web-app
 target_scale:
@@ -49,7 +49,7 @@ The product treats Gmail as the source of truth for order notifications: it extr
 - Gmail import runs **only on explicit Sync** — no scheduled/background mailbox polling.
 - **Desktop web only** — no mobile-optimized experience required in MVP.
 - **Local deployment** — not publicly hosted on the internet.
-- v1 extraction uses pattern/heuristic rules on known merchant email templates; AI-assisted extraction is deferred to reduce MVP risk while keeping the same user flow.
+- v1 extraction uses **OpenRouter** (models `gpt-5.4-mini` or `gpt-5.4-nano`) to parse email body text for tracking number, carrier, and optional description; API key stays in local env only.
 - **No age-based auto-archive:** parcels stay on the active list until the user marks Delivered or removes them; sync does not archive by order date.
 - **Gmail scan scope:** sync searches only the configured Gmail label within the configured scan period; it does not scan the entire mailbox.
 
@@ -106,7 +106,7 @@ The product treats Gmail as the source of truth for order notifications: it extr
 ### Import & sync
 
 - FR-003: User can trigger an on-demand Gmail sync that scans messages matching the configured Gmail scan label within the configured scan period, from configured Allegro and AliExpress sender addresses. Priority: must-have
-- FR-004: System can extract tracking number, carrier, optional description, and order date from matching emails using template/heuristic rules in v1. Priority: must-have
+- FR-004: System can extract tracking number, carrier, optional description, and order date from matching emails using OpenRouter AI parsing (`gpt-5.4-mini` or `gpt-5.4-nano`) in v1. Priority: must-have
 - FR-005: System sets each parcel's order date to the oldest Gmail message date associated with that order (first appearance in the mailbox). Priority: must-have
 - FR-006: System does not move parcels to archive automatically based on order date or age during sync; only explicit user actions (remove, mark Delivered) change list membership. Priority: must-have
 - FR-007: System does not promote archived parcels back to the active list on later Gmail syncs (manual restore is separate; see FR-016). Priority: must-have
@@ -130,14 +130,17 @@ The product treats Gmail as the source of truth for order notifications: it extr
 
 - On-demand Gmail sync shows continuous visible progress for any operation longer than two seconds until completion or failure.
 - Imported parcel list remains usable on the latest two major versions of mainstream desktop browsers (Chrome, Firefox, Edge).
-- Sign-in credentials and parcel data for a session are confined to the user's local deployment; no third-party analytics or public multi-tenant hosting in MVP.
+- Sign-in credentials, parcel data, and OpenRouter API calls for a session are confined to the user's local deployment; no third-party analytics or public multi-tenant hosting in MVP.
 - Extraction quality target aligns with Primary success: ≥75% of real parcels from supported merchants appear correctly after sync under typical mailbox conditions.
+- Gmail sync fetches full message bodies only for message ids not yet processed; metadata listing and body retrieval are separate operations.
 
 ## Business Logic
 
-The application classifies order emails from known Allegro and AliExpress senders within the user's configured Gmail label and scan period, extracts trackable shipments with an order date (oldest mailbox appearance), and routes each parcel to active or archive based on user intent only.
+The application classifies order emails from known Allegro and AliExpress senders (hardcoded sender list in v1) within the user's configured Gmail label and scan period, extracts trackable shipments with an order date (oldest mailbox appearance) via OpenRouter AI parsing, and routes each parcel to active or archive based on user intent only.
 
 **Inputs (user-facing):** mailbox messages from configured merchant senders (filtered by Gmail scan label and scan period); user settings (scan label, scan period); user edits and manual additions; user actions: remove, mark Delivered, restore (unarchive), undeliver.
+
+**Gmail ingestion (implementation):** sync lists message metadata by label + scan period; if the label does not exist in the mailbox, the list is empty. Full bodies are fetched only for message ids not yet processed. Extraction runs on fetched body text.
 
 **Output:** a parcel record per shipment (tracking number, carrier, optional description, tracking URL, order date, list membership: active | archive).
 
@@ -165,7 +168,7 @@ The application classifies order emails from known Allegro and AliExpress sender
 - **Background/scheduled Gmail polling** — sync is explicit user action only.
 - **Mobile support** — desktop web experience only for MVP.
 - **Public internet hosting** — local deployment; not exposed as a public SaaS.
-- **AI-assisted extraction in v1** — heuristics/template parsing first; AI enrichment deferred.
+- **Configurable merchant sender list in app settings** — v1 uses a hardcoded Allegro/AliExpress sender allowlist in sync orchestration; Gmail filters + scan label remain the primary scope gate.
 - **Multi-user collaboration** — no shared household views or team workspaces.
 - **Hard delete** — parcels are archived, not permanently erased, in MVP.
 - **Age-based auto-archive** — sync does not move parcels to archive by order date or age.
