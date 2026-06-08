@@ -433,10 +433,10 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Automated
 
-- [x] 4.1 Unit tests pass: `npm run test:api`
-- [x] 4.2 Lint passes: `npm run lint:api`
-- [x] 4.3 API build passes: `npm run build:api`
-- [x] 4.4 Monorepo checks pass: `npm run lint && npm run test`
+- [x] 4.1 Unit tests pass: `npm run test:api` — 766ad27
+- [x] 4.2 Lint passes: `npm run lint:api` — 766ad27
+- [x] 4.3 API build passes: `npm run build:api` — 766ad27
+- [x] 4.4 Monorepo checks pass: `npm run lint && npm run test` — 766ad27
 
 #### Manual
 
