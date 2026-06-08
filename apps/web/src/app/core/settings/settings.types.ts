@@ -5,7 +5,7 @@ export type EffectiveUserSettings = {
 };
 
 export type SettingsValidationErrorResponse = {
-  errors: { field: keyof EffectiveUserSettings; message: string }[];
+  errors: { field?: keyof EffectiveUserSettings; message: string }[];
 };
 
 export type PatchUserSettings = Partial<EffectiveUserSettings>;

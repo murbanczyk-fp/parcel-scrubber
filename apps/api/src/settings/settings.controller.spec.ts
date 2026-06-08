@@ -154,8 +154,13 @@ describe('SettingsController', () => {
       app = module.createNestApplication();
       await app.init();
 
-      await request(app.getHttpServer() as Server)
-        .get('/settings')
+      const server = app.getHttpServer() as Server;
+
+      await request(server).get('/settings').expect(401);
+
+      await request(server)
+        .patch('/settings')
+        .send({ gmailScanLabel: 'x' })
         .expect(401);
     });
   });

@@ -141,9 +141,15 @@ export class SettingsPageComponent implements OnInit {
         life: 3000,
       });
     } catch (err) {
-      if (err instanceof HttpErrorResponse) {
-        this.applyServerErrors(err);
+      if (err instanceof HttpErrorResponse && this.applyServerErrors(err)) {
+        return;
       }
+
+      this.messages.add({
+        severity: 'error',
+        summary: 'Failed to save settings',
+        life: 3000,
+      });
     } finally {
       this.saving.set(false);
     }
@@ -200,13 +206,15 @@ export class SettingsPageComponent implements OnInit {
     }
   }
 
-  private applyServerErrors(err: HttpErrorResponse): void {
+  private applyServerErrors(err: HttpErrorResponse): boolean {
     const body = err.error as { errors?: { field?: string; message: string }[] };
     const errors = body?.errors;
 
     if (!Array.isArray(errors)) {
-      return;
+      return false;
     }
+
+    let applied = false;
 
     for (const item of errors) {
       if (
@@ -216,7 +224,10 @@ export class SettingsPageComponent implements OnInit {
         this.form.controls[item.field].setErrors({
           server: item.message,
         });
+        applied = true;
       }
     }
+
+    return applied;
   }
 }
