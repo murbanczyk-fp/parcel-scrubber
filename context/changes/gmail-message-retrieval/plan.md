@@ -399,20 +399,20 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Automated
 
-- [x] 1.1 API lint passes: `npm run lint:api`
-- [x] 1.2 Unit tests pass: `npm run test:api`
-- [x] 1.3 API build passes: `npm run build:api`
+- [x] 1.1 API lint passes: `npm run lint:api` — 656d938
+- [x] 1.2 Unit tests pass: `npm run test:api` — 656d938
+- [x] 1.3 API build passes: `npm run build:api` — 656d938
 
 #### Manual
 
-- [x] 1.4 Factory throws `GmailAuthError` when user has no refresh token in DB
+- [x] 1.4 Factory throws `GmailAuthError` when user has no refresh token in DB — 656d938
 
 ### Phase 2: Matching email id listing
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm run test:api`
-- [ ] 2.2 Lint passes: `npm run lint:api`
+- [x] 2.1 Unit tests pass: `npm run test:api`
+- [x] 2.2 Lint passes: `npm run lint:api`
 
 #### Manual
 
@@ -422,8 +422,8 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm run test:api`
-- [ ] 3.2 Lint passes: `npm run lint:api`
+- [x] 3.1 Unit tests pass: `npm run test:api`
+- [x] 3.2 Lint passes: `npm run lint:api`
 
 #### Manual
 
@@ -433,10 +433,10 @@ No database migrations. Existing users without `refreshToken` must re-authentica
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm run test:api`
-- [ ] 4.2 Lint passes: `npm run lint:api`
-- [ ] 4.3 API build passes: `npm run build:api`
-- [ ] 4.4 Monorepo checks pass: `npm run lint && npm run test`
+- [x] 4.1 Unit tests pass: `npm run test:api`
+- [x] 4.2 Lint passes: `npm run lint:api`
+- [x] 4.3 API build passes: `npm run build:api`
+- [x] 4.4 Monorepo checks pass: `npm run lint && npm run test`
 
 #### Manual
 
