@@ -180,7 +180,7 @@ describe('GmailService', () => {
     });
   });
 
-  describe('getMessageBody', () => {
+  describe('getMessage', () => {
     it('returns decoded plain text body', async () => {
       const encoded = Buffer.from('Order shipped', 'utf8')
         .toString('base64')
@@ -193,11 +193,19 @@ describe('GmailService', () => {
           payload: {
             mimeType: 'text/plain',
             body: { data: encoded },
+            headers: [
+              { name: 'From', value: 'shop@example.com' },
+              { name: 'Date', value: 'Mon, 9 Jun 2026 10:00:00 +0000' },
+              { name: 'Subject', value: 'Order shipped' },
+            ],
           },
         },
       });
 
-      await expect(service.getMessageBody(userId, 'msg-1')).resolves.toEqual({
+      await expect(service.getMessage(userId, 'msg-1')).resolves.toEqual({
+        from: 'shop@example.com',
+        date: 'Mon, 9 Jun 2026 10:00:00 +0000',
+        subject: 'Order shipped',
         body: 'Order shipped',
       });
     });
@@ -214,11 +222,18 @@ describe('GmailService', () => {
           payload: {
             mimeType: 'text/html',
             body: { data: encoded },
+            headers: [
+              { name: 'From', value: 'noreply@merchant.com' },
+              { name: 'Subject', value: 'HTML email' },
+            ],
           },
         },
       });
 
-      await expect(service.getMessageBody(userId, 'msg-2')).resolves.toEqual({
+      await expect(service.getMessage(userId, 'msg-2')).resolves.toEqual({
+        from: 'noreply@merchant.com',
+        date: '',
+        subject: 'HTML email',
         body: 'HTML body',
       });
     });

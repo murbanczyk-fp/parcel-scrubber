@@ -34,7 +34,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | F-03 | parcel-prisma-model | (foundation) Parcel records with active/archive membership persisted in PostgreSQL | — | FR-008, FR-009 | done |
 | F-04 | user-settings-model | (foundation) extensible per-user settings persisted (Gmail scan label default `ParcelScrubber`, scan period default 30 days; room for more) | — | FR-017, FR-003, FR-006, NFR (local session) | done |
 | S-01 | user-settings-page | open settings and configure Gmail scan label (default `ParcelScrubber`) and scan period (default last 30 days) | F-01, F-02, F-04 | FR-017, FR-003, FR-006, NFR (local session) | done |
-| F-05 | gmail-message-retrieval | (foundation) list Gmail message metadata by label + scan period; fetch full message body by id (separate methods) | F-02 | FR-003, FR-017 | done |
+| F-05 | gmail-message-retrieval | (foundation) list matching Gmail message ids by label + scan period; fetch full message (headers + body) by id (separate methods) | F-02 | FR-003, FR-017 | done |
 | F-06 | ai-email-parcel-extraction | (foundation) extract tracking number, carrier, and description from email body via OpenRouter | F-05 | FR-003, FR-004, FR-005 | proposed |
 | S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03, F-05, F-06 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | proposed |
 | S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | proposed |
@@ -121,7 +121,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### F-05: Gmail message retrieval service
 
-- **Outcome:** (foundation) Nest Gmail service exposes two methods for the authenticated user: **list message metadata** filtered by label name and scan period (method params — not read from settings), and **get full message body** by message id. Metadata list returns ids and headers only; body fetch is a separate call so sync can skip messages already scanned.
+- **Outcome:** (foundation) Nest Gmail service exposes two methods for the authenticated user: **list matching message ids** filtered by label name and scan period (method params — not read from settings), and **get full message** by message id. Id list returns `string[]` only; body fetch is a separate call (so sync can skip messages already scanned) and returns `from`, `date`, `subject` from `payload.headers` plus decoded body text.
 - **Change ID:** gmail-message-retrieval
 - **PRD refs:** FR-003, FR-017
 - **Unlocks:** F-06, S-02
@@ -134,7 +134,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### F-06: AI parcel extraction from email
 
-- **Outcome:** (foundation) given email metadata plus body text (from F-05 `getMessage`), a service returns structured parcel fields — tracking number, carrier, optional description — via **OpenRouter** using `gpt-5.4-mini` or `gpt-5.4-nano`.
+- **Outcome:** (foundation) given email headers and body text (from F-05 `getMessage`), a service returns structured parcel fields — tracking number, carrier, optional description — via **OpenRouter** using `gpt-5.4-mini` or `gpt-5.4-nano`.
 - **Change ID:** ai-email-parcel-extraction
 - **PRD refs:** FR-003, FR-004, FR-005
 - **Unlocks:** S-02
@@ -161,7 +161,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### S-02: Gmail sync and active parcels
 
-- **Outcome:** user can click Sync, see progress for long runs, and view imported parcels on the active list with order dates and generated tracking links for supported carriers. Sync reads label and scan period from user settings, calls F-05 to list metadata, fetches full body via F-05 only for **new** message ids (already-scanned ids are skipped), runs F-06 extraction, dedupes, and upserts parcels. Merchant sender filter uses **hardcoded** Allegro/AliExpress addresses for v1. Imported parcels are not auto-archived by age (FR-006).
+- **Outcome:** user can click Sync, see progress for long runs, and view imported parcels on the active list with order dates and generated tracking links for supported carriers. Sync reads label and scan period from user settings, calls F-05 to list matching ids, fetches full message via F-05 only for **new** message ids (already-scanned ids are skipped), runs F-06 extraction, dedupes, and upserts parcels. Merchant sender filter uses **hardcoded** Allegro/AliExpress addresses for v1. Imported parcels are not auto-archived by age (FR-006).
 - **Change ID:** gmail-sync-active-parcels
 - **PRD refs:** US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017
 - **Prerequisites:** S-01, F-03, F-05, F-06
@@ -216,7 +216,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | F-03 | parcel-prisma-model | Add Parcel model and migration | no | Parallel; required before north star S-02 |
 | F-04 | user-settings-model | Extensible user settings persistence | no | Parallel; required before S-01 and S-02 |
 | S-01 | user-settings-page | Settings — Gmail label and scan period | no | Defaults: label `ParcelScrubber`, period 30 days |
-| F-05 | gmail-message-retrieval | Gmail metadata list + body fetch by id | yes | After F-02; missing label → 0 results |
+| F-05 | gmail-message-retrieval | Gmail id list + full message fetch (headers + body) by id | yes | After F-02; missing label → 0 results |
 | F-06 | ai-email-parcel-extraction | OpenRouter parcel extraction from email body | yes | After F-05; models: gpt-5.4-mini or gpt-5.4-nano |
 | S-02 | gmail-sync-active-parcels | Sync orchestration, dedupe, and active parcel list UI | no | North star; after S-01 + F-03 + F-05 + F-06 |
 | S-03 | deliver-remove-archive | Delivered/remove and archive view | no | After S-02 |
@@ -227,7 +227,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 1. **target_scale ballparks (qps, data_volume)** — Owner: user. Block: roadmap-wide (informational only; does not gate slices). From PRD Open Questions.
 2. **Tailwind for layout utilities vs PrimeNG-only styling** — Owner: user. Block: no (resolves during `/10x-plan prime-layout-scaffold`; PrimeNG-first is the default assumption).
-**Decided defaults (v1):** Gmail scan label `ParcelScrubber`; scan period 30 days (FR-017). **Decided lifecycle (PRD v4):** no age-based auto-archive; restore/undeliver any archived parcel. **Decided Gmail retrieval (F-05):** separate `listMetadata` and `getMessageBody` methods; label + scan period are method params; missing label → zero results. **Decided extraction (F-06):** OpenRouter with `gpt-5.4-mini` or `gpt-5.4-nano` (replaces deferred heuristic-only path). **Decided sync filter (S-02):** hardcoded Allegro/AliExpress sender addresses; skip body fetch for already-scanned message ids.
+**Decided defaults (v1):** Gmail scan label `ParcelScrubber`; scan period 30 days (FR-017). **Decided lifecycle (PRD v4):** no age-based auto-archive; restore/undeliver any archived parcel. **Decided Gmail retrieval (F-05):** separate `listMatchingEmailIds` and `getMessage` methods; label + scan period are method params; missing label → zero results; `getMessage` returns `from`, `date`, `subject`, and decoded `body`. **Decided extraction (F-06):** OpenRouter with `gpt-5.4-mini` or `gpt-5.4-nano` (replaces deferred heuristic-only path). **Decided sync filter (S-02):** hardcoded Allegro/AliExpress sender addresses; skip body fetch for already-scanned message ids.
 
 ## Parked
 
@@ -249,4 +249,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-03: (foundation) Prisma `Parcel` (and related fields) migrated; API can persist active vs archive membership per authenticated user.** — Archived 2026-06-06 → `context/archive/2026-06-06-parcel-prisma-model/`. Lesson: —.
 - **F-04: (foundation) extensible per-user settings storage landed (e.g. dedicated settings row or structured fields on `User`); v1 fields are Gmail scan label (default `ParcelScrubber`) and scan period in days (default 30); schema/API contract allows adding more settings without redesign.** — Archived 2026-06-06 → `context/archive/2026-06-06-user-settings-model/`. Lesson: —.
 - **S-01: user can open a settings page and configure Gmail scan label and scan period (how far back sync searches); defaults are label `ParcelScrubber` and last 30 days when unset.** — Archived 2026-06-08 → `context/archive/2026-06-08-user-settings-page/`. Lesson: —.
-- **F-05: (foundation) Nest Gmail service exposes two methods for the authenticated user: list message metadata filtered by label name and scan period (method params — not read from settings), and get full message body by message id. Metadata list returns ids and headers only; body fetch is a separate call so sync can skip messages already scanned.** — Archived 2026-06-08 → `context/archive/2026-06-08-gmail-message-retrieval/`. Lesson: —.
+- **F-05: (foundation) Nest Gmail service exposes two methods for the authenticated user: list matching message ids filtered by label name and scan period (method params — not read from settings), and get full message by message id. Id list returns `string[]` only; body fetch is a separate call (so sync can skip messages already scanned) and returns `from`, `date`, `subject`, and decoded body text.** — Archived 2026-06-08 → `context/archive/2026-06-08-gmail-message-retrieval/`. Lesson: —.

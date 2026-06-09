@@ -1,4 +1,7 @@
-export type GmailMessageBody = {
+export type GmailMessage = {
+  from: string;
+  date: string;
+  subject: string;
   body: string;
 };
 

@@ -1,3 +1,3 @@
 export { GmailModule } from './gmail.module';
 export { GmailService } from './gmail.service';
-export { GmailAuthError, type GmailMessageBody } from './types';
+export { GmailAuthError, type GmailMessage } from './types';

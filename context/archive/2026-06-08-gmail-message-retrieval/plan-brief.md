@@ -4,7 +4,7 @@
 
 ## What & Why
 
-Roadmap **F-05** adds a Nest foundation service that calls the Gmail API for the authenticated user: list message metadata scoped by Gmail label and scan period, and fetch full message body by id. S-02 sync and F-06 extraction depend on this layer; F-05 does not write parcels, run AI, or read user settings inside the service itself.
+Roadmap **F-05** adds a Nest foundation service that calls the Gmail API for the authenticated user: list matching message ids scoped by Gmail label and scan period, and fetch full message (headers + body) by id. S-02 sync and F-06 extraction depend on this layer; F-05 does not write parcels, run AI, or read user settings inside the service itself.
 
 ## Starting Point
 
@@ -12,13 +12,14 @@ Google OAuth (F-02) already requests `gmail.readonly` and persists `User.refresh
 
 ## Desired End State
 
-`GmailService` exposes `listMetadata(userId, labelName, scanPeriodDays)` and `getMessageBody(userId, messageId)`. Metadata listing resolves the label, queries `label:{name} newer_than:{days}d`, paginates up to 500 messages, and returns id, threadId, internalDate, from, subject, snippet. Missing label returns `[]`. Body fetch returns plain text (HTML stripped as fallback). Missing or revoked refresh tokens throw `GmailAuthError` (invalid_grant clears the DB token). Authenticated test routes `GET /api/test/emails-metadata` and `GET /api/test/email?id=` wire through for local smoke tests.
+`GmailService` exposes `listMatchingEmailIds(userId, labelName, scanPeriodDays)` and `getMessage(userId, messageId)`. Id listing resolves the label, queries `label:{name} newer_than:{days}d`, paginates up to 500 message ids, and returns `string[]`. Missing label returns `[]`. Body fetch returns `from`, `date`, `subject` (from `payload.headers`) plus decoded plain text (HTML stripped as fallback). Missing or revoked refresh tokens throw `GmailAuthError` (invalid_grant clears the DB token). Authenticated test routes `GET /api/test/matching-email-ids` and `GET /api/test/email?id=` wire through for local smoke tests.
 
 ## Key Decisions Made
 
 | Decision | Choice | Why (1 sentence) | Source |
 | --- | --- | --- | --- |
-| Metadata fields | id, threadId, internalDate, from, subject, snippet | S-02 can filter senders and show progress without body fetch | Plan |
+| List response | Message ids only (`string[]`) | Enough for S-02 dedupe; avoids per-message metadata API calls during listing | Plan |
+| Body fetch fields | from, date, subject, body | F-06 and S-02 get sender/date context alongside decoded text in one `messages.get` call | Plan |
 | Body format | Plain text preferred; strip HTML fallback | Covers HTML-only merchant templates for F-06 | Plan |
 | Missing refresh token | Throw `GmailAuthError` | S-02 can prompt re-auth instead of silent empty sync | Plan |
 | invalid_grant | Clear `User.refreshToken`, then throw | Avoids retry loops on dead tokens | Plan |
@@ -31,7 +32,7 @@ Google OAuth (F-02) already requests `gmail.readonly` and persists `User.refresh
 
 ## Scope
 
-**In scope:** `googleapis` dependency; `GmailModule` + `GmailService`; OAuth2 client factory from env + DB refresh token; metadata list + body fetch; `GmailAuthError`; unit tests with mocked Gmail client; `GET /api/test/emails-metadata` and `GET /api/test/email` (JWT-protected).
+**In scope:** `googleapis` dependency; `GmailModule` + `GmailService`; OAuth2 client factory from env + DB refresh token; id list + full message fetch (headers + body); `GmailAuthError`; unit tests with mocked Gmail client; `GET /api/test/matching-email-ids` and `GET /api/test/email` (JWT-protected).
 
 **Out of scope:** OpenRouter extraction (F-06); sync orchestration, dedupe, parcel writes (S-02); `GmailMessage` Prisma tables (S-02); merchant sender filtering inside F-05; reading settings inside `GmailService`; production sync REST routes; real Gmail e2e against live API.
 
@@ -49,7 +50,7 @@ TestController / S-02 (future)
         │  messages.list (paginated, cap 500)
         │  messages.get format=full → MIME decode
         ▼
-   DTOs: GmailMessageMetadata[] | string (body)
+   DTOs: string[] (ids) | GmailMessage (from, date, subject, body)
 ```
 
 Test controller optionally reads effective settings when query params omitted, then passes explicit values to the service.
@@ -75,6 +76,6 @@ Test controller optionally reads effective settings when query params omitted, t
 
 ## Success Criteria (Summary)
 
-- Authenticated `GET /api/test/emails-metadata` returns metadata for labeled mail in scope (or `[]` when label missing).
-- `GET /api/test/email?id=<gmailMessageId>` returns decodable body text for a known message.
+- Authenticated `GET /api/test/matching-email-ids` returns ids for labeled mail in scope (or `[]` when label missing).
+- `GET /api/test/email?id=<gmailMessageId>` returns `from`, `date`, `subject`, and decodable body text for a known message.
 - `npm run lint:api && npm run test:api` pass with mocked Gmail client tests.

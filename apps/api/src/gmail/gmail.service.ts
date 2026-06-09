@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { google, type gmail_v1 } from 'googleapis';
 import { buildGmailListQuery } from './build-gmail-list-query';
 import { decodeMessageBody } from './decode-message-body';
+import { extractMessageHeaders } from './extract-message-headers';
 import { GoogleOAuthClientFactory } from './google-oauth-client.factory';
 import { resolveGmailLabelId } from './resolve-gmail-label-id';
 import { retryTransientGmailApiCall } from './retry-transient-gmail-api-call';
-import type { GmailMessageBody } from './types';
+import type { GmailMessage } from './types';
 
 const LIST_PAGE_SIZE = 100;
 const MAX_MESSAGE_IDS = 500;
@@ -59,10 +60,7 @@ export class GmailService {
     return ids.slice(0, MAX_MESSAGE_IDS);
   }
 
-  async getMessageBody(
-    userId: string,
-    messageId: string,
-  ): Promise<GmailMessageBody> {
+  async getMessage(userId: string, messageId: string): Promise<GmailMessage> {
     const gmail = await this.createGmailClient(userId);
 
     const response = await this.callGmailApi(userId, () =>
@@ -73,8 +71,11 @@ export class GmailService {
       }),
     );
 
+    const payload = response.data.payload;
+
     return {
-      body: decodeMessageBody(response.data.payload),
+      ...extractMessageHeaders(payload?.headers),
+      body: decodeMessageBody(payload),
     };
   }
 

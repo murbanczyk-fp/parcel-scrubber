@@ -211,7 +211,7 @@ Parked during shape; refined in `context/foundation/roadmap.md` (2026-06-04):
 - **UI:** PrimeNG layout scaffold (F-01); OAuth + session shell in one foundation (F-02), not a separate slice.
 - **Settings:** extensible per-user persistence (F-04); settings page (S-01) before sync — Gmail scan label (default `ParcelScrubber`) and scan period (default 30 days).
 - **Sync scope:** label + period filter, not whole mailbox; north star is label-scoped Gmail sync + active list (S-02, `gmail-sync-active-parcels`).
-- **Gmail pipeline (2026-06-08):** F-05 Gmail metadata list + body-by-id; F-06 OpenRouter extraction; S-02 orchestration only. Missing label → zero results; skip body fetch for already-scanned message ids.
+- **Gmail pipeline (2026-06-08):** F-05 Gmail id list + full-message-by-id (`from`, `date`, `subject`, body); F-06 OpenRouter extraction; S-02 orchestration only. Missing label → zero results; skip body fetch for already-scanned message ids.
 - **Lifecycle (PRD v3):** no age-based auto-archive; restore/undeliver any archived parcel (S-05, `restore-undeliver-parcel`).
 - **Sequencing bias:** `main_goal: speed`, `top_blocker: time` — see roadmap frontmatter.
 

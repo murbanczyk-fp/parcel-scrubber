@@ -2,7 +2,7 @@
 
 ## Overview
 
-Ship roadmap **F-05**: a Nest foundation `GmailService` with two methods — **list matching Gmail message ids** by label name and scan period, and **get full message body** by Gmail message id — backed by the user's stored Google refresh token. Includes authenticated **test HTTP routes** for local smoke verification. No parcel persistence, AI extraction, sync orchestration, or settings reads inside the service layer.
+Ship roadmap **F-05**: a Nest foundation `GmailService` with two methods — **list matching Gmail message ids** by label name and scan period, and **get full message** (headers + body) by Gmail message id — backed by the user's stored Google refresh token. Includes authenticated **test HTTP routes** for local smoke verification. No parcel persistence, AI extraction, sync orchestration, or settings reads inside the service layer.
 
 ## Current State Analysis
 
@@ -64,7 +64,7 @@ Four phases: OAuth plumbing and error types first, then matching id listing, the
 
 **Test route query params:** `GET /api/test/matching-email-ids` accepts optional `label` and `scanPeriodDays`. When omitted, test controller loads effective settings via `SettingsService.getEffectiveSettings(user.id)` and passes values to `listMatchingEmailIds`. `GET /api/test/email` requires query param `id` (Gmail message id).
 
-**Gmail list API shape:** `users.messages.list` returns only `id` and `threadId` per message — no headers or snippet on the list endpoint. F-05 listing returns ids only (enough for S-02 dedupe); full content comes from `messages.get` format `full` via `getMessageBody`.
+**Gmail list API shape:** `users.messages.list` returns only `id` and `threadId` per message — no headers or snippet on the list endpoint. F-05 listing returns ids only (enough for S-02 dedupe); full content comes from `messages.get` format `full` via `getMessage`.
 
 ## Phase 1: Dependencies and OAuth plumbing
 
@@ -89,7 +89,7 @@ Add `googleapis`, core types, `GmailAuthError`, and a per-user OAuth2 client fac
 **Intent**: Define stable DTOs for S-02/F-06 consumers and a typed auth failure.
 
 **Contract**:
-- `type GmailMessageBody = { body: string }`
+- `type GmailMessage = { from: string; date: string; subject: string; body: string }` — `from`, `date`, and `subject` come from `payload.headers`; `body` is decoded MIME text
 - `class GmailAuthError extends Error` with optional `cause` — thrown when refresh token missing or Google auth fails permanently.
 
 #### 3. OAuth client factory
@@ -193,7 +193,7 @@ Implement `GmailService.listMatchingEmailIds(userId, labelName, scanPeriodDays)`
 
 ### Overview
 
-Implement `GmailService.getMessageBody(userId, messageId)` with full MIME fetch, plain-text preference, HTML fallback, and transient retries.
+Implement `GmailService.getMessage(userId, messageId)` with full MIME fetch, header extraction (`From`, `Date`, `Subject` from `payload.headers`), plain-text preference, HTML fallback, and transient retries.
 
 ### Changes Required:
 
@@ -215,16 +215,26 @@ Implement `GmailService.getMessageBody(userId, messageId)` with full MIME fetch,
 
 **Intent**: Cover plain-only, html-only, multipart nested, and empty payload cases with fixture payloads.
 
-#### 3. GmailService.getMessageBody
+#### 2b. Header extraction helper
+
+**File**: `apps/api/src/gmail/extract-message-headers.ts` (new)
+
+**Intent**: Read standard email headers from Gmail `messages.get` payload.
+
+**Contract**:
+- `extractMessageHeaders(headers): { from: string; date: string; subject: string }`
+- Match header names case-insensitively; return empty string when a header is absent.
+
+#### 3. GmailService.getMessage
 
 **File**: `apps/api/src/gmail/gmail.service.ts`
 
-**Intent**: Fetch one message and return decoded body text.
+**Intent**: Fetch one message and return headers plus decoded body text.
 
 **Contract**:
-- Signature: `getMessageBody(userId: string, messageId: string): Promise<GmailMessageBody>`
+- Signature: `getMessage(userId: string, messageId: string): Promise<GmailMessage>`
 - `users.messages.get({ userId: 'me', id: messageId, format: 'full' })`
-- Pass `payload` to decoder; return `{ body }`.
+- Extract `from`, `date`, `subject` from `payload.headers`; pass `payload` to body decoder; return `{ from, date, subject, body }`.
 - Same retry policy as list (429/5xx, 3× backoff).
 - Propagate `GmailAuthError` from factory; 404 from Gmail may map to Nest `NotFoundException` at controller layer only.
 
@@ -232,7 +242,7 @@ Implement `GmailService.getMessageBody(userId, messageId)` with full MIME fetch,
 
 **File**: `apps/api/src/gmail/gmail.service.spec.ts`
 
-**Intent**: Mock `messages.get` with sample payloads; assert plain preference and HTML fallback.
+**Intent**: Mock `messages.get` with sample payloads; assert header extraction, plain preference, and HTML fallback.
 
 ### Success Criteria:
 
@@ -243,7 +253,7 @@ Implement `GmailService.getMessageBody(userId, messageId)` with full MIME fetch,
 
 #### Manual Verification:
 
-- `GET /api/test/email?id=` returns readable text for a known order email in the test mailbox
+- `GET /api/test/email?id=` returns `from`, `date`, `subject`, and readable body text for a known order email in the test mailbox
 
 **Implementation Note**: Pause for manual confirmation before Phase 4.
 
@@ -283,7 +293,7 @@ Register `GmailModule`, expose test HTTP routes under `/api/test` (non-productio
 
 **Intent**: Public API surface for other modules.
 
-**Contract**: Export `GmailModule`, `GmailService`, `GmailMessageBody`, `GmailAuthError`.
+**Contract**: Export `GmailModule`, `GmailService`, `GmailMessage`, `GmailAuthError`.
 
 #### 4. Test controller
 
@@ -303,9 +313,9 @@ Register `GmailModule`, expose test HTTP routes under `/api/test` (non-productio
   - Response: `string[]` of Gmail message ids.
 - `GET email`:
   - Query: required `id` (Gmail message id); `BadRequestException` if missing.
-  - Call `gmail.getMessageBody(user.id, id)`.
+  - Call `gmail.getMessage(user.id, id)`.
   - Same `GmailAuthError` mapping.
-  - Response: `GmailMessageBody`.
+  - Response: `GmailMessage`.
 
 #### 5. Register module
 
@@ -376,7 +386,7 @@ Register `GmailModule`, expose test HTTP routes under `/api/test` (non-productio
 ## Performance Considerations
 
 - Id listing caps at 500 messages to bound worst-case Gmail API calls per sync (~5 paginated `messages.list` calls).
-- Body fetch uses `messages.get` format `full` only on demand via `getMessageBody` — not during listing.
+- Body fetch uses `messages.get` format `full` only on demand via `getMessage` — not during listing.
 - Retry backoff adds latency only on transient failures; do not retry auth errors.
 
 ## Migration Notes

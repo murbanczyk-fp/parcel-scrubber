@@ -132,7 +132,7 @@ The product treats Gmail as the source of truth for order notifications: it extr
 - Imported parcel list remains usable on the latest two major versions of mainstream desktop browsers (Chrome, Firefox, Edge).
 - Sign-in credentials, parcel data, and OpenRouter API calls for a session are confined to the user's local deployment; no third-party analytics or public multi-tenant hosting in MVP.
 - Extraction quality target aligns with Primary success: ≥75% of real parcels from supported merchants appear correctly after sync under typical mailbox conditions.
-- Gmail sync fetches full message bodies only for message ids not yet processed; metadata listing and body retrieval are separate operations.
+- Gmail sync fetches full messages (headers + body) only for message ids not yet processed; id listing and full message retrieval are separate operations.
 
 ## Business Logic
 

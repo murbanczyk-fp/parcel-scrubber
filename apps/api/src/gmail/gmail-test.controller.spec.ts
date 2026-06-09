@@ -25,7 +25,7 @@ describe('GmailTestController', () => {
   let controller: GmailTestController;
   let gmailService: {
     listMatchingEmailIds: jest.Mock;
-    getMessageBody: jest.Mock;
+    getMessage: jest.Mock;
   };
   let settingsService: {
     getEffectiveSettings: jest.Mock;
@@ -34,7 +34,7 @@ describe('GmailTestController', () => {
   beforeEach(async () => {
     gmailService = {
       listMatchingEmailIds: jest.fn(),
-      getMessageBody: jest.fn(),
+      getMessage: jest.fn(),
     };
     settingsService = {
       getEffectiveSettings: jest.fn(),
@@ -143,19 +143,27 @@ describe('GmailTestController', () => {
     });
 
     it('returns message body for valid id', async () => {
-      gmailService.getMessageBody.mockResolvedValue({ body: 'hello' });
-
-      await expect(controller.email(sessionUser, 'msg-1')).resolves.toEqual({
+      gmailService.getMessage.mockResolvedValue({
+        from: 'shop@example.com',
+        date: 'Mon, 9 Jun 2026 10:00:00 +0000',
+        subject: 'Hello',
         body: 'hello',
       });
-      expect(gmailService.getMessageBody).toHaveBeenCalledWith(
+
+      await expect(controller.email(sessionUser, 'msg-1')).resolves.toEqual({
+        from: 'shop@example.com',
+        date: 'Mon, 9 Jun 2026 10:00:00 +0000',
+        subject: 'Hello',
+        body: 'hello',
+      });
+      expect(gmailService.getMessage).toHaveBeenCalledWith(
         sessionUser.id,
         'msg-1',
       );
     });
 
     it('maps GmailAuthError to UnauthorizedException', async () => {
-      gmailService.getMessageBody.mockRejectedValue(
+      gmailService.getMessage.mockRejectedValue(
         new GmailAuthError('re-auth required'),
       );
 
