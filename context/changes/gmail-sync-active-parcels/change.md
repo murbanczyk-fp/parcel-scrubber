@@ -1,7 +1,7 @@
 ---
 change_id: gmail-sync-active-parcels
 title: Gmail sync active parcels
-status: new
+status: planned
 created: 2026-06-14
 updated: 2026-06-14
 archived_at: null
