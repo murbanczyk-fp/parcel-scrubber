@@ -453,25 +453,25 @@ Use signals for `loading`, `parcels`, `syncJob`, `syncing` — mirror settings p
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm run test:api -- parcels`
-- [x] 3.2 E2E passes: `npm run test:api -- sync.e2e-spec`
-- [x] 3.3 Linting passes: `npm run lint:api`
+- [x] 3.1 Unit tests pass: `npm run test:api -- parcels` — 5a5a750
+- [x] 3.2 E2E passes: `npm run test:api -- sync.e2e-spec` — 5a5a750
+- [x] 3.3 Linting passes: `npm run lint:api` — 5a5a750
 
 #### Manual
 
-- [x] 3.4 `GET /api/parcels?status=active` returns parcels with resolved `trackingUrl`
+- [x] 3.4 `GET /api/parcels?status=active` returns parcels with resolved `trackingUrl` — 5a5a750
 
 ### Phase 4: Active page UI
 
 #### Automated
 
-- [ ] 4.1 Linting passes: `npm run lint:web`
-- [ ] 4.2 Web unit tests pass: `npm run test:web`
+- [x] 4.1 Linting passes: `npm run lint:web`
+- [x] 4.2 Web unit tests pass: `npm run test:web`
 
 #### Manual
 
-- [ ] 4.3 Active page empty state shows Sync CTA; Sync shows progress bar and populates table after completion
-- [ ] 4.4 Completion toast shows imported/skipped/failed counts
-- [ ] 4.5 Gmail auth failure shows re-login toast
-- [ ] 4.6 Second Sync click while running shows already-running feedback
-- [ ] 4.7 Real mailbox manual validation (Allegro/AliExpress labeled mail)
+- [x] 4.3 Active page empty state shows Sync CTA; Sync shows progress bar and populates table after completion
+- [x] 4.4 Completion toast shows imported/skipped/failed counts
+- [x] 4.5 Gmail auth failure shows re-login toast
+- [x] 4.6 Second Sync click while running shows already-running feedback
+- [x] 4.7 Real mailbox manual validation (Allegro/AliExpress labeled mail)

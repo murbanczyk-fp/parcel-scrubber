@@ -1,0 +1,98 @@
+<section class="active-list">
+  <p-card>
+    <ng-template #header>
+      <div class="active-list__header">
+        <h1 class="active-list__title">Active parcels</h1>
+        <p-button
+          label="Sync"
+          icon="pi pi-refresh"
+          data-testid="sync-parcels"
+          [disabled]="syncing()"
+          [loading]="syncing()"
+          (onClick)="onSync()"
+        />
+      </div>
+    </ng-template>
+
+    @if (authRequired()) {
+      <p-message
+        class="active-list__auth-banner"
+        severity="warn"
+        text="Gmail access expired. Sign in with Google again to sync mail."
+      />
+      <div class="active-list__auth-action">
+        <p-button
+          label="Sign in with Google"
+          icon="pi pi-google"
+          (onClick)="onReLogin()"
+        />
+      </div>
+    }
+
+    @if (syncing() && syncJob(); as job) {
+      <div class="active-list__progress">
+        <p-progressBar [value]="progressPercent(job)" [showValue]="false" />
+        <p class="active-list__progress-text">
+          {{ job.processed }} / {{ job.total }} processed —
+          imported {{ job.imported }}, skipped {{ job.skipped }}, failed
+          {{ job.failed }}
+        </p>
+      </div>
+    }
+
+    @if (loading()) {
+      <p class="active-list__status">Loading parcels…</p>
+    } @else if (loadError()) {
+      <p-message severity="error" [text]="loadError()!" />
+    } @else if (parcels().length === 0) {
+      <div class="active-list__empty">
+        <p class="active-list__empty-text">
+          No active parcels yet. Sync Gmail to import shipments from your
+          configured label.
+        </p>
+        <p-button
+          label="Sync Gmail"
+          icon="pi pi-refresh"
+          data-testid="sync-parcels-empty"
+          [disabled]="syncing()"
+          [loading]="syncing()"
+          (onClick)="onSync()"
+        />
+      </div>
+    } @else {
+      <p-table [value]="parcels()" dataKey="id" styleClass="active-list__table">
+        <ng-template #header>
+          <tr>
+            <th>Store</th>
+            <th>Description</th>
+            <th>Order date</th>
+            <th>Carrier</th>
+            <th>Tracking</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-parcel>
+          <tr>
+            <td>{{ parcel.store ?? '—' }}</td>
+            <td>{{ parcel.description ?? '—' }}</td>
+            <td>{{ parcel.orderDate | date: 'mediumDate' }}</td>
+            <td>{{ carrierLabel(parcel) }}</td>
+            <td>
+              @if (parcel.trackingUrl) {
+                <a
+                  class="active-list__tracking-link"
+                  [href]="parcel.trackingUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ parcel.trackingNumber ?? 'Track' }}
+                </a>
+              } @else {
+                {{ parcel.trackingNumber ?? '—' }}
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-card>
+</section>
