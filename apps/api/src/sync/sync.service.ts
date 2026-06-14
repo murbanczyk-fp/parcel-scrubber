@@ -45,7 +45,16 @@ export class SyncService {
       });
 
       for (const messageId of workIds) {
-        await this.processMessage(userId, jobId, messageId);
+        try {
+          await this.processMessage(userId, jobId, messageId);
+        } catch (error) {
+          if (error instanceof GmailAuthError) {
+            throw error;
+          }
+
+          this.registry.increment(jobId, 'failed');
+        }
+
         this.registry.increment(jobId, 'processed');
       }
 
@@ -118,8 +127,6 @@ export class SyncService {
       return;
     }
 
-    await this.createLedgerEntry(userId, gmailMessageId, internalDate);
-
     const existing = await this.prisma.parcel.findFirst({
       where: { userId, trackingNumber: normalizedTracking },
     });
@@ -153,48 +160,73 @@ export class SyncService {
       customCarrierLabel: extraction.customCarrierLabel,
     };
 
-    let parcelId: string;
-    let imported = false;
+    return this.prisma.$transaction(async (tx) => {
+      let parcelId: string;
+      let imported = false;
 
-    if (!existing) {
-      const created = await this.prisma.parcel.create({
+      if (!existing) {
+        const created = await tx.parcel.create({
+          data: {
+            userId,
+            trackingNumber,
+            orderDate: internalDate,
+            status: ParcelStatus.NEW,
+            source: ParcelSource.GMAIL,
+            ...fieldData,
+          },
+        });
+        parcelId = created.id;
+        imported = true;
+      } else if (isArchivedStatus(existing.status)) {
+        await tx.parcel.update({
+          where: { id: existing.id },
+          data: fieldData,
+        });
+        parcelId = existing.id;
+      } else {
+        const changed = parcelFieldsChanged(existing, fieldData);
+        await tx.parcel.update({
+          where: { id: existing.id },
+          data: fieldData,
+        });
+        parcelId = existing.id;
+        imported = changed;
+      }
+
+      await tx.gmailMessage.create({
         data: {
           userId,
-          trackingNumber,
-          orderDate: internalDate,
-          status: ParcelStatus.NEW,
-          source: ParcelSource.GMAIL,
-          ...fieldData,
+          gmailMessageId,
+          internalDate,
         },
       });
-      parcelId = created.id;
-      imported = true;
-    } else if (isArchivedStatus(existing.status)) {
-      await this.prisma.parcel.update({
-        where: { id: existing.id },
-        data: fieldData,
-      });
-      parcelId = existing.id;
-    } else {
-      const changed = parcelFieldsChanged(existing, fieldData);
-      await this.prisma.parcel.update({
-        where: { id: existing.id },
-        data: fieldData,
-      });
-      parcelId = existing.id;
-      imported = changed;
-    }
 
-    await this.prisma.parcelEmail.create({
-      data: {
-        parcelId,
-        gmailMessageId,
-        userId,
-      },
+      await tx.parcelEmail.create({
+        data: {
+          parcelId,
+          gmailMessageId,
+          userId,
+        },
+      });
+
+      const links = await tx.parcelEmail.findMany({
+        where: { parcelId },
+        include: { gmailMessage: { select: { internalDate: true } } },
+      });
+
+      if (links.length > 0) {
+        const minTimestamp = Math.min(
+          ...links.map((link) => link.gmailMessage.internalDate.getTime()),
+        );
+
+        await tx.parcel.update({
+          where: { id: parcelId },
+          data: { orderDate: new Date(minTimestamp) },
+        });
+      }
+
+      return imported;
     });
-
-    await this.recomputeOrderDate(parcelId);
-    return imported;
   }
 
   private async createLedgerEntry(
@@ -208,26 +240,6 @@ export class SyncService {
         gmailMessageId,
         internalDate,
       },
-    });
-  }
-
-  private async recomputeOrderDate(parcelId: string): Promise<void> {
-    const links = await this.prisma.parcelEmail.findMany({
-      where: { parcelId },
-      include: { gmailMessage: { select: { internalDate: true } } },
-    });
-
-    if (links.length === 0) {
-      return;
-    }
-
-    const minTimestamp = Math.min(
-      ...links.map((link) => link.gmailMessage.internalDate.getTime()),
-    );
-
-    await this.prisma.parcel.update({
-      where: { id: parcelId },
-      data: { orderDate: new Date(minTimestamp) },
     });
   }
 }

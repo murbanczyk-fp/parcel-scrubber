@@ -54,6 +54,8 @@ Ship roadmap **S-02**: replace the `/active` placeholder with a working Gmail im
 - Production changes to `/api/test/*` routes
 - `ParcelStatusEvent` writes on import
 
+**Addendum (impl-review 2026-06-14):** Dev-only `POST /api/test/reset-sync` added in `SyncTestController` — wipes authenticated user's parcels, ledger, and status events for manual/E2E reset. Registered only when `NODE_ENV !== 'production'` (same gating as `GmailTestController`). Not exposed in production.
+
 ## Implementation Approach
 
 Four vertical phases: schema → sync backend → read API → web UI. Sync job runs in-process async (Promise chain after HTTP response) with an in-memory `SyncJobRegistry` keyed by `userId` (one active job) and `jobId` for polling. Orchestration lives in `SyncService`; HTTP thin in `SyncController`. Parcel list mapping in `ParcelsService` with `resolveTrackingUrl`. Web polls job status every ~1s while `running`, refreshes parcel list on `completed`.
@@ -287,7 +289,7 @@ Expose authenticated list endpoint for active parcels with server-resolved track
 #### Automated Verification
 
 - Unit tests pass: `npm run test:api -- parcels`
-- E2E passes: `npm run test:api -- sync.e2e-spec`
+- E2E passes: `npm run test:e2e -w @parcel-scrubber/api -- sync.e2e-spec`
 - Linting passes: `npm run lint:api`
 
 #### Manual Verification
@@ -454,7 +456,7 @@ Use signals for `loading`, `parcels`, `syncJob`, `syncing` — mirror settings p
 #### Automated
 
 - [x] 3.1 Unit tests pass: `npm run test:api -- parcels` — 5a5a750
-- [x] 3.2 E2E passes: `npm run test:api -- sync.e2e-spec` — 5a5a750
+- [x] 3.2 E2E passes: `npm run test:e2e -w @parcel-scrubber/api -- sync.e2e-spec` — 5a5a750
 - [x] 3.3 Linting passes: `npm run lint:api` — 5a5a750
 
 #### Manual

@@ -51,7 +51,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
   protected readonly syncJob = signal<SyncJobDto | null>(null);
   protected readonly authRequired = signal(false);
 
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
     void this.loadParcels();
@@ -137,7 +137,6 @@ export class ActiveListComponent implements OnInit, OnDestroy {
           this.syncJob.set(job);
 
           if (job.status === 'completed') {
-            this.clearPoll();
             await this.loadParcels();
             this.messages.add({
               severity: 'success',
@@ -150,8 +149,6 @@ export class ActiveListComponent implements OnInit, OnDestroy {
           }
 
           if (job.status === 'failed') {
-            this.clearPoll();
-
             if (job.errorCode === 'GMAIL_AUTH_REQUIRED') {
               this.authRequired.set(true);
               this.messages.add({
@@ -170,26 +167,38 @@ export class ActiveListComponent implements OnInit, OnDestroy {
             }
 
             resolve();
+            return;
           }
-        } catch {
-          this.clearPoll();
-          this.messages.add({
-            severity: 'error',
-            summary: 'Failed to check sync status',
-            life: 4000,
-          });
+
+          this.pollTimer = setTimeout(() => void poll(), 1000);
+        } catch (err) {
+          if (err instanceof HttpErrorResponse && err.status === 404) {
+            this.messages.add({
+              severity: 'warn',
+              summary: 'Sync session expired',
+              detail:
+                'The sync job is no longer available. You can start a new sync.',
+              life: 5000,
+            });
+          } else {
+            this.messages.add({
+              severity: 'error',
+              summary: 'Failed to check sync status',
+              life: 4000,
+            });
+          }
+
           resolve();
         }
       };
 
       void poll();
-      this.pollTimer = setInterval(() => void poll(), 1000);
     });
   }
 
   private clearPoll(): void {
     if (this.pollTimer) {
-      clearInterval(this.pollTimer);
+      clearTimeout(this.pollTimer);
       this.pollTimer = null;
     }
   }

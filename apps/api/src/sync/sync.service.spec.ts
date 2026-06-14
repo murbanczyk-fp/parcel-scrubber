@@ -12,6 +12,7 @@ describe('SyncService', () => {
   let gmail: { listMatchingEmailIds: jest.Mock; getMessage: jest.Mock };
   let extraction: { extractParcelFields: jest.Mock };
   let prisma: {
+    $transaction: jest.Mock;
     gmailMessage: {
       findMany: jest.Mock;
       create: jest.Mock;
@@ -75,6 +76,9 @@ describe('SyncService', () => {
         create: jest.fn().mockResolvedValue({}),
       },
     };
+    prisma.$transaction = jest.fn(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
 
     service = new SyncService(
       registry,
@@ -212,6 +216,32 @@ describe('SyncService', () => {
       imported: 0,
       processed: 1,
     });
+  });
+
+  it('continues after unexpected per-message errors', async () => {
+    gmail.listMatchingEmailIds.mockResolvedValue(['msg-1', 'msg-2']);
+    gmail.getMessage
+      .mockRejectedValueOnce(new Error('Gmail API unavailable'))
+      .mockResolvedValueOnce(allegroInPostShipmentFixture);
+    extraction.extractParcelFields.mockResolvedValue({
+      store: 'Allegro',
+      trackingNumber: '520000012680041086770098',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      description: 'Etui na telefon',
+    });
+
+    const started = registry.start('user-1');
+    await service.runJob('user-1', started!.jobId);
+
+    expect(registry.get(started!.jobId, 'user-1')).toMatchObject({
+      status: 'completed',
+      total: 2,
+      processed: 2,
+      failed: 1,
+      imported: 1,
+    });
+    expect(gmail.getMessage).toHaveBeenCalledTimes(2);
   });
 
   it('marks job failed with GMAIL_AUTH_REQUIRED on auth error', async () => {
