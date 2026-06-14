@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Carrier } from '@prisma/client';
 
-import { GmailMessage } from '../gmail/types';
+import { FetchedGmailMessage } from '../gmail/types';
 import { detectStoreFromSender } from './detect-store-from-sender';
 import {
   buildExtractionJsonSchema,
@@ -17,7 +17,7 @@ export class ExtractionService {
   constructor(private readonly openRouter: OpenRouterClient) {}
 
   async extractParcelFields(
-    message: GmailMessage,
+    message: FetchedGmailMessage,
   ): Promise<ExtractedParcelFields> {
     const store = detectStoreFromSender(message.from);
 

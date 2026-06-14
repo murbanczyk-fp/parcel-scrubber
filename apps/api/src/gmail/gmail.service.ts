@@ -6,7 +6,7 @@ import { extractMessageHeaders } from './extract-message-headers';
 import { GoogleOAuthClientFactory } from './google-oauth-client.factory';
 import { resolveGmailLabelId } from './resolve-gmail-label-id';
 import { retryTransientGmailApiCall } from './retry-transient-gmail-api-call';
-import type { GmailMessage } from './types';
+import type { FetchedGmailMessage } from './types';
 
 const LIST_PAGE_SIZE = 100;
 const MAX_MESSAGE_IDS = 500;
@@ -60,7 +60,10 @@ export class GmailService {
     return ids.slice(0, MAX_MESSAGE_IDS);
   }
 
-  async getMessage(userId: string, messageId: string): Promise<GmailMessage> {
+  async getMessage(
+    userId: string,
+    messageId: string,
+  ): Promise<FetchedGmailMessage> {
     const gmail = await this.createGmailClient(userId);
 
     const response = await this.callGmailApi(userId, () =>

@@ -15,7 +15,7 @@ import {
   validateScanPeriodDays,
 } from '../user-settings';
 import { GmailService } from './gmail.service';
-import { GmailAuthError, type GmailMessage } from './types';
+import { GmailAuthError, type FetchedGmailMessage } from './types';
 
 @Controller('test')
 @UseGuards(JwtAuthGuard)
@@ -56,7 +56,7 @@ export class GmailTestController {
   async email(
     @CurrentUser() user: SessionUser,
     @Query('id') messageId?: string,
-  ): Promise<GmailMessage> {
+  ): Promise<FetchedGmailMessage> {
     if (!messageId?.trim()) {
       throw new BadRequestException('Query parameter "id" is required');
     }

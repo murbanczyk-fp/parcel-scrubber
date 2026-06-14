@@ -1,4 +1,4 @@
-import { GmailMessage } from '../gmail/types';
+import { FetchedGmailMessage } from '../gmail/types';
 import { CARRIER_PROMPT_OPTIONS } from './validate-extracted-fields';
 
 export const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-5.4-nano';
@@ -46,7 +46,9 @@ export function buildExtractionJsonSchema(): Record<string, unknown> {
   };
 }
 
-export function buildExtractionUserContent(message: GmailMessage): string {
+export function buildExtractionUserContent(
+  message: FetchedGmailMessage,
+): string {
   return [
     `From: ${message.from}`,
     `Subject: ${message.subject}`,
