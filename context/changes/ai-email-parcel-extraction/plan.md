@@ -456,9 +456,9 @@ Optional: add `OPENROUTER_MODEL=openai/gpt-5.4-mini` to override nano if recall 
 
 #### Automated
 
-- [x] 4.1 Full API test suite passes: `npm run test:api`
-- [x] 4.2 Full monorepo lint passes: `npm run lint`
+- [x] 4.1 Full API test suite passes: `npm run test:api` — a8fb4b8
+- [x] 4.2 Full monorepo lint passes: `npm run lint` — a8fb4b8
 
 #### Manual
 
-- [x] 4.3 Spot-check 2–3 real labeled emails via `/api/test/extract`; informal ≥75% recall on tracking + carrier
+- [x] 4.3 Spot-check 2–3 real labeled emails via `/api/test/extract`; informal ≥75% recall on tracking + carrier — a8fb4b8
