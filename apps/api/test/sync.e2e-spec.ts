@@ -52,6 +52,11 @@ describe('SyncService (e2e)', () => {
   beforeAll(async () => {
     assertE2eDatabaseUrl(TEST_DATABASE_URL);
     process.env.DATABASE_URL = TEST_DATABASE_URL;
+    process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars!!';
+    process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
+    process.env.GOOGLE_CALLBACK_URL =
+      'http://localhost:8080/api/auth/google/callback';
     process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
     execSync('npx prisma migrate deploy', {
       cwd: path.join(__dirname, '..'),
