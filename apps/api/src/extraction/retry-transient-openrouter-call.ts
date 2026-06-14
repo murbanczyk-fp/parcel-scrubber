@@ -10,7 +10,6 @@ export class OpenRouterHttpError extends Error {
   constructor(
     message: string,
     readonly status: number,
-    readonly bodySnippet?: string,
   ) {
     super(message);
     this.name = 'OpenRouterHttpError';

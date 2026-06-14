@@ -83,10 +83,10 @@ describe('OpenRouterClient', () => {
       'https://openrouter.ai/api/v1/chat/completions',
       expect.objectContaining({
         method: 'POST',
+        signal: expect.any(AbortSignal),
         headers: {
           Authorization: 'Bearer test-api-key',
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'http://localhost:4200',
           'X-Title': 'Parcel Scrubber',
         },
       }),
@@ -148,6 +148,18 @@ describe('OpenRouterClient', () => {
     await expect(
       client.completeStructuredJson('system', 'user', { type: 'object' }),
     ).rejects.toBeInstanceOf(ExtractionError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws ExtractionError when fetch rejects with a network error', async () => {
+    fetchMock.mockRejectedValue(new TypeError('fetch failed'));
+
+    await expect(
+      client.completeStructuredJson('system', 'user', { type: 'object' }),
+    ).rejects.toMatchObject({
+      message: 'OpenRouter request failed',
+      cause: expect.any(TypeError),
+    });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

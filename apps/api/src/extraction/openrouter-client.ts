@@ -13,8 +13,8 @@ import { ExtractionError } from './types';
 
 const OPENROUTER_CHAT_COMPLETIONS_URL =
   'https://openrouter.ai/api/v1/chat/completions';
-const HTTP_REFERER = 'http://localhost:4200';
 const APP_TITLE = 'Parcel Scrubber';
+const OPENROUTER_REQUEST_TIMEOUT_MS = 60_000;
 
 type ChatCompletionResponse = {
   choices?: Array<{
@@ -44,10 +44,10 @@ export class OpenRouterClient {
       return await retryTransientOpenRouterCall(async () => {
         const response = await fetch(OPENROUTER_CHAT_COMPLETIONS_URL, {
           method: 'POST',
+          signal: AbortSignal.timeout(OPENROUTER_REQUEST_TIMEOUT_MS),
           headers: {
             Authorization: `Bearer ${this.apiKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': HTTP_REFERER,
             'X-Title': APP_TITLE,
           },
           body: JSON.stringify({
@@ -72,18 +72,21 @@ export class OpenRouterClient {
           throw new OpenRouterHttpError(
             `OpenRouter request failed with status ${response.status}`,
             response.status,
-            bodyText.slice(0, 500),
           );
         }
 
         return parseStructuredJsonContent(bodyText);
       });
     } catch (error) {
+      if (error instanceof ExtractionError) {
+        throw error;
+      }
+
       if (error instanceof OpenRouterHttpError) {
         throw new ExtractionError(error.message, error);
       }
 
-      throw error;
+      throw new ExtractionError('OpenRouter request failed', error);
     }
   }
 }
