@@ -2,7 +2,7 @@
 
 ## Overview
 
-Ship roadmap **S-02**: replace the `/active` placeholder with a working Gmail import loop and active parcel list. A signed-in user clicks Sync on the Active page; the API runs an asynchronous sync job that lists Gmail message ids (scoped by settings), skips ledgered ids, fetches new messages, filters merchant senders, extracts parcel fields via OpenRouter, upserts parcels, and links processed mail. The UI polls job status for an inline progress bar, then shows parcels in a table with server-resolved tracking URLs. FR-006 and FR-007 are enforced in orchestration — no age-based archive and no auto-restore of archived parcels.
+Ship roadmap **S-02**: replace the `/active` placeholder with a working Gmail import loop and active parcel list. A signed-in user clicks Sync on the Active page; the API runs an asynchronous sync job that lists Gmail message ids (scoped by settings), skips ledgered ids, fetches new messages, filters merchant senders, extracts parcel fields via OpenRouter, creates or updates parcels (by normalized tracking number), and links processed mail. The UI polls job status for an inline progress bar, then shows parcels in a table with server-resolved tracking URLs. FR-006 and FR-007 are enforced in orchestration — no age-based archive and no auto-restore of archived parcels.
 
 ## Current State Analysis
 
@@ -62,9 +62,11 @@ Four vertical phases: schema → sync backend → read API → web UI. Sync job 
 
 **Merchant filter (post-fetch):** For each ledger-new Gmail id, always call `getMessage` first. If `detectStoreFromSender(message.from)` is `null`, create `GmailMessage` ledger row and increment `skipped` — do not call extraction. User chose post-fetch over metadata-only pre-filter.
 
+**F-05 DTO rename (before Prisma `GmailMessage` lands):** Rename `type GmailMessage` in `apps/api/src/gmail/types.ts` to `FetchedGmailMessage` and update gmail + extraction imports (`gmail.service.ts`, `extraction.service.ts`, `extraction-prompt.ts`, fixtures, specs). Prisma ledger model keeps the name `GmailMessage` per F-03 research — avoids `@prisma/client` vs fetch-DTO import clash in `SyncService`.
+
 **Ledger semantics:** Create `GmailMessage` for skipped paths (unknown sender, null tracking, extraction skip after ledger creation timing) so ids are not re-fetched. On extraction error after message fetch, ledger the message before continuing so retries do not re-spend OpenRouter on the same id unless you explicitly want retry — decision: ledger on extraction failure too (count `failed`, continue).
 
-**Archived upsert:** When upsert matches existing parcel by `(userId, trackingNumber)` and `isArchivedStatus(parcel.status)`, update `store`, `description`, `carrier`, `customCarrierLabel` (and links via fields) but **never** change `status`. Still link `ParcelEmail` and recompute `orderDate` from min linked `internalDate`.
+**Archived parcel update:** When `findFirst` matches existing parcel by `(userId, trackingNumber)` and `isArchivedStatus(parcel.status)`, update `store`, `description`, `carrier`, `customCarrierLabel` (and links via fields) but **never** change `status`. Still link `ParcelEmail` and recompute `orderDate` from min linked `internalDate`. Do not increment `imported` for archived-only metadata refresh.
 
 **Job loss on restart:** In-memory jobs disappear on API restart; UI should treat missing job as failed/stale and allow new Sync — acceptable for local MVP.
 
@@ -113,12 +115,21 @@ Add Prisma models for processed-mail ledger and parcel–email junction so sync 
 
 **Contract**: Truncate list: `parcel_emails`, `gmail_messages`, then existing tables.
 
+#### 5. F-05 DTO rename (prerequisite for Prisma model name)
+
+**File**: `apps/api/src/gmail/types.ts` (+ gmail/extraction import sites)
+
+**Intent**: Rename fetch DTO `GmailMessage` → `FetchedGmailMessage` so Prisma `GmailMessage` ledger model can coexist without type clashes.
+
+**Contract**: All F-05 consumers updated; `getMessage` return type is `FetchedGmailMessage`; no remaining `GmailMessage` type export from `gmail/types.ts`.
+
 ### Success Criteria
 
 #### Automated Verification
 
 - Migration applies cleanly: `npm run prisma:migrate:dev -w @parcel-scrubber/api`
 - Unit tests pass: `npm run test:api -- parse-gmail-date-header`
+- F-05 DTO rename: `npm run test:api -- gmail extraction` (existing suites green after `FetchedGmailMessage` rename)
 - Linting passes: `npm run lint:api`
 
 #### Manual Verification
@@ -146,7 +157,7 @@ Implement sync pipeline, in-memory job registry, and authenticated HTTP routes t
 
 **Contract**:
 
-- `SyncJob`: `id`, `userId`, `status`, `phase` (`listing | processing | done`), `total`, `processed`, `imported`, `skipped`, `failed`, `error?`, `errorCode?` (e.g. `GMAIL_AUTH_REQUIRED`, `OPENROUTER_MISCONFIGURED`), `startedAt`, `finishedAt?`.
+- `SyncJob`: `id`, `userId`, `status`, `phase` (`listing | processing | done`), `total`, `processed`, `imported`, `skipped`, `failed`, `error?`, `errorCode?` (e.g. `GMAIL_AUTH_REQUIRED`), `startedAt`, `finishedAt?`.
 - `SyncJobRegistry.start(userId): { jobId } | null` returns null if user already has `running` job.
 - `get(jobId, userId)` for poll authorization (job must belong to user).
 
@@ -159,22 +170,22 @@ Implement sync pipeline, in-memory job registry, and authenticated HTTP routes t
 **Contract**: `runJob(userId, jobId): Promise<void>` (invoked async from controller). Pipeline:
 
 1. `settings.getEffectiveSettings(userId)`
-2. Fail fast if `OPENROUTER_API_KEY` missing/empty when env required (match F-06 startup expectations)
-3. `gmail.listMatchingEmailIds` → set `total` to count of ids not in ledger (after ledger query) or total new work estimate
-4. Load existing ledger ids for user into Set for O(1) skip
-5. For each listed id not in ledger:
+2. `gmail.listMatchingEmailIds` → load ledger ids into Set; `workIds = allIds.filter(id => !ledgerSet.has(id))`; set `total = workIds.length`
+3. For each id in `workIds`:
    - `getMessage`
-   - If unparseable date, use reasonable fallback or skip with ledger + `skipped`
+   - If unparseable date → create `GmailMessage` ledger row, `skipped++`, continue (never create `Parcel` — `orderDate` is required)
    - If not merchant sender → create `GmailMessage`, `skipped++`
    - Else `extractParcelFields` (sequential)
    - On `ExtractionError` → ledger message, `failed++`, continue
    - If null tracking → ledger, `skipped++`
-   - Else normalize tracking, upsert parcel (respect archived rule), link `ParcelEmail`, recompute `orderDate` as min `internalDate` across links
-   - `imported++` when new parcel created or active parcel materially updated (define: new row or non-archived upsert)
+   - Else normalize tracking; **find existing parcel** via `findFirst({ where: { userId, trackingNumber: normalized } })` (partial unique index — do **not** use `prisma.parcel.upsert`); create or update respecting archived rule; link `ParcelEmail`; recompute `orderDate` as min `internalDate` across links
+   - `imported++` when new parcel row created OR existing non-archived parcel had at least one field change; never increment for archived-only metadata refresh
    - `processed++`, update registry progress
 
 6. On `GmailAuthError` → mark job `failed`, `errorCode = GMAIL_AUTH_REQUIRED`
 7. On completion → `status = completed`, `phase = done`
+
+OpenRouter availability is enforced at DI via `OpenRouterClient` constructor `getOrThrow('OPENROUTER_API_KEY')` — no separate sync-time env check in S-02.
 
 Use `detectStoreFromSender` for merchant gate; use `result.store` from extraction for persist (should match). Import `normalizeTrackingNumber`, `isArchivedStatus` from parcels helpers. New parcels: `status = NEW`, `source = GMAIL`. No `ParcelStatusEvent` rows.
 
@@ -253,7 +264,7 @@ Expose authenticated list endpoint for active parcels with server-resolved track
 
 **Intent**: JWT-protected read route.
 
-**Contract**: `GET /api/parcels?status=active` — validate query enum; `400` for unknown status values. Only `active` required for S-02 (reject or ignore other values until S-03).
+**Contract**: `GET /api/parcels?status=active` — validate query enum; return `400 Bad Request` for unknown `status` values. Only `active` is supported in S-02.
 
 #### 4. Parcels module
 
@@ -269,7 +280,7 @@ Expose authenticated list endpoint for active parcels with server-resolved track
 
 **Intent**: Prisma-level e2e for orchestration with mocked `GmailService` and `ExtractionService` (Nest testing module overrides) or direct `SyncService` with test DB.
 
-**Contract**: Scenarios: import new parcel from mocked message; ledger skip on second run; archived parcel stays archived on upsert; unknown sender ledgered without parcel.
+**Contract**: Scenarios: import new parcel from mocked message; ledger skip on second run; archived parcel stays archived on tracking match; unknown sender ledgered without parcel.
 
 ### Success Criteria
 
@@ -368,7 +379,7 @@ Use signals for `loading`, `parcels`, `syncJob`, `syncing` — mirror settings p
 
 - `parseGmailDateHeader` edge cases
 - `SyncJobRegistry` one-job-per-user enforcement
-- `SyncService` pipeline with mocked Gmail, extraction, Prisma (import, skip, ledger, archived upsert, extraction error continue)
+- `SyncService` pipeline with mocked Gmail, extraction, Prisma (import, skip, ledger, archived parcel update, extraction error continue)
 - `ParcelsService` active filter + sort + `trackingUrl` mapping
 - Controllers: auth guard override pattern, 409, 404 job, query validation
 
@@ -417,12 +428,14 @@ Use signals for `loading`, `parcels`, `syncJob`, `syncing` — mirror settings p
 
 - [ ] 1.1 Migration applies cleanly: `npm run prisma:migrate:dev -w @parcel-scrubber/api`
 - [ ] 1.2 Unit tests pass: `npm run test:api -- parse-gmail-date-header`
-- [ ] 1.3 Linting passes: `npm run lint:api`
+- [ ] 1.3 F-05 DTO rename: `npm run test:api -- gmail extraction`
+- [ ] 1.4 Linting passes: `npm run lint:api`
 
 #### Manual
 
-- [ ] 1.4 Prisma client exposes `GmailMessage` and `ParcelEmail` types after generate
-- [ ] 1.5 No changes to existing `Parcel` migration constraints
+- [ ] 1.5 Prisma client exposes `GmailMessage` and `ParcelEmail` types after generate
+- [ ] 1.6 No changes to existing `Parcel` migration constraints
+- [ ] 1.7 F-05 DTO renamed to `FetchedGmailMessage`; no `GmailMessage` type export in `gmail/types.ts`
 
 ### Phase 2: Sync orchestration and job API
 
