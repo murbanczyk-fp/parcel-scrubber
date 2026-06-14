@@ -421,20 +421,20 @@ Optional: add `OPENROUTER_MODEL=openai/gpt-5.4-mini` to override nano if recall 
 
 #### Automated
 
-- [x] 1.1 API lint passes: `npm run lint:api`
-- [x] 1.2 Unit tests pass: `npm run test:api -- --testPathPattern=extraction`
+- [x] 1.1 API lint passes: `npm run lint:api` — 501cee8
+- [x] 1.2 Unit tests pass: `npm run test:api -- --testPathPattern=extraction` — 501cee8
 
 #### Manual
 
-- [x] 1.3 Hardcoded merchant addresses match PRD v1 Allegro/AliExpress senders
-- [x] 1.4 `CARRIER_PROMPT_OPTIONS` lists all enum values with hints for the OpenRouter prompt
+- [x] 1.3 Hardcoded merchant addresses match PRD v1 Allegro/AliExpress senders — 501cee8
+- [x] 1.4 `CARRIER_PROMPT_OPTIONS` lists all enum values with hints for the OpenRouter prompt — 501cee8
 
 ### Phase 2: OpenRouter client and extraction service
 
 #### Automated
 
-- [ ] 2.1 API lint passes: `npm run lint:api`
-- [ ] 2.2 Unit tests pass: `npm run test:api -- --testPathPattern=extraction`
+- [x] 2.1 API lint passes: `npm run lint:api`
+- [x] 2.2 Unit tests pass: `npm run test:api -- --testPathPattern=extraction`
 
 #### Manual
 
