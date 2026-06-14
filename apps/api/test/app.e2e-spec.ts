@@ -27,6 +27,7 @@ describe('AppController (e2e)', () => {
     process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
     process.env.GOOGLE_CALLBACK_URL =
       'http://localhost:8080/api/auth/google/callback';
+    process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
     process.env.DATABASE_URL =
       'postgresql://parcel:parcel@localhost:5432/parcel_scrubber_test';
 
