@@ -83,7 +83,7 @@ describe('OpenRouterClient', () => {
       'https://openrouter.ai/api/v1/chat/completions',
       expect.objectContaining({
         method: 'POST',
-        signal: expect.any(AbortSignal),
+        signal: expect.any(AbortSignal) as AbortSignal,
         headers: {
           Authorization: 'Bearer test-api-key',
           'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ describe('OpenRouterClient', () => {
       client.completeStructuredJson('system', 'user', { type: 'object' }),
     ).rejects.toMatchObject({
       message: 'OpenRouter request failed',
-      cause: expect.any(TypeError),
+      cause: expect.any(TypeError) as TypeError,
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
