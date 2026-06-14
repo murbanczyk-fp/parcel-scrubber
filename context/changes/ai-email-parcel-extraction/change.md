@@ -1,9 +1,9 @@
 ---
 change_id: ai-email-parcel-extraction
 title: Ai email parcel extraction
-status: plan_reviewed
+status: implementing
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-06-14
 archived_at: null
 ---
 
