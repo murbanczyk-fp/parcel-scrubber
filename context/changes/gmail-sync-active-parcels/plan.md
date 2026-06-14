@@ -441,25 +441,25 @@ Use signals for `loading`, `parcels`, `syncJob`, `syncing` — mirror settings p
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm run test:api -- sync`
-- [x] 2.2 Linting passes: `npm run lint:api`
+- [x] 2.1 Unit tests pass: `npm run test:api -- sync` — d35477f
+- [x] 2.2 Linting passes: `npm run lint:api` — d35477f
 
 #### Manual
 
-- [x] 2.3 Second `POST /api/sync` while running returns 409
-- [x] 2.4 `POST /api/sync` + poll returns increasing `processed` in controller/service tests
+- [x] 2.3 Second `POST /api/sync` while running returns 409 — d35477f
+- [x] 2.4 `POST /api/sync` + poll returns increasing `processed` in controller/service tests — d35477f
 
 ### Phase 3: Active parcels read API
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm run test:api -- parcels`
-- [ ] 3.2 E2E passes: `npm run test:api -- sync.e2e-spec`
-- [ ] 3.3 Linting passes: `npm run lint:api`
+- [x] 3.1 Unit tests pass: `npm run test:api -- parcels`
+- [x] 3.2 E2E passes: `npm run test:api -- sync.e2e-spec`
+- [x] 3.3 Linting passes: `npm run lint:api`
 
 #### Manual
 
-- [ ] 3.4 `GET /api/parcels?status=active` returns parcels with resolved `trackingUrl`
+- [x] 3.4 `GET /api/parcels?status=active` returns parcels with resolved `trackingUrl`
 
 ### Phase 4: Active page UI
 
