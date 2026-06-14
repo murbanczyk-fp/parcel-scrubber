@@ -465,13 +465,13 @@ Use signals for `loading`, `parcels`, `syncJob`, `syncing` — mirror settings p
 
 #### Automated
 
-- [x] 4.1 Linting passes: `npm run lint:web`
-- [x] 4.2 Web unit tests pass: `npm run test:web`
+- [x] 4.1 Linting passes: `npm run lint:web` — 94d117a
+- [x] 4.2 Web unit tests pass: `npm run test:web` — 94d117a
 
 #### Manual
 
-- [x] 4.3 Active page empty state shows Sync CTA; Sync shows progress bar and populates table after completion
-- [x] 4.4 Completion toast shows imported/skipped/failed counts
-- [x] 4.5 Gmail auth failure shows re-login toast
-- [x] 4.6 Second Sync click while running shows already-running feedback
-- [x] 4.7 Real mailbox manual validation (Allegro/AliExpress labeled mail)
+- [x] 4.3 Active page empty state shows Sync CTA; Sync shows progress bar and populates table after completion — 94d117a
+- [x] 4.4 Completion toast shows imported/skipped/failed counts — 94d117a
+- [x] 4.5 Gmail auth failure shows re-login toast — 94d117a
+- [x] 4.6 Second Sync click while running shows already-running feedback — 94d117a
+- [x] 4.7 Real mailbox manual validation (Allegro/AliExpress labeled mail) — 94d117a
