@@ -433,24 +433,24 @@ Optional: add `OPENROUTER_MODEL=openai/gpt-5.4-mini` to override nano if recall 
 
 #### Automated
 
-- [x] 2.1 API lint passes: `npm run lint:api`
-- [x] 2.2 Unit tests pass: `npm run test:api -- --testPathPattern=extraction`
+- [x] 2.1 API lint passes: `npm run lint:api` — 7cfc09c
+- [x] 2.2 Unit tests pass: `npm run test:api -- --testPathPattern=extraction` — 7cfc09c
 
 #### Manual
 
-- [ ] 2.3 With real `OPENROUTER_API_KEY`, extraction returns sensible fields for a saved Allegro fixture body
+- [x] 2.3 With real `OPENROUTER_API_KEY`, extraction returns sensible fields for a saved Allegro fixture body
 
 ### Phase 3: Module wiring and dev test route
 
 #### Automated
 
-- [ ] 3.1 API lint passes: `npm run lint:api`
-- [ ] 3.2 Unit tests pass: `npm run test:api`
+- [x] 3.1 API lint passes: `npm run lint:api`
+- [x] 3.2 Unit tests pass: `npm run test:api`
 
 #### Manual
 
-- [ ] 3.3 `GET /api/test/extract?id=<allegro-id>` returns `{ message, result }` with `result.store: "Allegro"`, tracking number, and carrier
-- [ ] 3.4 Non-shipment Allegro message returns `result.store: "Allegro"` and null tracking in `result`
+- [x] 3.3 `GET /api/test/extract?id=<allegro-id>` returns `{ message, result }` with `result.store: "Allegro"`, tracking number, and carrier
+- [x] 3.4 Non-shipment Allegro message returns `result.store: "Allegro"` and null tracking in `result`
 
 ### Phase 4: Fixture hardening and regression tests
 
