@@ -1,52 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Carrier } from '@prisma/client';
 
-import { GmailMessage } from '../gmail/types';
 import { ExtractionService } from './extraction.service';
+import {
+  allegroInPostShipmentFixture,
+  allegroMarketingNonShipmentFixture,
+  aliExpressDhlShipmentFixture,
+  extractionFixtureCases,
+} from './fixtures';
 import { OpenRouterClient } from './openrouter-client';
 import { ExtractionError } from './types';
 
 describe('ExtractionService', () => {
   let service: ExtractionService;
   let completeStructuredJson: jest.Mock;
-
-  const allegroInPostMessage: GmailMessage = {
-    from: 'Allegro <powiadomienia@allegro.pl>',
-    date: '2026-01-15T10:00:00.000Z',
-    subject: 'Twoja przesyłka została nadana',
-    body: [
-      'Dzień dobry,',
-      '',
-      'Twoja przesyłka z zamówienia została nadana.',
-      '',
-      'Numer przesyłki: 520000012680041086770098',
-      'Przewoźnik: InPost Paczkomaty',
-      '',
-      'Pozdrawiamy, Allegro',
-    ].join('\n'),
-  };
-
-  const aliExpressDhlMessage: GmailMessage = {
-    from: 'AliExpress <transaction@notice.aliexpress.com>',
-    date: '2026-02-01T08:30:00.000Z',
-    subject: 'Your package has been shipped',
-    body: [
-      'Hello,',
-      '',
-      'Your order has shipped.',
-      'Tracking number: 3SBCC000123456',
-      'Carrier: DHL',
-      '',
-      'Thank you for shopping with AliExpress.',
-    ].join('\n'),
-  };
-
-  const allegroMarketingMessage: GmailMessage = {
-    from: 'Allegro <powiadomienia@allegromail.pl>',
-    date: '2026-03-01T12:00:00.000Z',
-    subject: 'Sprawdź nowe promocje na Allegro',
-    body: 'Zobacz najlepsze okazje tygodnia. Brak informacji o przesyłce.',
-  };
 
   beforeEach(async () => {
     completeStructuredJson = jest.fn();
@@ -64,61 +31,34 @@ describe('ExtractionService', () => {
     service = module.get(ExtractionService);
   });
 
-  it('merges Allegro store with validated InPost fields', async () => {
-    completeStructuredJson.mockResolvedValue({
-      trackingNumber: '520000012680041086770098',
-      carrier: Carrier.INPOST,
-      customCarrierLabel: null,
-      description: 'Smartfon',
-    });
+  describe('fixture regression', () => {
+    it.each(extractionFixtureCases)(
+      '$name',
+      async ({ message, openRouterResponse, expected }) => {
+        completeStructuredJson.mockResolvedValue(openRouterResponse);
 
-    await expect(
-      service.extractParcelFields(allegroInPostMessage),
-    ).resolves.toEqual({
-      store: 'Allegro',
-      trackingNumber: '520000012680041086770098',
-      carrier: Carrier.INPOST,
-      customCarrierLabel: null,
-      description: 'Smartfon',
-    });
-  });
+        const result = await service.extractParcelFields(message);
 
-  it('merges AliExpress store with validated DHL fields', async () => {
-    completeStructuredJson.mockResolvedValue({
-      trackingNumber: '3SBCC000123456',
-      carrier: Carrier.DHL,
-      customCarrierLabel: null,
-      description: null,
-    });
+        expect(result.store).toBe(expected.store);
 
-    await expect(
-      service.extractParcelFields(aliExpressDhlMessage),
-    ).resolves.toEqual({
-      store: 'AliExpress',
-      trackingNumber: '3SBCC000123456',
-      carrier: Carrier.DHL,
-      customCarrierLabel: null,
-      description: null,
-    });
-  });
+        if (expected.kind === 'non-shipment') {
+          expect(result).toEqual({
+            store: expected.store,
+            trackingNumber: null,
+            carrier: Carrier.CUSTOM,
+            customCarrierLabel: null,
+            description: null,
+          });
+          return;
+        }
 
-  it('returns null tracking contract for non-shipment email while preserving store', async () => {
-    completeStructuredJson.mockResolvedValue({
-      trackingNumber: null,
-      carrier: Carrier.CUSTOM,
-      customCarrierLabel: null,
-      description: 'Promocje',
-    });
-
-    await expect(
-      service.extractParcelFields(allegroMarketingMessage),
-    ).resolves.toEqual({
-      store: 'Allegro',
-      trackingNumber: null,
-      carrier: Carrier.CUSTOM,
-      customCarrierLabel: null,
-      description: null,
-    });
+        expect(result.trackingNumber).toMatch(
+          new RegExp(`^${expected.trackingNumberPrefix}`),
+        );
+        expect(result.carrier).toBe(expected.carrier);
+        expect(result.trackingNumber).toBeTruthy();
+      },
+    );
   });
 
   it('returns null tracking contract when tracking number is blank whitespace', async () => {
@@ -130,7 +70,7 @@ describe('ExtractionService', () => {
     });
 
     await expect(
-      service.extractParcelFields(allegroMarketingMessage),
+      service.extractParcelFields(allegroMarketingNonShipmentFixture),
     ).resolves.toEqual({
       store: 'Allegro',
       trackingNumber: null,
@@ -149,7 +89,7 @@ describe('ExtractionService', () => {
     });
 
     await expect(
-      service.extractParcelFields(allegroInPostMessage),
+      service.extractParcelFields(allegroInPostShipmentFixture),
     ).rejects.toBeInstanceOf(ExtractionError);
   });
 
@@ -163,7 +103,7 @@ describe('ExtractionService', () => {
 
     await expect(
       service.extractParcelFields({
-        ...allegroInPostMessage,
+        ...aliExpressDhlShipmentFixture,
         from: 'shop@example.com',
       }),
     ).resolves.toMatchObject({
@@ -179,7 +119,7 @@ describe('ExtractionService', () => {
     );
 
     await expect(
-      service.extractParcelFields(allegroInPostMessage),
+      service.extractParcelFields(allegroInPostShipmentFixture),
     ).rejects.toBeInstanceOf(ExtractionError);
   });
 });

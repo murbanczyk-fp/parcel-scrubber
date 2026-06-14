@@ -438,27 +438,27 @@ Optional: add `OPENROUTER_MODEL=openai/gpt-5.4-mini` to override nano if recall 
 
 #### Manual
 
-- [x] 2.3 With real `OPENROUTER_API_KEY`, extraction returns sensible fields for a saved Allegro fixture body
+- [x] 2.3 With real `OPENROUTER_API_KEY`, extraction returns sensible fields for a saved Allegro fixture body — d22641b
 
 ### Phase 3: Module wiring and dev test route
 
 #### Automated
 
-- [x] 3.1 API lint passes: `npm run lint:api`
-- [x] 3.2 Unit tests pass: `npm run test:api`
+- [x] 3.1 API lint passes: `npm run lint:api` — d22641b
+- [x] 3.2 Unit tests pass: `npm run test:api` — d22641b
 
 #### Manual
 
-- [x] 3.3 `GET /api/test/extract?id=<allegro-id>` returns `{ message, result }` with `result.store: "Allegro"`, tracking number, and carrier
-- [x] 3.4 Non-shipment Allegro message returns `result.store: "Allegro"` and null tracking in `result`
+- [x] 3.3 `GET /api/test/extract?id=<allegro-id>` returns `{ message, result }` with `result.store: "Allegro"`, tracking number, and carrier — d22641b
+- [x] 3.4 Non-shipment Allegro message returns `result.store: "Allegro"` and null tracking in `result` — d22641b
 
 ### Phase 4: Fixture hardening and regression tests
 
 #### Automated
 
-- [ ] 4.1 Full API test suite passes: `npm run test:api`
-- [ ] 4.2 Full monorepo lint passes: `npm run lint`
+- [x] 4.1 Full API test suite passes: `npm run test:api`
+- [x] 4.2 Full monorepo lint passes: `npm run lint`
 
 #### Manual
 
-- [ ] 4.3 Spot-check 2–3 real labeled emails via `/api/test/extract`; informal ≥75% recall on tracking + carrier
+- [x] 4.3 Spot-check 2–3 real labeled emails via `/api/test/extract`; informal ≥75% recall on tracking + carrier
