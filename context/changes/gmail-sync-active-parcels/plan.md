@@ -426,28 +426,28 @@ Use signals for `loading`, `parcels`, `syncJob`, `syncing` — mirror settings p
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly: `npm run prisma:migrate:dev -w @parcel-scrubber/api`
-- [x] 1.2 Unit tests pass: `npm run test:api -- parse-gmail-date-header`
-- [x] 1.3 F-05 DTO rename: `npm run test:api -- gmail extraction`
-- [x] 1.4 Linting passes: `npm run lint:api`
+- [x] 1.1 Migration applies cleanly: `npm run prisma:migrate:dev -w @parcel-scrubber/api` — e99ec32
+- [x] 1.2 Unit tests pass: `npm run test:api -- parse-gmail-date-header` — e99ec32
+- [x] 1.3 F-05 DTO rename: `npm run test:api -- gmail extraction` — e99ec32
+- [x] 1.4 Linting passes: `npm run lint:api` — e99ec32
 
 #### Manual
 
-- [x] 1.5 Prisma client exposes `GmailMessage` and `ParcelEmail` types after generate
-- [x] 1.6 No changes to existing `Parcel` migration constraints
-- [x] 1.7 F-05 DTO renamed to `FetchedGmailMessage`; no `GmailMessage` type export in `gmail/types.ts`
+- [x] 1.5 Prisma client exposes `GmailMessage` and `ParcelEmail` types after generate — e99ec32
+- [x] 1.6 No changes to existing `Parcel` migration constraints — e99ec32
+- [x] 1.7 F-05 DTO renamed to `FetchedGmailMessage`; no `GmailMessage` type export in `gmail/types.ts` — e99ec32
 
 ### Phase 2: Sync orchestration and job API
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm run test:api -- sync`
-- [ ] 2.2 Linting passes: `npm run lint:api`
+- [x] 2.1 Unit tests pass: `npm run test:api -- sync`
+- [x] 2.2 Linting passes: `npm run lint:api`
 
 #### Manual
 
-- [ ] 2.3 Second `POST /api/sync` while running returns 409
-- [ ] 2.4 `POST /api/sync` + poll returns increasing `processed` in controller/service tests
+- [x] 2.3 Second `POST /api/sync` while running returns 409
+- [x] 2.4 `POST /api/sync` + poll returns increasing `processed` in controller/service tests
 
 ### Phase 3: Active parcels read API
 
