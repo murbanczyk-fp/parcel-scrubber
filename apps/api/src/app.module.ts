@@ -8,7 +8,9 @@ import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { GmailModule } from './gmail/gmail.module';
 import { ExtractionModule } from './extraction/extraction.module';
+import { ParcelsModule } from './parcels/parcels.module';
 import { SettingsModule } from './settings/settings.module';
+import { SyncModule } from './sync/sync.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { SettingsModule } from './settings/settings.module';
     SettingsModule,
     GmailModule,
     ExtractionModule,
+    SyncModule,
+    ParcelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

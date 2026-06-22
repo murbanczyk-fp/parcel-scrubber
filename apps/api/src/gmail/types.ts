@@ -1,4 +1,4 @@
-export type GmailMessage = {
+export type FetchedGmailMessage = {
   from: string;
   date: string;
   subject: string;

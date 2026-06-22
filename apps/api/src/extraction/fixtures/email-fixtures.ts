@@ -1,6 +1,6 @@
-import { GmailMessage } from '../../gmail/types';
+import { FetchedGmailMessage } from '../../gmail/types';
 
-export const allegroInPostShipmentFixture: GmailMessage = {
+export const allegroInPostShipmentFixture: FetchedGmailMessage = {
   from: 'Allegro <powiadomienia@allegro.pl>',
   date: '2026-01-15T10:00:00.000Z',
   subject: 'Twoja przesyłka została nadana',
@@ -18,7 +18,7 @@ export const allegroInPostShipmentFixture: GmailMessage = {
   ].join('\n'),
 };
 
-export const allegroInPostHtmlStrippedFixture: GmailMessage = {
+export const allegroInPostHtmlStrippedFixture: FetchedGmailMessage = {
   from: 'Allegro <powiadomienia@allegromail.pl>',
   date: '2026-01-20T14:30:00.000Z',
   subject: 'Informacja o wysyłce',
@@ -31,7 +31,7 @@ export const allegroInPostHtmlStrippedFixture: GmailMessage = {
   ].join('\n'),
 };
 
-export const aliExpressDhlShipmentFixture: GmailMessage = {
+export const aliExpressDhlShipmentFixture: FetchedGmailMessage = {
   from: 'AliExpress <transaction@notice.aliexpress.com>',
   date: '2026-02-01T08:30:00.000Z',
   subject: 'Your package has been shipped',
@@ -47,7 +47,7 @@ export const aliExpressDhlShipmentFixture: GmailMessage = {
   ].join('\n'),
 };
 
-export const allegroMarketingNonShipmentFixture: GmailMessage = {
+export const allegroMarketingNonShipmentFixture: FetchedGmailMessage = {
   from: 'Allegro <powiadomienia@allegromail.pl>',
   date: '2026-03-01T12:00:00.000Z',
   subject: 'Sprawdź nowe promocje na Allegro',
@@ -68,7 +68,7 @@ export type ExtractionFixtureExpectation =
 
 export const extractionFixtureCases: Array<{
   name: string;
-  message: GmailMessage;
+  message: FetchedGmailMessage;
   openRouterResponse: Record<string, unknown>;
   expected: ExtractionFixtureExpectation;
 }> = [

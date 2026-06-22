@@ -44,8 +44,9 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  parcels  Parcel[]
-  settings UserSetting[]
+  parcels       Parcel[]
+  settings      UserSetting[]
+  gmailMessages GmailMessage[]
 
   @@map("users")
 }
@@ -84,9 +85,37 @@ model Parcel {
 
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   statusEvents ParcelStatusEvent[]
+  messages     ParcelEmail[]
 
   @@index([userId, status])
   @@map("parcels")
+}
+
+model GmailMessage {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  gmailMessageId String   @map("gmail_message_id")
+  internalDate   DateTime @map("internal_date")
+  threadId       String?  @map("thread_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parcels ParcelEmail[]
+
+  @@unique([userId, gmailMessageId])
+  @@map("gmail_messages")
+}
+
+model ParcelEmail {
+  parcelId       String @map("parcel_id")
+  gmailMessageId String @map("gmail_message_id")
+  userId         String @map("user_id")
+
+  parcel       Parcel       @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  gmailMessage GmailMessage @relation(fields: [userId, gmailMessageId], references: [userId, gmailMessageId], onDelete: Cascade)
+
+  @@id([parcelId, gmailMessageId])
+  @@map("parcel_emails")
 }
 
 model ParcelStatusEvent {

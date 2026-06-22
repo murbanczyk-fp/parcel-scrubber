@@ -1,6 +1,6 @@
 import { Carrier } from '@prisma/client';
 
-import { GmailMessage } from '../gmail/types';
+import { FetchedGmailMessage } from '../gmail/types';
 
 export type MerchantStore = 'Allegro' | 'AliExpress';
 
@@ -15,7 +15,7 @@ export type ExtractedParcelFields = {
 export type AiExtractedFields = Omit<ExtractedParcelFields, 'store'>;
 
 export type ExtractTestResponse = {
-  message: GmailMessage;
+  message: FetchedGmailMessage;
   result: ExtractedParcelFields;
 };
 
