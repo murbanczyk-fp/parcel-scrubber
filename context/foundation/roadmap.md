@@ -3,7 +3,7 @@ project: ParcelScrubber
 version: 1
 status: draft
 created: 2026-06-04
-updated: 2026-06-14
+updated: 2026-06-22
 prd_version: 4
 main_goal: speed
 top_blocker: time
@@ -36,7 +36,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | S-01 | user-settings-page | open settings and configure Gmail scan label (default `ParcelScrubber`) and scan period (default last 30 days) | F-01, F-02, F-04 | FR-017, FR-003, FR-006, NFR (local session) | done |
 | F-05 | gmail-message-retrieval | (foundation) list matching Gmail message ids by label + scan period; fetch full message (headers + body) by id (separate methods) | F-02 | FR-003, FR-017 | done |
 | F-06 | ai-email-parcel-extraction | (foundation) extract tracking number, carrier, and description from email body via OpenRouter | F-05 | FR-003, FR-004, FR-005 | done |
-| S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03, F-05, F-06 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | proposed |
+| S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03, F-05, F-06 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | done |
 | S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | proposed |
 | S-04 | manual-parcel-crud | manually add or edit parcels (including order date and tracking URL override) | S-02 | FR-010, FR-011, FR-015 | proposed |
 | S-05 | restore-undeliver-parcel | restore or undeliver any archived parcel back to the active list regardless of order date | S-03 | US-03, FR-016 | proposed |
@@ -169,7 +169,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** North star — orchestration, dedupe, tracking-link generation, and sync progress UI concentrate here; Gmail retrieval and AI extraction are delegated to F-05/F-06. Missing Gmail label yields zero imports (F-05 returns empty list). FR-006 ensures sync never auto-archives by age.
-- **Status:** proposed
+- **Status:** done
 
 ### S-03: Delivered, remove, and archive view
 
@@ -251,3 +251,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-01: user can open a settings page and configure Gmail scan label and scan period (how far back sync searches); defaults are label `ParcelScrubber` and last 30 days when unset.** — Archived 2026-06-08 → `context/archive/2026-06-08-user-settings-page/`. Lesson: —.
 - **F-05: (foundation) Nest Gmail service exposes two methods for the authenticated user: list matching message ids filtered by label name and scan period (method params — not read from settings), and get full message by message id. Id list returns `string[]` only; body fetch is a separate call (so sync can skip messages already scanned) and returns `from`, `date`, `subject`, and decoded body text.** — Archived 2026-06-08 → `context/archive/2026-06-08-gmail-message-retrieval/`. Lesson: —.
 - **F-06: (foundation) given email headers and body text (from F-05 `getMessage`), a service returns structured parcel fields — tracking number, carrier, optional description — via **OpenRouter** using `gpt-5.4-mini` or `gpt-5.4-nano`.** — Archived 2026-06-14 → `context/archive/2026-06-09-ai-email-parcel-extraction/`. Lesson: —.
+- **S-02: trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive)** — Archived 2026-06-22 → `context/archive/2026-06-14-gmail-sync-active-parcels/`. Lesson: —.
