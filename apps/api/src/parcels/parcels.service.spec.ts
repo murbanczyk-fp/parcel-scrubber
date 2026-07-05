@@ -188,6 +188,104 @@ describe('ParcelsService', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
+  it('reactivates a delivered parcel to NEW and writes a user status event', async () => {
+    const delivered = { ...baseParcel, status: ParcelStatus.DELIVERED };
+    const reactivated = { ...baseParcel, status: ParcelStatus.NEW };
+    prisma.parcel.findFirst
+      .mockResolvedValueOnce(delivered)
+      .mockResolvedValueOnce(delivered);
+    prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
+    prisma.parcel.findFirstOrThrow.mockResolvedValue(reactivated);
+
+    const result = await service.reactivateParcel('user-1', 'parcel-1');
+
+    expect(prisma.parcel.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'parcel-1',
+        userId: 'user-1',
+        status: ParcelStatus.DELIVERED,
+      },
+      data: { status: ParcelStatus.NEW },
+    });
+    expect(prisma.parcelStatusEvent.create).toHaveBeenCalledWith({
+      data: {
+        parcelId: 'parcel-1',
+        fromStatus: ParcelStatus.DELIVERED,
+        toStatus: ParcelStatus.NEW,
+        source: StatusEventSource.USER,
+      },
+    });
+    expect(result.status).toBe('NEW');
+  });
+
+  it('reactivates a removed parcel to NEW and writes a user status event', async () => {
+    const removed = { ...baseParcel, status: ParcelStatus.REMOVED };
+    const reactivated = { ...baseParcel, status: ParcelStatus.NEW };
+    prisma.parcel.findFirst
+      .mockResolvedValueOnce(removed)
+      .mockResolvedValueOnce(removed);
+    prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
+    prisma.parcel.findFirstOrThrow.mockResolvedValue(reactivated);
+
+    const result = await service.reactivateParcel('user-1', 'parcel-1');
+
+    expect(prisma.parcel.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'parcel-1',
+        userId: 'user-1',
+        status: ParcelStatus.REMOVED,
+      },
+      data: { status: ParcelStatus.NEW },
+    });
+    expect(prisma.parcelStatusEvent.create).toHaveBeenCalledWith({
+      data: {
+        parcelId: 'parcel-1',
+        fromStatus: ParcelStatus.REMOVED,
+        toStatus: ParcelStatus.NEW,
+        source: StatusEventSource.USER,
+      },
+    });
+    expect(result.status).toBe('NEW');
+  });
+
+  it('is idempotent when reactivating an already active NEW parcel', async () => {
+    prisma.parcel.findFirst.mockResolvedValue(baseParcel);
+
+    const result = await service.reactivateParcel('user-1', 'parcel-1');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.parcelStatusEvent.create).not.toHaveBeenCalled();
+    expect(result.status).toBe('NEW');
+  });
+
+  it('throws BadRequestException when reactivating an IN_TRANSIT parcel', async () => {
+    const inTransit = { ...baseParcel, status: ParcelStatus.IN_TRANSIT };
+    prisma.parcel.findFirst.mockResolvedValue(inTransit);
+
+    await expect(
+      service.reactivateParcel('user-1', 'parcel-1'),
+    ).rejects.toThrow('Parcel is not archived');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('throws BadRequestException when reactivating an IN_DELIVERY parcel', async () => {
+    const inDelivery = { ...baseParcel, status: ParcelStatus.IN_DELIVERY };
+    prisma.parcel.findFirst.mockResolvedValue(inDelivery);
+
+    await expect(
+      service.reactivateParcel('user-1', 'parcel-1'),
+    ).rejects.toThrow('Parcel is not archived');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('throws NotFoundException when reactivating a missing parcel', async () => {
+    prisma.parcel.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.reactivateParcel('user-1', 'missing-parcel'),
+    ).rejects.toThrow(NotFoundException);
+  });
+
   describe('createForUser', () => {
     const validBody = {
       store: 'Allegro',

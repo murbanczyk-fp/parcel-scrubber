@@ -1,4 +1,4 @@
-1. There should be expandable rows in the parcels table. After expander they should list all messages scanned for that parcel. Each message should have a link with icon pi-external-link linking to: https://mail.google.com/mail/u/0/#all/{{gmailMessageId}}.
+1. There should be expandable rows in the parcels table. After expanded they should list all messages scanned for that parcel. Each message should have a link with icon pi-external-link linking to: https://mail.google.com/mail/u/0/#all/{{gmailMessageId}}.
 2. Ability to merge few parcels into one - there are cases when multiple messages related to the same parcel are incorrectly deduped and considered multiple parcels instead of one. There should be a possibility to merge them.
 3. Carrier messages without store, custom store support - there might be messages from carriers which are not directly related to store. App should try:
     A. to dedupe it with some previous mail from store if it founds a mail with the same trackingNumber

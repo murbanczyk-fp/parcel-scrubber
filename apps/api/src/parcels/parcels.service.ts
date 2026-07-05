@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   Carrier,
   Parcel,
@@ -9,7 +13,10 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { ARCHIVED_PARCEL_STATUSES } from './is-archived-status';
+import {
+  ARCHIVED_PARCEL_STATUSES,
+  isArchivedStatus,
+} from './is-archived-status';
 import { isSafeHttpUrl } from './is-safe-http-url';
 import { mapParcelToDto } from './map-parcel-to-dto';
 import { normalizeTrackingNumber } from './normalize-tracking-number';
@@ -185,6 +192,25 @@ export class ParcelsService {
 
   markRemoved(userId: string, parcelId: string): Promise<ParcelDto> {
     return this.transitionStatus(userId, parcelId, ParcelStatus.REMOVED);
+  }
+
+  async reactivateParcel(userId: string, parcelId: string): Promise<ParcelDto> {
+    const parcel = await this.prisma.parcel.findFirst({
+      where: { id: parcelId, userId },
+    });
+
+    if (!parcel) {
+      throw new NotFoundException('Parcel not found');
+    }
+
+    if (
+      !isArchivedStatus(parcel.status) &&
+      parcel.status !== ParcelStatus.NEW
+    ) {
+      throw new BadRequestException('Parcel is not archived');
+    }
+
+    return this.transitionStatus(userId, parcelId, ParcelStatus.NEW);
   }
 
   private validateCreateBody(body: CreateParcelBody): {
