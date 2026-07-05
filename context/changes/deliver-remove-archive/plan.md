@@ -389,24 +389,24 @@ No schema migration. Existing parcels with active statuses work unchanged. Manua
 
 #### Automated
 
-- [x] 2.1 `npm run test:e2e -w @parcel-scrubber/api` passes (includes new spec)
-- [x] 2.2 `npm run lint:api` passes
+- [x] 2.1 `npm run test:e2e -w @parcel-scrubber/api` passes (includes new spec) — 0054737
+- [x] 2.2 `npm run lint:api` passes — 0054737
 
 #### Manual
 
-- [x] 2.3 N/A
+- [x] 2.3 N/A — 0054737
 
 ### Phase 3: Web — archive list page
 
 #### Automated
 
-- [ ] 3.1 `npm run lint:web` passes
-- [ ] 3.2 `npm run build` passes
+- [x] 3.1 `npm run lint:web` passes
+- [x] 3.2 `npm run build` passes (web compiles with new component)
 
 #### Manual
 
-- [ ] 3.3 Archive page shows seeded/archived parcels with Status column and tracking links
-- [ ] 3.4 Empty archive shows empty-state message; shell toggle works
+- [x] 3.3 Archive page shows seeded/archived parcels with Status column and tracking links
+- [x] 3.4 Empty archive shows empty-state message; shell toggle works
 
 ### Phase 4: Web — active list deliver/remove actions
 

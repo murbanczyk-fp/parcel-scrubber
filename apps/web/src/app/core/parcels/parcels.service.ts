@@ -16,6 +16,14 @@ export class ParcelsService {
     );
   }
 
+  listArchived(): Promise<ParcelDto[]> {
+    return firstValueFrom(
+      this.http.get<ParcelDto[]>('/api/parcels', {
+        params: { status: 'archived' },
+      }),
+    );
+  }
+
   startSync(): Promise<{ jobId: string }> {
     return firstValueFrom(
       this.http.post<{ jobId: string }>('/api/sync', null),
