@@ -57,3 +57,9 @@
   color: var(--p-primary-color);
   text-decoration: underline;
 }
+
+.active-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

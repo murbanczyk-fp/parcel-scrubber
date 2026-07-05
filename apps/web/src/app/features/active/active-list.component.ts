@@ -7,9 +7,10 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageModule } from 'primeng/message';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TableModule } from 'primeng/table';
@@ -32,6 +33,7 @@ const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
     DatePipe,
     ButtonModule,
     CardModule,
+    ConfirmDialogModule,
     MessageModule,
     ProgressBarModule,
     TableModule,
@@ -43,6 +45,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
   private readonly parcelsService = inject(ParcelsService);
   private readonly authService = inject(AuthService);
   private readonly messages = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -50,6 +53,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
   protected readonly syncing = signal(false);
   protected readonly syncJob = signal<SyncJobDto | null>(null);
   protected readonly authRequired = signal(false);
+  protected readonly actionInFlight = signal<ReadonlySet<string>>(new Set());
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -113,6 +117,81 @@ export class ActiveListComponent implements OnInit, OnDestroy {
 
   protected onReLogin(): void {
     this.authService.signIn();
+  }
+
+  protected isActionInFlight(parcelId: string): boolean {
+    return this.actionInFlight().has(parcelId);
+  }
+
+  protected onDeliver(parcel: ParcelDto): void {
+    void this.runParcelAction(
+      parcel,
+      () => this.parcelsService.deliverParcel(parcel.id),
+      'Marked as delivered',
+    );
+  }
+
+  protected onRemove(parcel: ParcelDto): void {
+    this.confirmationService.confirm({
+      message:
+        'Remove this parcel from your active list? It will move to archive.',
+      accept: () => {
+        void this.runParcelAction(
+          parcel,
+          () => this.parcelsService.removeParcel(parcel.id),
+          'Removed from active list',
+        );
+      },
+    });
+  }
+
+  private async runParcelAction(
+    parcel: ParcelDto,
+    action: () => Promise<ParcelDto>,
+    successSummary: string,
+  ): Promise<void> {
+    if (this.isActionInFlight(parcel.id)) {
+      return;
+    }
+
+    const current = this.parcels();
+    const index = current.findIndex((row) => row.id === parcel.id);
+    if (index === -1) {
+      return;
+    }
+
+    this.setActionInFlight(parcel.id, true);
+    this.parcels.set(current.filter((row) => row.id !== parcel.id));
+
+    try {
+      await action();
+      this.messages.add({
+        severity: 'success',
+        summary: successSummary,
+        life: 4000,
+      });
+    } catch {
+      const restored = [...this.parcels()];
+      restored.splice(index, 0, parcel);
+      this.parcels.set(restored);
+      this.messages.add({
+        severity: 'error',
+        summary: 'Could not update parcel',
+        life: 4000,
+      });
+    } finally {
+      this.setActionInFlight(parcel.id, false);
+    }
+  }
+
+  private setActionInFlight(parcelId: string, inFlight: boolean): void {
+    const next = new Set(this.actionInFlight());
+    if (inFlight) {
+      next.add(parcelId);
+    } else {
+      next.delete(parcelId);
+    }
+    this.actionInFlight.set(next);
   }
 
   private async loadParcels(): Promise<void> {

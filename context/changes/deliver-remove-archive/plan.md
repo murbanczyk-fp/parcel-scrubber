@@ -400,23 +400,23 @@ No schema migration. Existing parcels with active statuses work unchanged. Manua
 
 #### Automated
 
-- [x] 3.1 `npm run lint:web` passes
-- [x] 3.2 `npm run build` passes (web compiles with new component)
+- [x] 3.1 `npm run lint:web` passes — 5cb2edd
+- [x] 3.2 `npm run build` passes (web compiles with new component) — 5cb2edd
 
 #### Manual
 
-- [x] 3.3 Archive page shows seeded/archived parcels with Status column and tracking links
-- [x] 3.4 Empty archive shows empty-state message; shell toggle works
+- [x] 3.3 Archive page shows seeded/archived parcels with Status column and tracking links — 5cb2edd
+- [x] 3.4 Empty archive shows empty-state message; shell toggle works — 5cb2edd
 
 ### Phase 4: Web — active list deliver/remove actions
 
 #### Automated
 
-- [ ] 4.1 `npm run lint` passes
-- [ ] 4.2 `npm run test` passes (unit tests; e2e verified in Phase 2)
-- [ ] 4.3 `npm run build` passes
+- [x] 4.1 `npm run lint` passes
+- [x] 4.2 `npm run test` passes (unit tests; e2e verified in Phase 2)
+- [x] 4.3 `npm run build` passes
 
 #### Manual
 
-- [ ] 4.4 Delivered one-click archives with toast; Remove uses confirm dialog
-- [ ] 4.5 Archive reflects actions; optimistic rollback on API failure verified
+- [x] 4.4 Delivered one-click archives with toast; Remove uses confirm dialog
+- [x] 4.5 Archive reflects actions; optimistic rollback on API failure verified
