@@ -4,14 +4,14 @@ version: 1
 status: draft
 created: 2026-06-04
 updated: 2026-07-05
-prd_version: 4
+prd_version: 5
 main_goal: speed
 top_blocker: time
 ---
 
 # Roadmap: ParcelScrubber
 
-> Derived from `context/foundation/prd.md` (v4) + auto-researched codebase baseline.
+> Derived from `context/foundation/prd.md` (v5) + auto-researched codebase baseline.
 > Edit-in-place; archive when superseded.
 > Slices below are listed in dependency order. The "At a glance" table is the index.
 
@@ -40,6 +40,9 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | done |
 | S-04 | manual-parcel-crud | manually add or edit parcels (including order date and tracking URL override) | S-02 | FR-010, FR-011, FR-015 | done |
 | S-05 | restore-undeliver-parcel | restore or undeliver any archived parcel back to the active list regardless of order date | S-03 | US-03, FR-016 | done |
+| S-06 | carrier-email-parcel-linking | carrier shipment emails import or enrich parcels by tracking number even without a known store sender | S-02 | US-06, FR-018 | proposed |
+| S-07 | parcel-email-expandable-rows | expand a parcel row to list linked Gmail messages with external links back to Gmail | S-02 | US-04, FR-019 | proposed |
+| S-08 | merge-parcels | select multiple parcels and merge them into one when dedupe split the same shipment | S-02 | US-05, FR-020 | proposed |
 
 ## Streams
 
@@ -51,6 +54,7 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 | B | Parcel persistence & Gmail pipeline | `F-03` + `F-05` → `F-06` → joins Stream A at `S-02` | F-05/F-06 parallel with Stream A until S-02; F-05 after F-02. |
 | C | User settings data | `F-04` → joins Stream A at `S-01` | Extensible settings schema before settings UI and sync. |
 | D | Restore | `S-05` | Continues Stream A after archive actions in `S-03`. |
+| E | Post-MVP parcel intelligence | `S-06` → `S-07` / `S-08` | Carrier import improves dedupe at sync time; expandable rows and merge are parallel UI corrections after S-02. |
 
 ## Baseline
 
@@ -207,6 +211,43 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** Requires archive flow from S-03 — restore/undeliver must not reintroduce age-based eligibility dropped in PRD v3.
 - **Status:** done
 
+### S-06: Carrier email parcel linking
+
+- **Outcome:** user sees carrier-only shipment notifications appear as parcels (or enrich existing ones) after Sync, even when the sender is not Allegro/AliExpress. Sync no longer skips non-merchant messages when extraction yields a tracking number; it links by normalized tracking number, creates when new, and enriches null/empty fields when a later merchant email shares the same tracking number.
+- **Change ID:** carrier-email-parcel-linking
+- **PRD refs:** US-06, FR-018
+- **Prerequisites:** S-02
+- **Parallel with:** S-07, S-08
+- **Blockers:** —
+- **Unknowns:**
+  - Carrier sender allowlist vs AI-only detection for carrier emails — Owner: user. Block: no (default: attempt extraction on all labeled messages in scan period; merchant filter removed for messages with extractable tracking).
+- **Risk:** Broadens sync scope beyond hardcoded merchant senders — may increase OpenRouter calls and import noise; enrichment must not clobber user-edited parcel fields.
+- **Status:** proposed
+
+### S-07: Expandable parcel rows with Gmail links
+
+- **Outcome:** user can expand a parcel row on the active or archive table to see every Gmail message scanned for that parcel; each entry links to `https://mail.google.com/mail/u/0/#all/{gmailMessageId}` with a `pi-external-link` icon.
+- **Change ID:** parcel-email-expandable-rows
+- **PRD refs:** US-04, FR-019
+- **Prerequisites:** S-02
+- **Parallel with:** S-06, S-08
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Requires API to return linked `gmailMessageId` values (and optional date/subject metadata) per parcel; `ParcelEmail` / `GmailMessage` models already exist from S-02.
+- **Status:** proposed
+
+### S-08: Merge parcels
+
+- **Outcome:** user can select two or more parcels (active or archived) and merge them into one record that keeps all linked Gmail messages, the earliest order date, and a single tracking number when duplicates agree.
+- **Change ID:** merge-parcels
+- **PRD refs:** US-05, FR-020
+- **Prerequisites:** S-02
+- **Parallel with:** S-06, S-07
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Merge conflict rules for store/description/carrier must match PRD enrichment precedence; recompute order date after relinking messages.
+- **Status:** proposed
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID | Suggested issue title | Ready for `/10x-plan` | Notes |
@@ -222,13 +263,16 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-03 | deliver-remove-archive | Delivered/remove and archive view | no | After S-02 |
 | S-04 | manual-parcel-crud | Manual add/edit parcels and URL override | no | After S-02 |
 | S-05 | restore-undeliver-parcel | Restore or undeliver any archived parcel | no | After S-03; no order-date limit |
+| S-06 | carrier-email-parcel-linking | Import/enrich parcels from carrier emails by tracking number | yes | After S-02; extends sync beyond merchant senders |
+| S-07 | parcel-email-expandable-rows | Expandable parcel rows with Gmail message links | yes | After S-02; uses existing ParcelEmail links |
+| S-08 | merge-parcels | Merge mis-split parcels into one | yes | After S-02; parallel with S-07 |
 
 ## Open Roadmap Questions
 
 1. **target_scale ballparks (qps, data_volume)** — Owner: user. Block: roadmap-wide (informational only; does not gate slices). From PRD Open Questions.
 2. **Tailwind for layout utilities vs PrimeNG-only styling** — Owner: user. Block: no (resolves during `/10x-plan prime-layout-scaffold`; PrimeNG-first is the default assumption).
 
-**Decided defaults (v1):** Gmail scan label `ParcelScrubber`; scan period 30 days (FR-017). **Decided lifecycle (PRD v4):** no age-based auto-archive; restore/undeliver any archived parcel. **Decided Gmail retrieval (F-05):** separate `listMatchingEmailIds` and `getMessage` methods; label + scan period are method params; missing label → zero results; `getMessage` returns `from`, `date`, `subject`, and decoded `body`. **Decided extraction (F-06):** OpenRouter with `gpt-5.4-mini` or `gpt-5.4-nano` (replaces deferred heuristic-only path). **Decided sync filter (S-02):** hardcoded Allegro/AliExpress sender addresses; skip body fetch for already-scanned message ids.
+**Decided defaults (v1):** Gmail scan label `ParcelScrubber`; scan period 30 days (FR-017). **Decided lifecycle (PRD v4):** no age-based auto-archive; restore/undeliver any archived parcel. **Decided Gmail retrieval (F-05):** separate `listMatchingEmailIds` and `getMessage` methods; label + scan period are method params; missing label → zero results; `getMessage` returns `from`, `date`, `subject`, and decoded `body`. **Decided extraction (F-06):** OpenRouter with `gpt-5.4-mini` or `gpt-5.4-nano` (replaces deferred heuristic-only path). **Decided sync filter (S-02):** hardcoded Allegro/AliExpress sender addresses; skip body fetch for already-scanned message ids. **Post-MVP (PRD v5):** carrier emails import by tracking number (S-06); expandable Gmail source rows (S-07); manual merge (S-08).
 
 ## Parked
 

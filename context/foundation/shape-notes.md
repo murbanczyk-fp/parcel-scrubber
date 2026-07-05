@@ -2,8 +2,8 @@
 project: ParcelScrubber
 context_type: greenfield
 created: 2026-05-18
-updated: 2026-06-04
-revision: 2026-06-04 — lifecycle aligned with PRD v3 (no age auto-archive; restore/undeliver any parcel); 2026-06-04 roadmap; 2026-05-19 monorepo + CI
+updated: 2026-07-05
+revision: 2026-07-05 — post-MVP features from FEATURES_TO_COME.md (expandable Gmail rows, merge parcels, carrier email linking); 2026-06-04 — lifecycle aligned with PRD v3 (no age auto-archive; restore/undeliver any parcel); 2026-06-04 roadmap; 2026-05-19 monorepo + CI
 product_type: web-app
 target_scale:
   users: small
@@ -31,7 +31,7 @@ checkpoint:
       decision: active list until user marks Delivered or removes; no age-based auto-archive; no hard delete in MVP (PRD v3)
     - topic: restore from archive
       decision: user can restore or undeliver any archived parcel regardless of order date (PRD v3)
-  frs_drafted: 17
+  frs_drafted: 20
   quality_check_status: accepted
 ---
 
@@ -109,6 +109,12 @@ The product treats Gmail as the source of truth for order notifications: it extr
 - FR-013: User can mark a parcel as **Delivered**, which **moves it to archive** (same outcome as remove). Priority: must-have
 - FR-016: User can **restore** (unarchive) any archived parcel to the active list regardless of order date, and can **undeliver** (reverse Delivered). Priority: must-have
 
+### Parcel provenance, merge & carrier mail (post-MVP, PRD v5)
+
+- FR-018: System processes Gmail messages from **carrier senders** (not only known merchant senders) when extraction yields a tracking number — link to existing parcel by tracking number, create when new, enrich null/empty fields when a later merchant email shares the same tracking number. Priority: must-have
+- FR-019: User can **expand** a parcel row to view all linked Gmail messages; each message links to `https://mail.google.com/mail/u/0/#all/{gmailMessageId}` with a `pi-external-link` icon. Priority: must-have
+- FR-020: User can **merge** two or more parcels into one; result retains all linked messages, earliest order date, and removes duplicate parcel records. Priority: must-have
+
 ### Tracking links
 
 - FR-014: System can generate a tracking URL from carrier + tracking number for InPost, Poczta Polska, DPD, and DHL using known URL patterns. Priority: must-have
@@ -159,6 +165,24 @@ Revision (2026-05-18): lifecycle update — FR-005–FR-015 (order date, active 
 - Restore and undeliver are available for any archived parcel regardless of order date
 - After restore or undeliver, the parcel behaves like any other active parcel until the user marks Delivered or removes it again
 
+### US-04: Expand parcel row to source Gmail messages
+
+- **Given** a parcel with linked Gmail messages from sync
+- **When** the user expands that parcel's table row
+- **Then** they see each message with a link opening it in Gmail (`pi-external-link` icon)
+
+### US-05: Merge incorrectly split parcels
+
+- **Given** multiple parcels for the same physical shipment
+- **When** the user selects them and merges
+- **Then** one parcel remains with all linked messages and the earliest order date
+
+### US-06: Carrier email links by tracking number
+
+- **Given** a carrier email (not from Allegro/AliExpress) with an extractable tracking number
+- **When** sync runs
+- **Then** the message links to an existing parcel with that tracking number or creates a new one; later merchant mail with the same tracking enriches missing fields
+
 ## Business Logic
 
 The application classifies order emails from known Allegro and AliExpress senders, extracts trackable shipments with an **order date** (oldest Gmail appearance), and routes each parcel to **active** or **archive** based on user intent only.
@@ -174,8 +198,12 @@ The application classifies order emails from known Allegro and AliExpress sender
 3. **Archive, not delete** — remove and mark Delivered both **move to archive**; parcels are retained for lookup, not hard-deleted in MVP.
 4. **Sync idempotency** — archived parcels are **not** restored to the active list automatically on a later Gmail sync.
 5. **Manual restore / undeliver** — user may **restore** or **undeliver** any archived parcel regardless of order date.
+6. **Tracking-number dedupe** — sync links messages to an existing parcel when the normalized tracking number matches, or creates a new parcel.
+7. **Carrier-before-store enrichment** — carrier-only parcels gain store/description from later merchant mail with the same tracking; only null/empty fields are filled.
+8. **Manual merge** — user may merge mis-split parcels; all Gmail links move to the survivor; earliest order date wins.
+9. **Source mail surfacing** — expandable parcel rows list linked Gmail messages with outbound links.
 
-**Encounter in flow:** user triggers Sync → extraction assigns order dates → imported parcels land on active list → user may edit, remove, mark Delivered, restore, or undeliver → archive holds only user-dismissed parcels until restored.
+**Encounter in flow:** user triggers Sync → extraction and tracking dedupe → imported parcels on active list → user may expand source mail, merge mis-split parcels, edit, remove, mark Delivered, restore, or undeliver → archive holds dismissed parcels until restored.
 
 ## Non-Functional Requirements
 
@@ -213,6 +241,7 @@ Parked during shape; refined in `context/foundation/roadmap.md` (2026-06-04):
 - **Sync scope:** label + period filter, not whole mailbox; north star is label-scoped Gmail sync + active list (S-02, `gmail-sync-active-parcels`).
 - **Gmail pipeline (2026-06-08):** F-05 Gmail id list + full-message-by-id (`from`, `date`, `subject`, body); F-06 OpenRouter extraction; S-02 orchestration only. Missing label → zero results; skip body fetch for already-scanned message ids.
 - **Lifecycle (PRD v3):** no age-based auto-archive; restore/undeliver any archived parcel (S-05, `restore-undeliver-parcel`).
+- **Post-MVP (PRD v5, 2026-07-05):** carrier email import by tracking number (S-06); expandable Gmail source rows (S-07); manual parcel merge (S-08). Source: `FEATURES_TO_COME.md`.
 - **Sequencing bias:** `main_goal: speed`, `top_blocker: time` — see roadmap frontmatter.
 
 ## Quality cross-check
