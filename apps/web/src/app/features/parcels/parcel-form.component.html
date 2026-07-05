@@ -1,0 +1,195 @@
+<section class="parcel-form-page">
+  <p-card>
+    <ng-template #header>
+      <h1 class="parcel-form-page__title">{{ pageTitle() }}</h1>
+    </ng-template>
+
+    @if (authRequired()) {
+      <p-message
+        severity="warn"
+        text="Session expired. Sign in with Google again to continue."
+      />
+      <div class="parcel-form-page__actions">
+        <p-button
+          label="Sign in with Google"
+          data-testid="parcel-form-relogin"
+          (onClick)="onReLogin()"
+        />
+      </div>
+    } @else if (loading()) {
+      <p class="parcel-form-page__status">Loading parcel…</p>
+    } @else if (loadError()) {
+      <p-message severity="error" [text]="loadError()!" />
+      <div class="parcel-form-page__actions">
+        <p-button
+          label="Back"
+          severity="secondary"
+          data-testid="parcel-form-cancel"
+          (onClick)="onCancel()"
+        />
+      </div>
+    } @else {
+      <form
+        class="parcel-form-page__form"
+        data-testid="parcel-form"
+        [formGroup]="form"
+        (ngSubmit)="onSubmit()"
+      >
+        <div class="parcel-form-page__field">
+          <label class="parcel-form-page__label" for="store">Store</label>
+          <input
+            id="store"
+            type="text"
+            pInputText
+            formControlName="store"
+            data-testid="parcel-store"
+            autocomplete="off"
+          />
+          @if (showFieldError('store')) {
+            <p-message severity="error" [text]="fieldErrorMessage('store')!" />
+          }
+        </div>
+
+        <div class="parcel-form-page__field">
+          <label class="parcel-form-page__label" for="carrier">Carrier</label>
+          <p-select
+            inputId="carrier"
+            formControlName="carrier"
+            data-testid="parcel-carrier"
+            [options]="carrierOptions"
+            optionLabel="label"
+            optionValue="value"
+          />
+          @if (showFieldError('carrier')) {
+            <p-message severity="error" [text]="fieldErrorMessage('carrier')!" />
+          }
+        </div>
+
+        @if (showCustomCarrierLabel()) {
+          <div class="parcel-form-page__field">
+            <label class="parcel-form-page__label" for="customCarrierLabel">
+              Custom carrier label
+            </label>
+            <input
+              id="customCarrierLabel"
+              type="text"
+              pInputText
+              formControlName="customCarrierLabel"
+              data-testid="parcel-custom-carrier-label"
+              autocomplete="off"
+            />
+            @if (showFieldError('customCarrierLabel')) {
+              <p-message
+                severity="error"
+                [text]="fieldErrorMessage('customCarrierLabel')!"
+              />
+            }
+          </div>
+        }
+
+        <div class="parcel-form-page__field">
+          <label class="parcel-form-page__label" for="trackingNumber">
+            Tracking number
+          </label>
+          <input
+            id="trackingNumber"
+            type="text"
+            pInputText
+            formControlName="trackingNumber"
+            data-testid="parcel-tracking-number"
+            autocomplete="off"
+          />
+          @if (showFieldError('trackingNumber')) {
+            <p-message
+              severity="error"
+              [text]="fieldErrorMessage('trackingNumber')!"
+            />
+          }
+        </div>
+
+        <div class="parcel-form-page__field">
+          <label class="parcel-form-page__label" for="orderDate">Order date</label>
+          <p-datepicker
+            inputId="orderDate"
+            formControlName="orderDate"
+            data-testid="parcel-order-date"
+            dateFormat="yy-mm-dd"
+            [showIcon]="true"
+          />
+          @if (showFieldError('orderDate')) {
+            <p-message
+              severity="error"
+              [text]="fieldErrorMessage('orderDate')!"
+            />
+          }
+        </div>
+
+        <div class="parcel-form-page__field">
+          <label class="parcel-form-page__label" for="description">
+            Description
+          </label>
+          <textarea
+            id="description"
+            pTextarea
+            formControlName="description"
+            data-testid="parcel-description"
+            rows="3"
+          ></textarea>
+          @if (showFieldError('description')) {
+            <p-message
+              severity="error"
+              [text]="fieldErrorMessage('description')!"
+            />
+          }
+        </div>
+
+        <div class="parcel-form-page__field">
+          <label class="parcel-form-page__label" for="trackingUrl">
+            Tracking URL override
+          </label>
+          <input
+            id="trackingUrl"
+            type="url"
+            pInputText
+            formControlName="trackingUrl"
+            data-testid="parcel-tracking-url"
+            autocomplete="off"
+          />
+          <p class="parcel-form-page__help">
+            Leave empty to use the carrier link; clear the field to revert to the
+            generated URL.
+            @if (resolvedTrackingUrl()) {
+              Current generated link:
+              <a [href]="resolvedTrackingUrl()!" target="_blank" rel="noopener">
+                {{ resolvedTrackingUrl() }}
+              </a>
+            }
+          </p>
+          @if (showFieldError('trackingUrl')) {
+            <p-message
+              severity="error"
+              [text]="fieldErrorMessage('trackingUrl')!"
+            />
+          }
+        </div>
+
+        <div class="parcel-form-page__actions">
+          <p-button
+            type="button"
+            label="Cancel"
+            severity="secondary"
+            data-testid="parcel-form-cancel"
+            (onClick)="onCancel()"
+          />
+          <p-button
+            type="submit"
+            [label]="mode === 'create' ? 'Add parcel' : 'Save changes'"
+            data-testid="parcel-form-submit"
+            [disabled]="!canSave()"
+            [loading]="saving()"
+          />
+        </div>
+      </form>
+    }
+  </p-card>
+</section>

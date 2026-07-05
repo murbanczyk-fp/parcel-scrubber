@@ -265,6 +265,12 @@ describe('Parcels HTTP (e2e)', () => {
   });
 
   describe('manual parcel CRUD', () => {
+    type ParcelResponse = {
+      id: string;
+      trackingUrl: string | null;
+      trackingUrlOverride: string | null;
+    };
+
     const validCreateBody = {
       store: 'Allegro',
       carrier: 'INPOST',
@@ -280,8 +286,9 @@ describe('Parcels HTTP (e2e)', () => {
         .post('/api/parcels')
         .send(validCreateBody)
         .expect(201);
+      const body = response.body as ParcelResponse;
 
-      expect(response.body).toMatchObject({
+      expect(body).toMatchObject({
         store: 'Allegro',
         carrier: 'INPOST',
         trackingNumber: '520000012680041086770098',
@@ -289,13 +296,13 @@ describe('Parcels HTTP (e2e)', () => {
         status: 'NEW',
         trackingUrlOverride: null,
       });
-      expect(response.body.trackingUrl as string).toContain('inpost');
+      expect(body.trackingUrl).toContain('inpost');
 
       const activeIds = (
         (await agent.get('/api/parcels?status=active').expect(200))
           .body as Array<{ id: string }>
       ).map((row) => row.id);
-      expect(activeIds).toContain(response.body.id as string);
+      expect(activeIds).toContain(body.id);
     });
 
     it('POST /api/parcels rejects duplicate tracking number', async () => {
@@ -343,12 +350,13 @@ describe('Parcels HTTP (e2e)', () => {
       const response = await ownerAgent
         .get(`/api/parcels/${parcel.id}`)
         .expect(200);
+      const body = response.body as ParcelResponse;
 
-      expect(response.body).toMatchObject({
+      expect(body).toMatchObject({
         id: parcel.id,
         trackingUrlOverride: null,
       });
-      expect(response.body.trackingUrl as string).toContain('inpost');
+      expect(body.trackingUrl).toContain('inpost');
 
       await otherAgent.get(`/api/parcels/${parcel.id}`).expect(404);
     });
@@ -382,11 +390,12 @@ describe('Parcels HTTP (e2e)', () => {
         .patch(`/api/parcels/${parcel.id}`)
         .send({ trackingUrl: '' })
         .expect(200);
+      const emptyBody = clearedViaEmpty.body as ParcelResponse;
 
-      expect(clearedViaEmpty.body).toMatchObject({
+      expect(emptyBody).toMatchObject({
         trackingUrlOverride: null,
       });
-      expect(clearedViaEmpty.body.trackingUrl as string).toContain('inpost');
+      expect(emptyBody.trackingUrl).toContain('inpost');
 
       await prisma.parcel.update({
         where: { id: parcel.id },
@@ -397,11 +406,12 @@ describe('Parcels HTTP (e2e)', () => {
         .patch(`/api/parcels/${parcel.id}`)
         .send({ trackingUrl: null })
         .expect(200);
+      const nullBody = clearedViaNull.body as ParcelResponse;
 
-      expect(clearedViaNull.body).toMatchObject({
+      expect(nullBody).toMatchObject({
         trackingUrlOverride: null,
       });
-      expect(clearedViaNull.body.trackingUrl as string).toContain('inpost');
+      expect(nullBody.trackingUrl).toContain('inpost');
     });
 
     it('PATCH /api/parcels/:id rejects duplicate tracking number', async () => {

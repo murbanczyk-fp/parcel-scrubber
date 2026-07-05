@@ -463,19 +463,19 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Automated
 
-- [x] 2.1 E2e passes: `npm run test:api -- --testPathPattern=parcels.e2e`
-- [x] 2.2 Full API test suite passes: `npm run test:api`
+- [x] 2.1 E2e passes: `npm run test:api -- --testPathPattern=parcels.e2e` — 9b70e60
+- [x] 2.2 Full API test suite passes: `npm run test:api` — 9b70e60
 
 #### Manual
 
-- [x] 2.3 Optional smoke via curl/Postman if e2e green
+- [x] 2.3 Optional smoke via curl/Postman if e2e green — 9b70e60
 
 ### Phase 3: Web form + routes
 
 #### Automated
 
-- [ ] 3.1 Lint passes: `npm run lint`
-- [ ] 3.2 Web build passes: `npm run build`
+- [x] 3.1 Lint passes: `npm run lint`
+- [x] 3.2 Web build passes: `npm run build`
 
 #### Manual
 
@@ -486,8 +486,8 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Automated
 
-- [ ] 4.1 Lint passes: `npm run lint`
-- [ ] 4.2 Full monorepo tests pass: `npm run test`
+- [x] 4.1 Lint passes: `npm run lint`
+- [x] 4.2 Full monorepo tests pass: `npm run test`
 
 #### Manual
 

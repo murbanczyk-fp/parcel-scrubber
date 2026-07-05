@@ -14,6 +14,29 @@ export type ParcelStatus =
 
 export type ParcelSource = 'GMAIL' | 'MANUAL';
 
+export type CreateParcelPayload = {
+  store: string;
+  carrier: ParcelCarrier;
+  trackingNumber: string;
+  orderDate: string;
+  description?: string;
+  trackingUrl?: string;
+  customCarrierLabel?: string;
+};
+
+export type UpdateParcelPayload = Partial<
+  Pick<
+    CreateParcelPayload,
+    | 'store'
+    | 'description'
+    | 'carrier'
+    | 'customCarrierLabel'
+    | 'trackingNumber'
+    | 'trackingUrl'
+    | 'orderDate'
+  >
+>;
+
 export type ParcelDto = {
   id: string;
   store: string | null;
@@ -22,6 +45,7 @@ export type ParcelDto = {
   customCarrierLabel: string | null;
   trackingNumber: string | null;
   trackingUrl: string | null;
+  trackingUrlOverride: string | null;
   orderDate: string;
   status: ParcelStatus;
   source: ParcelSource;
