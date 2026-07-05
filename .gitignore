@@ -50,6 +50,9 @@ __screenshots__/
 .env
 .env.local
 
+# Database dumps (local backups — may contain user data)
+/backups/
+
 # System files
 .DS_Store
 Thumbs.db
