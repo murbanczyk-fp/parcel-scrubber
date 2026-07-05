@@ -16,6 +16,26 @@ export class ParcelsService {
     );
   }
 
+  listArchived(): Promise<ParcelDto[]> {
+    return firstValueFrom(
+      this.http.get<ParcelDto[]>('/api/parcels', {
+        params: { status: 'archived' },
+      }),
+    );
+  }
+
+  deliverParcel(id: string): Promise<ParcelDto> {
+    return firstValueFrom(
+      this.http.post<ParcelDto>(`/api/parcels/${id}/deliver`, null),
+    );
+  }
+
+  removeParcel(id: string): Promise<ParcelDto> {
+    return firstValueFrom(
+      this.http.post<ParcelDto>(`/api/parcels/${id}/remove`, null),
+    );
+  }
+
   startSync(): Promise<{ jobId: string }> {
     return firstValueFrom(
       this.http.post<{ jobId: string }>('/api/sync', null),

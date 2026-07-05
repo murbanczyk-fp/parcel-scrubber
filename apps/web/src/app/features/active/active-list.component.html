@@ -1,4 +1,5 @@
 <section class="active-list">
+  <p-confirmDialog />
   <p-card>
     <ng-template #header>
       <div class="active-list__header">
@@ -68,6 +69,7 @@
             <th>Order date</th>
             <th>Carrier</th>
             <th>Tracking</th>
+            <th>Actions</th>
           </tr>
         </ng-template>
         <ng-template #body let-parcel>
@@ -89,6 +91,24 @@
               } @else {
                 {{ parcel.trackingNumber ?? '—' }}
               }
+            </td>
+            <td class="active-list__actions">
+              <p-button
+                label="Delivered"
+                size="small"
+                [attr.data-testid]="'deliver-parcel-' + parcel.id"
+                [disabled]="isActionInFlight(parcel.id)"
+                [loading]="isActionInFlight(parcel.id)"
+                (onClick)="onDeliver(parcel)"
+              />
+              <p-button
+                label="Remove"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                [disabled]="isActionInFlight(parcel.id)"
+                (onClick)="onRemove(parcel)"
+              />
             </td>
           </tr>
         </ng-template>

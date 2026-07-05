@@ -1,0 +1,59 @@
+<section class="archive-list">
+  <p-card>
+    <ng-template #header>
+      <h1 class="archive-list__title">Archived parcels</h1>
+    </ng-template>
+
+    @if (loading()) {
+      <p class="archive-list__status">Loading archived parcels…</p>
+    } @else if (loadError()) {
+      <p-message severity="error" [text]="loadError()!" />
+    } @else if (parcels().length === 0) {
+      <p class="archive-list__empty-text">
+        No archived parcels yet. Mark parcels Delivered or Remove them from the
+        active list.
+      </p>
+    } @else {
+      <p-table
+        [value]="parcels()"
+        dataKey="id"
+        styleClass="archive-list__table"
+        data-testid="archive-list-table"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Store</th>
+            <th>Description</th>
+            <th>Order date</th>
+            <th>Carrier</th>
+            <th>Tracking</th>
+            <th>Status</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-parcel>
+          <tr>
+            <td>{{ parcel.store ?? '—' }}</td>
+            <td>{{ parcel.description ?? '—' }}</td>
+            <td>{{ parcel.orderDate | date: 'mediumDate' }}</td>
+            <td>{{ carrierLabel(parcel) }}</td>
+            <td>
+              @if (parcel.trackingUrl) {
+                <a
+                  class="archive-list__tracking-link"
+                  [href]="parcel.trackingUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ parcel.trackingNumber ?? 'Track' }}
+                </a>
+              } @else {
+                {{ parcel.trackingNumber ?? '—' }}
+              }
+            </td>
+            <td>{{ statusLabel(parcel) }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-card>
+</section>

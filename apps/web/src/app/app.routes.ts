@@ -3,7 +3,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { guestGuard } from './core/auth/guest.guard';
 import { ActiveListComponent } from './features/active/active-list.component';
-import { ArchivePlaceholderComponent } from './features/archive/archive-placeholder.component';
+import { ArchiveListComponent } from './features/archive/archive-list.component';
 import { LandingComponent } from './features/landing/landing.component';
 import { SettingsPageComponent } from './features/settings/settings-page.component';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
@@ -26,7 +26,7 @@ export const routes: Routes = [
       },
       {
         path: 'archive',
-        component: ArchivePlaceholderComponent,
+        component: ArchiveListComponent,
         canActivate: [authGuard],
       },
       {
