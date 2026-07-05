@@ -29,6 +29,7 @@ Edit `.env`:
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | From Google Cloud Console |
 | `GOOGLE_CALLBACK_URL` | `http://<UNRAID_LAN_IP>:<WEB_PORT>/api/auth/google/callback` |
 | `JWT_SECRET` | At least 32 random characters |
+| `OPENROUTER_API_KEY` | OpenRouter API key (required for Gmail sync / AI extraction) |
 | `COOKIE_SECURE` | `false` for LAN HTTP; `true` only behind HTTPS |
 
 Never commit `.env`.
