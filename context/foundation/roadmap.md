@@ -3,7 +3,7 @@ project: ParcelScrubber
 version: 1
 status: draft
 created: 2026-06-04
-updated: 2026-06-22
+updated: 2026-07-05
 prd_version: 4
 main_goal: speed
 top_blocker: time
@@ -37,7 +37,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | F-05 | gmail-message-retrieval | (foundation) list matching Gmail message ids by label + scan period; fetch full message (headers + body) by id (separate methods) | F-02 | FR-003, FR-017 | done |
 | F-06 | ai-email-parcel-extraction | (foundation) extract tracking number, carrier, and description from email body via OpenRouter | F-05 | FR-003, FR-004, FR-005 | done |
 | S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03, F-05, F-06 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | done |
-| S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | proposed |
+| S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | done |
 | S-04 | manual-parcel-crud | manually add or edit parcels (including order date and tracking URL override) | S-02 | FR-010, FR-011, FR-015 | proposed |
 | S-05 | restore-undeliver-parcel | restore or undeliver any archived parcel back to the active list regardless of order date | S-03 | US-03, FR-016 | proposed |
 
@@ -181,7 +181,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Depends on real parcels from sync — intentionally after S-02 so archive semantics are testable against imported data.
-- **Status:** proposed
+- **Status:** done
 
 ### S-04: Manual add and edit parcels
 

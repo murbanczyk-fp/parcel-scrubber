@@ -1,10 +1,10 @@
 ---
 change_id: deliver-remove-archive
 title: Delivered/remove actions and archive view
-status: impl_reviewed
+status: archived
 created: 2026-06-22
-updated: 2026-06-27
-archived_at: null
+updated: 2026-07-05
+archived_at: 2026-07-05T11:46:50Z
 ---
 
 ## Notes
