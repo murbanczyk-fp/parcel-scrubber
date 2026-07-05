@@ -322,6 +322,12 @@ describe('Parcels HTTP (e2e)', () => {
     ).map((row) => row.id);
     expect(activeIds).toContain(parcel.id);
 
+    const archivedIds = (
+      (await agent.get('/api/parcels?status=archived').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(archivedIds).not.toContain(parcel.id);
+
     const events = await prisma.parcelStatusEvent.findMany({
       where: { parcelId: parcel.id },
     });
@@ -372,6 +378,21 @@ describe('Parcels HTTP (e2e)', () => {
     const agent = createAuthenticatedAgent(user);
     const parcel = await createParcel(user.id, {
       status: ParcelStatus.IN_TRANSIT,
+    });
+
+    await agent.post(`/api/parcels/${parcel.id}/reactivate`).expect(400);
+
+    const eventCount = await prisma.parcelStatusEvent.count({
+      where: { parcelId: parcel.id },
+    });
+    expect(eventCount).toBe(0);
+  });
+
+  it('returns 400 when reactivating an IN_DELIVERY parcel', async () => {
+    const user = await createTestUser();
+    const agent = createAuthenticatedAgent(user);
+    const parcel = await createParcel(user.id, {
+      status: ParcelStatus.IN_DELIVERY,
     });
 
     await agent.post(`/api/parcels/${parcel.id}/reactivate`).expect(400);

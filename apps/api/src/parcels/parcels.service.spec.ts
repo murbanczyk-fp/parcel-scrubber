@@ -264,7 +264,17 @@ describe('ParcelsService', () => {
 
     await expect(
       service.reactivateParcel('user-1', 'parcel-1'),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow('Parcel is not archived');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('throws BadRequestException when reactivating an IN_DELIVERY parcel', async () => {
+    const inDelivery = { ...baseParcel, status: ParcelStatus.IN_DELIVERY };
+    prisma.parcel.findFirst.mockResolvedValue(inDelivery);
+
+    await expect(
+      service.reactivateParcel('user-1', 'parcel-1'),
+    ).rejects.toThrow('Parcel is not archived');
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 

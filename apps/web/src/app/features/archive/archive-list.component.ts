@@ -89,13 +89,16 @@ export class ArchiveListComponent implements OnInit {
         life: 4000,
       });
     } catch (err) {
-      await this.handleRestoreError(err);
+      await this.handleRestoreError(err, parcel);
     } finally {
       this.setActionInFlight(parcel.id, false);
     }
   }
 
-  private async handleRestoreError(err: unknown): Promise<void> {
+  private async handleRestoreError(
+    err: unknown,
+    parcel: ParcelDto,
+  ): Promise<void> {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 401) {
         this.messages.add({
@@ -135,7 +138,9 @@ export class ArchiveListComponent implements OnInit {
       const archived = await this.parcelsService.listArchived();
       this.parcels.set(archived);
     } catch {
-      // Keep optimistic removal if reload fails.
+      if (!this.parcels().some((row) => row.id === parcel.id)) {
+        this.parcels.set([...this.parcels(), parcel]);
+      }
     }
   }
 
