@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { ParcelDto, SyncJobDto } from './parcels.types';
+import type {
+  CreateParcelPayload,
+  ParcelDto,
+  SyncJobDto,
+  UpdateParcelPayload,
+} from './parcels.types';
 
 @Injectable({ providedIn: 'root' })
 export class ParcelsService {
@@ -21,6 +26,20 @@ export class ParcelsService {
       this.http.get<ParcelDto[]>('/api/parcels', {
         params: { status: 'archived' },
       }),
+    );
+  }
+
+  getParcel(id: string): Promise<ParcelDto> {
+    return firstValueFrom(this.http.get<ParcelDto>(`/api/parcels/${id}`));
+  }
+
+  createParcel(body: CreateParcelPayload): Promise<ParcelDto> {
+    return firstValueFrom(this.http.post<ParcelDto>('/api/parcels', body));
+  }
+
+  updateParcel(id: string, body: UpdateParcelPayload): Promise<ParcelDto> {
+    return firstValueFrom(
+      this.http.patch<ParcelDto>(`/api/parcels/${id}`, body),
     );
   }
 

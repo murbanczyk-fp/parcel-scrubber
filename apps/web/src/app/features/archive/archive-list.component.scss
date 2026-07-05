@@ -21,3 +21,13 @@
   color: var(--p-primary-color);
   text-decoration: underline;
 }
+
+.archive-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.archive-list__actions a {
+  text-decoration: none;
+}

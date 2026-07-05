@@ -1,10 +1,13 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 
 import { ParcelsService } from '../../core/parcels/parcels.service';
+import { OrderDateLocalPipe } from '../../core/parcels/order-date.pipe';
 import type { ParcelDto } from '../../core/parcels/parcels.types';
 
 const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
@@ -22,7 +25,7 @@ const STATUS_LABELS: Record<'DELIVERED' | 'REMOVED', string> = {
 
 @Component({
   selector: 'app-archive-list',
-  imports: [DatePipe, CardModule, MessageModule, TableModule],
+  imports: [DatePipe, OrderDateLocalPipe, RouterLink, ButtonModule, CardModule, MessageModule, TableModule],
   templateUrl: './archive-list.component.html',
   styleUrl: './archive-list.component.scss',
 })

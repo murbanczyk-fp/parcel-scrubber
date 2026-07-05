@@ -54,4 +54,16 @@ describe('resolveTrackingUrl', () => {
       }),
     ).toBe('https://custom.example/override');
   });
+
+  it('ignores unsafe tracking URL override and falls back to generated URL', () => {
+    expect(
+      resolveTrackingUrl({
+        trackingUrl: 'javascript:alert(1)',
+        carrier: Carrier.INPOST,
+        trackingNumber: '520000012680041086770098',
+      }),
+    ).toBe(
+      'https://inpost.pl/sledzenie-przesylek?number=520000012680041086770098',
+    );
+  });
 });

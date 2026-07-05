@@ -1,0 +1,41 @@
+@import '../placeholder-page';
+
+.parcel-form-page__title {
+  margin: 0;
+  padding: 1.25rem 1.25rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.parcel-form-page__status {
+  margin: 0;
+  color: var(--p-text-muted-color);
+}
+
+.parcel-form-page__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.parcel-form-page__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.parcel-form-page__label {
+  font-weight: 600;
+}
+
+.parcel-form-page__help {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.parcel-form-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}

@@ -1,13 +1,13 @@
 import { Carrier, Parcel } from '@prisma/client';
 
 import { buildCarrierUrl } from './carrier-url-templates';
+import { isSafeHttpUrl } from './is-safe-http-url';
 import { normalizeTrackingNumber } from './normalize-tracking-number';
 
 export function resolveTrackingUrl(
   parcel: Pick<Parcel, 'trackingUrl' | 'carrier' | 'trackingNumber'>,
 ): string | null {
-  // S-04: validate override scheme (http/https only) at API write boundary before persist.
-  if (parcel.trackingUrl) {
+  if (parcel.trackingUrl && isSafeHttpUrl(parcel.trackingUrl)) {
     return parcel.trackingUrl;
   }
 

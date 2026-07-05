@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { SessionUser } from '../auth/types';
 import { ParcelsController } from './parcels.controller';
 import { ParcelsService } from './parcels.service';
+import { ParcelValidationError } from './parcel-validation.error';
 
 const sessionUser: SessionUser = {
   id: 'user-1',
@@ -30,6 +31,7 @@ const sampleParcel = {
   trackingNumber: '520000012680041086770098',
   trackingUrl:
     'https://inpost.pl/sledzenie-przesylek?number=520000012680041086770098',
+  trackingUrlOverride: null,
   orderDate: '2026-01-15',
   status: 'NEW',
   source: 'GMAIL',
@@ -49,6 +51,9 @@ describe('ParcelsController', () => {
   let controller: ParcelsController;
   let parcelsService: {
     listForUser: jest.Mock;
+    createForUser: jest.Mock;
+    getByIdForUser: jest.Mock;
+    updateForUser: jest.Mock;
     markDelivered: jest.Mock;
     markRemoved: jest.Mock;
   };
@@ -56,6 +61,9 @@ describe('ParcelsController', () => {
   beforeEach(async () => {
     parcelsService = {
       listForUser: jest.fn().mockResolvedValue([]),
+      createForUser: jest.fn().mockResolvedValue(sampleParcel),
+      getByIdForUser: jest.fn().mockResolvedValue(sampleParcel),
+      updateForUser: jest.fn().mockResolvedValue(sampleParcel),
       markDelivered: jest.fn().mockResolvedValue(sampleParcel),
       markRemoved: jest.fn().mockResolvedValue({
         ...sampleParcel,
@@ -135,6 +143,64 @@ describe('ParcelsController', () => {
       sessionUser.id,
       'parcel-1',
     );
+  });
+
+  it('delegates create, get, and update to the service', async () => {
+    const createBody = {
+      store: 'Allegro',
+      carrier: 'INPOST',
+      trackingNumber: '520000012680041086770098',
+      orderDate: '2026-01-15',
+    };
+
+    await expect(
+      controller.createParcel(sessionUser, createBody as never),
+    ).resolves.toEqual(sampleParcel);
+    expect(parcelsService.createForUser).toHaveBeenCalledWith(
+      sessionUser.id,
+      createBody,
+    );
+
+    await expect(
+      controller.getParcel(sessionUser, 'parcel-1'),
+    ).resolves.toEqual(sampleParcel);
+    expect(parcelsService.getByIdForUser).toHaveBeenCalledWith(
+      sessionUser.id,
+      'parcel-1',
+    );
+
+    const patchBody = { description: 'Updated' };
+    await expect(
+      controller.updateParcel(sessionUser, 'parcel-1', patchBody),
+    ).resolves.toEqual(sampleParcel);
+    expect(parcelsService.updateForUser).toHaveBeenCalledWith(
+      sessionUser.id,
+      'parcel-1',
+      patchBody,
+    );
+  });
+
+  it('maps ParcelValidationError to BadRequestException with field errors', async () => {
+    parcelsService.createForUser.mockRejectedValue(
+      new ParcelValidationError([
+        { field: 'trackingNumber', message: 'Duplicate tracking number' },
+      ]),
+    );
+
+    await expect(
+      controller.createParcel(sessionUser, {
+        store: 'Shop',
+        carrier: 'INPOST',
+        trackingNumber: '123',
+        orderDate: '2026-01-01',
+      } as never),
+    ).rejects.toMatchObject({
+      response: {
+        errors: [
+          { field: 'trackingNumber', message: 'Duplicate tracking number' },
+        ],
+      },
+    });
   });
 
   describe('HTTP', () => {
@@ -258,6 +324,89 @@ describe('ParcelsController', () => {
       const server = app.getHttpServer() as Server;
 
       await request(server).post('/parcels/missing/remove').expect(404);
+    });
+
+    it('POST /parcels creates a parcel', async () => {
+      parcelsService.createForUser.mockResolvedValue(sampleParcel);
+      await createApp();
+
+      const server = app.getHttpServer() as Server;
+
+      const response = await request(server)
+        .post('/parcels')
+        .send({
+          store: 'Allegro',
+          carrier: 'INPOST',
+          trackingNumber: '520000012680041086770098',
+          orderDate: '2026-01-15',
+        })
+        .expect(201);
+
+      expect(response.body).toMatchObject({ id: 'parcel-1' });
+      expect(parcelsService.createForUser).toHaveBeenCalledWith(
+        sessionUser.id,
+        {
+          store: 'Allegro',
+          carrier: 'INPOST',
+          trackingNumber: '520000012680041086770098',
+          orderDate: '2026-01-15',
+        },
+      );
+    });
+
+    it('GET /parcels/:id returns a parcel', async () => {
+      parcelsService.getByIdForUser.mockResolvedValue(sampleParcel);
+      await createApp();
+
+      const server = app.getHttpServer() as Server;
+
+      const response = await request(server)
+        .get('/parcels/parcel-1')
+        .expect(200);
+
+      expect(response.body).toMatchObject({ id: 'parcel-1' });
+    });
+
+    it('PATCH /parcels/:id updates a parcel', async () => {
+      parcelsService.updateForUser.mockResolvedValue({
+        ...sampleParcel,
+        description: 'Updated',
+      });
+      await createApp();
+
+      const server = app.getHttpServer() as Server;
+
+      const response = await request(server)
+        .patch('/parcels/parcel-1')
+        .send({ description: 'Updated' })
+        .expect(200);
+
+      expect(response.body).toMatchObject({ description: 'Updated' });
+    });
+
+    it('POST /parcels returns 400 for validation errors', async () => {
+      parcelsService.createForUser.mockRejectedValue(
+        new ParcelValidationError([
+          { field: 'trackingNumber', message: 'Duplicate tracking number' },
+        ]),
+      );
+      await createApp();
+
+      const server = app.getHttpServer() as Server;
+
+      const response = await request(server)
+        .post('/parcels')
+        .send({
+          store: 'Allegro',
+          carrier: 'INPOST',
+          trackingNumber: '520000012680041086770098',
+          orderDate: '2026-01-15',
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
     });
   });
 });

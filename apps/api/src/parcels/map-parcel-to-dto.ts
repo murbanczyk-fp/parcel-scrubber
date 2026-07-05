@@ -11,6 +11,7 @@ export function mapParcelToDto(parcel: Parcel): ParcelDto {
     carrier: parcel.carrier,
     customCarrierLabel: parcel.customCarrierLabel,
     trackingNumber: parcel.trackingNumber,
+    trackingUrlOverride: parcel.trackingUrl,
     trackingUrl: resolveTrackingUrl(parcel),
     orderDate: parcel.orderDate.toISOString().slice(0, 10),
     status: parcel.status,

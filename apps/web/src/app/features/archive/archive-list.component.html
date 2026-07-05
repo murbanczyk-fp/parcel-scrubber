@@ -28,13 +28,14 @@
             <th>Carrier</th>
             <th>Tracking</th>
             <th>Status</th>
+            <th>Actions</th>
           </tr>
         </ng-template>
         <ng-template #body let-parcel>
           <tr>
             <td>{{ parcel.store ?? '—' }}</td>
             <td>{{ parcel.description ?? '—' }}</td>
-            <td>{{ parcel.orderDate | date: 'mediumDate' }}</td>
+            <td>{{ parcel.orderDate | orderDateLocal | date: 'mediumDate' }}</td>
             <td>{{ carrierLabel(parcel) }}</td>
             <td>
               @if (parcel.trackingUrl) {
@@ -51,6 +52,14 @@
               }
             </td>
             <td>{{ statusLabel(parcel) }}</td>
+            <td class="archive-list__actions">
+              <a
+                [routerLink]="['/archive', parcel.id, 'edit']"
+                [attr.data-testid]="'edit-parcel-' + parcel.id"
+              >
+                <p-button label="Edit" size="small" severity="secondary" [outlined]="true" />
+              </a>
+            </td>
           </tr>
         </ng-template>
       </p-table>
