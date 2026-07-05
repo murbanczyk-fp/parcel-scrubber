@@ -18,6 +18,7 @@ import { TableModule } from 'primeng/table';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { ParcelsService } from '../../core/parcels/parcels.service';
+import { OrderDateLocalPipe } from '../../core/parcels/order-date.pipe';
 import type { ParcelDto, SyncJobDto } from '../../core/parcels/parcels.types';
 
 const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
@@ -32,6 +33,7 @@ const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
   selector: 'app-active-list',
   imports: [
     DatePipe,
+    OrderDateLocalPipe,
     RouterLink,
     ButtonModule,
     CardModule,

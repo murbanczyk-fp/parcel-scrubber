@@ -86,7 +86,7 @@
           <tr>
             <td>{{ parcel.store ?? '—' }}</td>
             <td>{{ parcel.description ?? '—' }}</td>
-            <td>{{ parcel.orderDate | date: 'mediumDate' }}</td>
+            <td>{{ parcel.orderDate | orderDateLocal | date: 'mediumDate' }}</td>
             <td>{{ carrierLabel(parcel) }}</td>
             <td>
               @if (parcel.trackingUrl) {

@@ -25,6 +25,13 @@ import { TextareaModule } from 'primeng/textarea';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { ParcelsService } from '../../core/parcels/parcels.service';
+import { previewGeneratedTrackingUrl } from '../../core/parcels/preview-generated-tracking-url';
+import { parseOrderDate } from '../../core/parcels/order-date.pipe';
+import {
+  PARCEL_CUSTOM_CARRIER_LABEL_MAX_LENGTH,
+  PARCEL_DESCRIPTION_MAX_LENGTH,
+  PARCEL_STORE_MAX_LENGTH,
+} from '../../core/parcels/parcel-field-limits';
 import type {
   CreateParcelPayload,
   ParcelCarrier,
@@ -54,11 +61,6 @@ function formatLocalDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function parseOrderDate(value: string): Date {
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year, month - 1, day);
 }
 
 @Component({
@@ -98,12 +100,12 @@ export class ParcelFormComponent implements OnInit {
   private savedSnapshot: ParcelDto | null = null;
 
   protected readonly form = this.fb.nonNullable.group({
-    store: ['', [Validators.required]],
+    store: ['', [Validators.required, Validators.maxLength(PARCEL_STORE_MAX_LENGTH)]],
     carrier: ['INPOST' as ParcelCarrier, [Validators.required]],
-    customCarrierLabel: [''],
+    customCarrierLabel: ['', [Validators.maxLength(PARCEL_CUSTOM_CARRIER_LABEL_MAX_LENGTH)]],
     trackingNumber: ['', [Validators.required]],
     orderDate: [new Date(), [Validators.required]],
-    description: [''],
+    description: ['', [Validators.maxLength(PARCEL_DESCRIPTION_MAX_LENGTH)]],
     trackingUrl: [''],
   });
 
@@ -112,9 +114,14 @@ export class ParcelFormComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((carrier) => this.updateCustomLabelValidators(carrier));
 
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateGeneratedUrlPreview());
+
     if (this.mode === 'create') {
       this.loading.set(false);
       this.updateCustomLabelValidators(this.form.controls.carrier.value);
+      this.updateGeneratedUrlPreview();
       return;
     }
 
@@ -169,6 +176,18 @@ export class ParcelFormComponent implements OnInit {
       }
       if (controlName === 'customCarrierLabel') {
         return 'Custom carrier label is required';
+      }
+    }
+
+    if (errors['maxlength']) {
+      if (controlName === 'store') {
+        return `Store must be at most ${PARCEL_STORE_MAX_LENGTH} characters`;
+      }
+      if (controlName === 'description') {
+        return `Description must be at most ${PARCEL_DESCRIPTION_MAX_LENGTH} characters`;
+      }
+      if (controlName === 'customCarrierLabel') {
+        return `Custom carrier label must be at most ${PARCEL_CUSTOM_CARRIER_LABEL_MAX_LENGTH} characters`;
       }
     }
 
@@ -272,7 +291,6 @@ export class ParcelFormComponent implements OnInit {
 
   private applySnapshot(parcel: ParcelDto): void {
     this.savedSnapshot = parcel;
-    this.resolvedTrackingUrl.set(parcel.trackingUrl);
     this.form.reset({
       store: parcel.store ?? '',
       carrier: parcel.carrier,
@@ -283,6 +301,14 @@ export class ParcelFormComponent implements OnInit {
       trackingUrl: parcel.trackingUrlOverride ?? '',
     });
     this.updateCustomLabelValidators(parcel.carrier);
+    this.updateGeneratedUrlPreview();
+  }
+
+  private updateGeneratedUrlPreview(): void {
+    const { carrier, trackingNumber } = this.form.getRawValue();
+    this.resolvedTrackingUrl.set(
+      previewGeneratedTrackingUrl(carrier, trackingNumber),
+    );
   }
 
   private buildCreatePayload(): CreateParcelPayload {
@@ -365,6 +391,9 @@ export class ParcelFormComponent implements OnInit {
       control.setValidators([Validators.required]);
     } else {
       control.clearValidators();
+      if (control.value !== '') {
+        control.setValue('');
+      }
     }
 
     control.updateValueAndValidity();

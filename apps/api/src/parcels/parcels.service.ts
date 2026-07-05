@@ -13,6 +13,11 @@ import { ARCHIVED_PARCEL_STATUSES } from './is-archived-status';
 import { isSafeHttpUrl } from './is-safe-http-url';
 import { mapParcelToDto } from './map-parcel-to-dto';
 import { normalizeTrackingNumber } from './normalize-tracking-number';
+import {
+  PARCEL_CUSTOM_CARRIER_LABEL_MAX_LENGTH,
+  PARCEL_DESCRIPTION_MAX_LENGTH,
+  PARCEL_STORE_MAX_LENGTH,
+} from './parcel-field-limits';
 import type {
   CreateParcelBody,
   ParcelDto,
@@ -151,10 +156,22 @@ export class ParcelsService {
     }
 
     try {
-      const updated = await this.prisma.parcel.update({
-        where: { id: parcelId },
+      const { count } = await this.prisma.parcel.updateMany({
+        where: { id: parcelId, userId },
         data,
       });
+
+      if (count === 0) {
+        throw new NotFoundException('Parcel not found');
+      }
+
+      const updated = await this.prisma.parcel.findFirst({
+        where: { id: parcelId, userId },
+      });
+
+      if (!updated) {
+        throw new NotFoundException('Parcel not found');
+      }
 
       return mapParcelToDto(updated);
     } catch (err) {
@@ -197,7 +214,12 @@ export class ParcelsService {
       body.trackingUrl,
       errors,
     );
-    const description = this.normalizeOptionalText(body.description);
+    const description = this.normalizeOptionalText(
+      body.description,
+      'description',
+      PARCEL_DESCRIPTION_MAX_LENGTH,
+      errors,
+    );
 
     if (errors.length > 0) {
       throw new ParcelValidationError(errors);
@@ -233,7 +255,12 @@ export class ParcelsService {
     }
 
     if (body.description !== undefined) {
-      data.description = this.normalizeOptionalText(body.description);
+      data.description = this.normalizeOptionalText(
+        body.description,
+        'description',
+        PARCEL_DESCRIPTION_MAX_LENGTH,
+        errors,
+      );
     }
 
     const effectiveCarrier =
@@ -264,6 +291,12 @@ export class ParcelsService {
       existing.carrier !== Carrier.CUSTOM
     ) {
       data.customCarrierLabel = customCarrierLabel;
+    } else if (
+      body.carrier !== undefined &&
+      effectiveCarrier !== undefined &&
+      effectiveCarrier !== Carrier.CUSTOM
+    ) {
+      data.customCarrierLabel = null;
     }
 
     if (body.trackingNumber !== undefined) {
@@ -307,7 +340,17 @@ export class ParcelsService {
       return undefined;
     }
 
-    return value.trim();
+    const trimmed = value.trim();
+
+    if (trimmed.length > PARCEL_STORE_MAX_LENGTH) {
+      errors.push({
+        field: 'store',
+        message: `Store must be at most ${PARCEL_STORE_MAX_LENGTH} characters`,
+      });
+      return undefined;
+    }
+
+    return trimmed;
   }
 
   private validateCarrier(
@@ -387,7 +430,17 @@ export class ParcelsService {
       return null;
     }
 
-    return value.trim();
+    const trimmed = value.trim();
+
+    if (trimmed.length > PARCEL_CUSTOM_CARRIER_LABEL_MAX_LENGTH) {
+      errors.push({
+        field,
+        message: `Custom carrier label must be at most ${PARCEL_CUSTOM_CARRIER_LABEL_MAX_LENGTH} characters`,
+      });
+      return null;
+    }
+
+    return trimmed;
   }
 
   private validateTrackingUrlForWrite(
@@ -432,12 +485,27 @@ export class ParcelsService {
     return trimmed;
   }
 
-  private normalizeOptionalText(value: string | undefined): string | null {
+  private normalizeOptionalText(
+    value: string | undefined,
+    field: string,
+    maxLength: number,
+    errors: ParcelFieldError[],
+  ): string | null {
     if (value === undefined || value.trim().length === 0) {
       return null;
     }
 
-    return value.trim();
+    const trimmed = value.trim();
+
+    if (trimmed.length > maxLength) {
+      errors.push({
+        field,
+        message: `Must be at most ${maxLength} characters`,
+      });
+      return null;
+    }
+
+    return trimmed;
   }
 
   private parseOrderDate(value: string): { date: Date } | { error: string } {

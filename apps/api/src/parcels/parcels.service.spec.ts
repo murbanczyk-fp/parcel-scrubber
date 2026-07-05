@@ -355,18 +355,46 @@ describe('ParcelsService', () => {
   describe('updateForUser', () => {
     it('updates partial fields', async () => {
       const updated = { ...baseParcel, description: 'Updated item' };
-      prisma.parcel.findFirst.mockResolvedValue(baseParcel);
-      prisma.parcel.update.mockResolvedValue(updated);
+      prisma.parcel.findFirst
+        .mockResolvedValueOnce(baseParcel)
+        .mockResolvedValueOnce(updated);
+      prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.updateForUser('user-1', 'parcel-1', {
         description: 'Updated item',
       });
 
-      expect(prisma.parcel.update).toHaveBeenCalledWith({
-        where: { id: 'parcel-1' },
+      expect(prisma.parcel.updateMany).toHaveBeenCalledWith({
+        where: { id: 'parcel-1', userId: 'user-1' },
         data: { description: 'Updated item' },
       });
       expect(result.description).toBe('Updated item');
+    });
+
+    it('clears custom carrier label when carrier changes away from CUSTOM', async () => {
+      const customParcel = {
+        ...baseParcel,
+        carrier: Carrier.CUSTOM,
+        customCarrierLabel: 'Bike courier',
+      };
+      const updated = {
+        ...customParcel,
+        carrier: Carrier.INPOST,
+        customCarrierLabel: null,
+      };
+      prisma.parcel.findFirst
+        .mockResolvedValueOnce(customParcel)
+        .mockResolvedValueOnce(updated);
+      prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.updateForUser('user-1', 'parcel-1', {
+        carrier: Carrier.INPOST,
+      });
+
+      expect(prisma.parcel.updateMany).toHaveBeenCalledWith({
+        where: { id: 'parcel-1', userId: 'user-1' },
+        data: { carrier: Carrier.INPOST, customCarrierLabel: null },
+      });
     });
 
     it('clears tracking URL override with empty string', async () => {
@@ -375,19 +403,33 @@ describe('ParcelsService', () => {
         trackingUrl: 'https://example.com/track',
       };
       const cleared = { ...withOverride, trackingUrl: null };
-      prisma.parcel.findFirst.mockResolvedValue(withOverride);
-      prisma.parcel.update.mockResolvedValue(cleared);
+      prisma.parcel.findFirst
+        .mockResolvedValueOnce(withOverride)
+        .mockResolvedValueOnce(cleared);
+      prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.updateForUser('user-1', 'parcel-1', {
         trackingUrl: '',
       });
 
-      expect(prisma.parcel.update).toHaveBeenCalledWith({
-        where: { id: 'parcel-1' },
+      expect(prisma.parcel.updateMany).toHaveBeenCalledWith({
+        where: { id: 'parcel-1', userId: 'user-1' },
         data: { trackingUrl: null },
       });
       expect(result.trackingUrlOverride).toBeNull();
       expect(result.trackingUrl).toContain('inpost');
+    });
+
+    it('rejects store values longer than the max length', async () => {
+      prisma.parcel.findFirst.mockResolvedValue(baseParcel);
+
+      await expect(
+        service.updateForUser('user-1', 'parcel-1', {
+          store: 'x'.repeat(201),
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'store' }],
+      });
     });
 
     it('rejects empty patch body', async () => {
