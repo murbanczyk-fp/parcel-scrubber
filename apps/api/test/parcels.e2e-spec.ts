@@ -229,6 +229,20 @@ describe('Parcels HTTP (e2e)', () => {
     expect(archived).toMatchObject({ status: 'REMOVED' });
   });
 
+  it('is idempotent when removing an already removed parcel', async () => {
+    const user = await createTestUser();
+    const agent = createAuthenticatedAgent(user);
+    const parcel = await createParcel(user.id);
+
+    await agent.post(`/api/parcels/${parcel.id}/remove`).expect(200);
+    await agent.post(`/api/parcels/${parcel.id}/remove`).expect(200);
+
+    const eventCount = await prisma.parcelStatusEvent.count({
+      where: { parcelId: parcel.id },
+    });
+    expect(eventCount).toBe(1);
+  });
+
   it('returns 404 for unknown parcel or another user parcel', async () => {
     const owner = await createTestUser();
     const otherUser = await createTestUser();

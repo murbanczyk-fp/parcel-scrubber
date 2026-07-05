@@ -155,8 +155,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
     }
 
     const current = this.parcels();
-    const index = current.findIndex((row) => row.id === parcel.id);
-    if (index === -1) {
+    if (!current.some((row) => row.id === parcel.id)) {
       return;
     }
 
@@ -170,17 +169,55 @@ export class ActiveListComponent implements OnInit, OnDestroy {
         summary: successSummary,
         life: 4000,
       });
-    } catch {
-      const restored = [...this.parcels()];
-      restored.splice(index, 0, parcel);
-      this.parcels.set(restored);
+    } catch (err) {
+      await this.handleParcelActionError(err, parcel);
+    } finally {
+      this.setActionInFlight(parcel.id, false);
+    }
+  }
+
+  private async handleParcelActionError(
+    err: unknown,
+    parcel: ParcelDto,
+  ): Promise<void> {
+    if (err instanceof HttpErrorResponse) {
+      if (err.status === 401) {
+        this.authRequired.set(true);
+        this.messages.add({
+          severity: 'warn',
+          summary: 'Session expired',
+          detail: 'Sign in with Google again to continue.',
+          life: 8000,
+        });
+      } else if (err.status === 404) {
+        this.messages.add({
+          severity: 'warn',
+          summary: 'Parcel not found',
+          life: 4000,
+        });
+        return;
+      } else {
+        this.messages.add({
+          severity: 'error',
+          summary: 'Could not update parcel',
+          life: 4000,
+        });
+      }
+    } else {
       this.messages.add({
         severity: 'error',
         summary: 'Could not update parcel',
         life: 4000,
       });
-    } finally {
-      this.setActionInFlight(parcel.id, false);
+    }
+
+    try {
+      const active = await this.parcelsService.listActive();
+      this.parcels.set(active);
+    } catch {
+      if (!this.parcels().some((row) => row.id === parcel.id)) {
+        this.parcels.set([...this.parcels(), parcel]);
+      }
     }
   }
 
@@ -208,6 +245,25 @@ export class ActiveListComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async reloadActiveParcelsRespectingInFlight(): Promise<void> {
+    const inFlight = this.actionInFlight();
+    if (inFlight.size === 0) {
+      await this.loadParcels();
+      return;
+    }
+
+    this.loadError.set(null);
+
+    try {
+      const serverParcels = await this.parcelsService.listActive();
+      this.parcels.set(
+        serverParcels.filter((parcel) => !inFlight.has(parcel.id)),
+      );
+    } catch {
+      this.loadError.set('Failed to load parcels.');
+    }
+  }
+
   private pollUntilDone(jobId: string): Promise<void> {
     return new Promise((resolve) => {
       const poll = async (): Promise<void> => {
@@ -216,7 +272,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
           this.syncJob.set(job);
 
           if (job.status === 'completed') {
-            await this.loadParcels();
+            await this.reloadActiveParcelsRespectingInFlight();
             this.messages.add({
               severity: 'success',
               summary: 'Sync complete',

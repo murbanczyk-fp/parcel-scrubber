@@ -14,7 +14,8 @@ describe('ParcelsService', () => {
     parcel: {
       findMany: jest.Mock;
       findFirst: jest.Mock;
-      update: jest.Mock;
+      findFirstOrThrow: jest.Mock;
+      updateMany: jest.Mock;
     };
     parcelStatusEvent: {
       create: jest.Mock;
@@ -43,7 +44,8 @@ describe('ParcelsService', () => {
       parcel: {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn(),
-        update: jest.fn(),
+        findFirstOrThrow: jest.fn(),
+        updateMany: jest.fn(),
       },
       parcelStatusEvent: {
         create: jest.fn().mockResolvedValue({}),
@@ -98,18 +100,51 @@ describe('ParcelsService', () => {
   it('marks a parcel delivered and writes a user status event', async () => {
     const delivered = { ...baseParcel, status: ParcelStatus.DELIVERED };
     prisma.parcel.findFirst.mockResolvedValue(baseParcel);
-    prisma.parcel.update.mockResolvedValue(delivered);
+    prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
+    prisma.parcel.findFirstOrThrow.mockResolvedValue(delivered);
 
     const result = await service.markDelivered('user-1', 'parcel-1');
 
-    expect(prisma.parcel.update).toHaveBeenCalledWith({
-      where: { id: 'parcel-1' },
+    expect(prisma.parcel.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'parcel-1',
+        userId: 'user-1',
+        status: ParcelStatus.NEW,
+      },
       data: { status: ParcelStatus.DELIVERED },
     });
     expect(prisma.parcelStatusEvent.create).toHaveBeenCalledWith({
       data: {
         parcelId: 'parcel-1',
         fromStatus: ParcelStatus.NEW,
+        toStatus: ParcelStatus.DELIVERED,
+        source: StatusEventSource.USER,
+      },
+    });
+    expect(result.status).toBe('DELIVERED');
+  });
+
+  it('marks a removed parcel delivered and writes a cross-archive user event', async () => {
+    const removed = { ...baseParcel, status: ParcelStatus.REMOVED };
+    const delivered = { ...baseParcel, status: ParcelStatus.DELIVERED };
+    prisma.parcel.findFirst.mockResolvedValue(removed);
+    prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
+    prisma.parcel.findFirstOrThrow.mockResolvedValue(delivered);
+
+    const result = await service.markDelivered('user-1', 'parcel-1');
+
+    expect(prisma.parcel.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'parcel-1',
+        userId: 'user-1',
+        status: ParcelStatus.REMOVED,
+      },
+      data: { status: ParcelStatus.DELIVERED },
+    });
+    expect(prisma.parcelStatusEvent.create).toHaveBeenCalledWith({
+      data: {
+        parcelId: 'parcel-1',
+        fromStatus: ParcelStatus.REMOVED,
         toStatus: ParcelStatus.DELIVERED,
         source: StatusEventSource.USER,
       },

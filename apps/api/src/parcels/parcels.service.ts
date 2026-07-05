@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ParcelStatus, StatusEventSource } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { ARCHIVED_PARCEL_STATUSES } from './is-archived-status';
 import { mapParcelToDto } from './map-parcel-to-dto';
 import type { ParcelDto } from './parcel.dto';
 
@@ -22,8 +23,8 @@ export class ParcelsService {
         userId,
         status:
           options.status === 'active'
-            ? { notIn: [ParcelStatus.DELIVERED, ParcelStatus.REMOVED] }
-            : { in: [ParcelStatus.DELIVERED, ParcelStatus.REMOVED] },
+            ? { notIn: [...ARCHIVED_PARCEL_STATUSES] }
+            : { in: [...ARCHIVED_PARCEL_STATUSES] },
       },
       orderBy: [{ orderDate: 'desc' }, { createdAt: 'desc' }],
     });
@@ -56,22 +57,40 @@ export class ParcelsService {
       return mapParcelToDto(parcel);
     }
 
+    const fromStatus = parcel.status;
+
     const updated = await this.prisma.$transaction(async (tx) => {
-      const next = await tx.parcel.update({
-        where: { id: parcel.id },
+      const { count } = await tx.parcel.updateMany({
+        where: {
+          id: parcelId,
+          userId,
+          status: fromStatus,
+        },
         data: { status: targetStatus },
       });
+
+      if (count === 0) {
+        const current = await tx.parcel.findFirst({
+          where: { id: parcelId, userId },
+        });
+        if (!current) {
+          throw new NotFoundException('Parcel not found');
+        }
+        return current;
+      }
 
       await tx.parcelStatusEvent.create({
         data: {
           parcelId: parcel.id,
-          fromStatus: parcel.status,
+          fromStatus,
           toStatus: targetStatus,
           source: StatusEventSource.USER,
         },
       });
 
-      return next;
+      return tx.parcel.findFirstOrThrow({
+        where: { id: parcelId, userId },
+      });
     });
 
     return mapParcelToDto(updated);
