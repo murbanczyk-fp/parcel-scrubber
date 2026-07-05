@@ -378,12 +378,12 @@ No schema migration. Existing parcels with active statuses work unchanged. Manua
 
 #### Automated
 
-- [ ] 1.1 `npm run lint:api` passes
-- [ ] 1.2 `npm run test:api` passes (updated parcels unit specs)
+- [x] 1.1 `npm run lint:api` passes
+- [x] 1.2 `npm run test:api` passes (updated parcels unit specs)
 
 #### Manual
 
-- [ ] 1.3 N/A — no UI in this phase (skip or mark done when proceeding)
+- [x] 1.3 N/A — no UI in this phase (skip or mark done when proceeding)
 
 ### Phase 2: API — parcels HTTP e2e
 
