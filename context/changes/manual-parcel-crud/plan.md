@@ -451,24 +451,24 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels`
-- [x] 1.2 Lint passes: `npm run lint`
-- [x] 1.3 Typecheck/build passes: `npm run build`
+- [x] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels` — 6359937
+- [x] 1.2 Lint passes: `npm run lint` — 6359937
+- [x] 1.3 Typecheck/build passes: `npm run build` — 6359937
 
 #### Manual
 
-- [ ] 1.4 (none — defer to Phase 2 e2e)
+- [x] 1.4 (none — defer to Phase 2 e2e) — 6359937
 
 ### Phase 2: Parcels HTTP e2e
 
 #### Automated
 
-- [ ] 2.1 E2e passes: `npm run test:api -- --testPathPattern=parcels.e2e`
-- [ ] 2.2 Full API test suite passes: `npm run test:api`
+- [x] 2.1 E2e passes: `npm run test:api -- --testPathPattern=parcels.e2e`
+- [x] 2.2 Full API test suite passes: `npm run test:api`
 
 #### Manual
 
-- [ ] 2.3 Optional smoke via curl/Postman if e2e green
+- [x] 2.3 Optional smoke via curl/Postman if e2e green
 
 ### Phase 3: Web form + routes
 

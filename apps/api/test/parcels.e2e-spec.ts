@@ -263,4 +263,184 @@ describe('Parcels HTTP (e2e)', () => {
 
     await agent.get('/api/parcels').expect(400);
   });
+
+  describe('manual parcel CRUD', () => {
+    const validCreateBody = {
+      store: 'Allegro',
+      carrier: 'INPOST',
+      trackingNumber: '520000012680041086770098',
+      orderDate: '2026-01-15',
+    };
+
+    it('POST /api/parcels creates a manual parcel with resolved tracking URL', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const response = await agent
+        .post('/api/parcels')
+        .send(validCreateBody)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        store: 'Allegro',
+        carrier: 'INPOST',
+        trackingNumber: '520000012680041086770098',
+        source: 'MANUAL',
+        status: 'NEW',
+        trackingUrlOverride: null,
+      });
+      expect(response.body.trackingUrl as string).toContain('inpost');
+
+      const activeIds = (
+        (await agent.get('/api/parcels?status=active').expect(200))
+          .body as Array<{ id: string }>
+      ).map((row) => row.id);
+      expect(activeIds).toContain(response.body.id as string);
+    });
+
+    it('POST /api/parcels rejects duplicate tracking number', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      await createParcel(user.id, {
+        trackingNumber: '520000012680041086770098',
+      });
+
+      const response = await agent
+        .post('/api/parcels')
+        .send(validCreateBody)
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
+    });
+
+    it('POST /api/parcels rejects unsafe tracking URL override', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const response = await agent
+        .post('/api/parcels')
+        .send({
+          ...validCreateBody,
+          trackingNumber: 'UNIQUE123456789',
+          trackingUrl: 'javascript:alert(1)',
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'trackingUrl' }],
+      });
+    });
+
+    it('GET /api/parcels/:id returns parcel for owner and 404 for other user', async () => {
+      const owner = await createTestUser();
+      const otherUser = await createTestUser();
+      const parcel = await createParcel(owner.id);
+      const ownerAgent = createAuthenticatedAgent(owner);
+      const otherAgent = createAuthenticatedAgent(otherUser);
+
+      const response = await ownerAgent
+        .get(`/api/parcels/${parcel.id}`)
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        id: parcel.id,
+        trackingUrlOverride: null,
+      });
+      expect(response.body.trackingUrl as string).toContain('inpost');
+
+      await otherAgent.get(`/api/parcels/${parcel.id}`).expect(404);
+    });
+
+    it('PATCH /api/parcels/:id updates fields', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await createParcel(user.id);
+
+      const response = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ store: 'Updated Store', description: 'New description' })
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        id: parcel.id,
+        store: 'Updated Store',
+        description: 'New description',
+      });
+    });
+
+    it('PATCH /api/parcels/:id clearing trackingUrl reverts to generated URL', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await prisma.parcel.update({
+        where: { id: (await createParcel(user.id)).id },
+        data: { trackingUrl: 'https://example.com/custom' },
+      });
+
+      const clearedViaEmpty = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ trackingUrl: '' })
+        .expect(200);
+
+      expect(clearedViaEmpty.body).toMatchObject({
+        trackingUrlOverride: null,
+      });
+      expect(clearedViaEmpty.body.trackingUrl as string).toContain('inpost');
+
+      await prisma.parcel.update({
+        where: { id: parcel.id },
+        data: { trackingUrl: 'https://example.com/custom' },
+      });
+
+      const clearedViaNull = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ trackingUrl: null })
+        .expect(200);
+
+      expect(clearedViaNull.body).toMatchObject({
+        trackingUrlOverride: null,
+      });
+      expect(clearedViaNull.body.trackingUrl as string).toContain('inpost');
+    });
+
+    it('PATCH /api/parcels/:id rejects duplicate tracking number', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const first = await createParcel(user.id, {
+        trackingNumber: '520000012680041086770098',
+      });
+      const second = await createParcel(user.id, {
+        trackingNumber: 'OTHERTRACK123456789',
+      });
+
+      const response = await agent
+        .patch(`/api/parcels/${second.id}`)
+        .send({ trackingNumber: first.trackingNumber })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
+    });
+
+    it('PATCH /api/parcels/:id works on archived parcels', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await createParcel(user.id, {
+        status: ParcelStatus.DELIVERED,
+      });
+
+      const response = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ store: 'Archive Edit Shop' })
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        id: parcel.id,
+        store: 'Archive Edit Shop',
+        status: 'DELIVERED',
+      });
+    });
+  });
 });
