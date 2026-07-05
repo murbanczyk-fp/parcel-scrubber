@@ -474,8 +474,8 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Automated
 
-- [x] 3.1 Lint passes: `npm run lint`
-- [x] 3.2 Web build passes: `npm run build`
+- [x] 3.1 Lint passes: `npm run lint` — 7e117df
+- [x] 3.2 Web build passes: `npm run build` — 7e117df
 
 #### Manual
 

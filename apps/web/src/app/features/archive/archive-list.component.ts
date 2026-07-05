@@ -1,5 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { TableModule } from 'primeng/table';
@@ -22,7 +24,7 @@ const STATUS_LABELS: Record<'DELIVERED' | 'REMOVED', string> = {
 
 @Component({
   selector: 'app-archive-list',
-  imports: [DatePipe, CardModule, MessageModule, TableModule],
+  imports: [DatePipe, RouterLink, ButtonModule, CardModule, MessageModule, TableModule],
   templateUrl: './archive-list.component.html',
   styleUrl: './archive-list.component.scss',
 })

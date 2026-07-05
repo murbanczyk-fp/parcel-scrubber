@@ -7,6 +7,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -31,6 +32,7 @@ const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
   selector: 'app-active-list',
   imports: [
     DatePipe,
+    RouterLink,
     ButtonModule,
     CardModule,
     ConfirmDialogModule,

@@ -4,14 +4,24 @@
     <ng-template #header>
       <div class="active-list__header">
         <h1 class="active-list__title">Active parcels</h1>
-        <p-button
-          label="Sync"
-          icon="pi pi-refresh"
-          data-testid="sync-parcels"
-          [disabled]="syncing()"
-          [loading]="syncing()"
-          (onClick)="onSync()"
-        />
+        <div class="active-list__header-actions">
+          <a routerLink="/active/new" data-testid="add-parcel">
+            <p-button
+              label="Add parcel"
+              icon="pi pi-plus"
+              severity="secondary"
+              [outlined]="true"
+            />
+          </a>
+          <p-button
+            label="Sync"
+            icon="pi pi-refresh"
+            data-testid="sync-parcels"
+            [disabled]="syncing()"
+            [loading]="syncing()"
+            (onClick)="onSync()"
+          />
+        </div>
       </div>
     </ng-template>
 
@@ -93,6 +103,12 @@
               }
             </td>
             <td class="active-list__actions">
+              <a
+                [routerLink]="['/active', parcel.id, 'edit']"
+                [attr.data-testid]="'edit-parcel-' + parcel.id"
+              >
+                <p-button label="Edit" size="small" severity="secondary" [outlined]="true" />
+              </a>
               <p-button
                 label="Delivered"
                 size="small"
