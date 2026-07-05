@@ -451,9 +451,9 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Automated
 
-- [ ] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels`
-- [ ] 1.2 Lint passes: `npm run lint`
-- [ ] 1.3 Typecheck/build passes: `npm run build`
+- [x] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels`
+- [x] 1.2 Lint passes: `npm run lint`
+- [x] 1.3 Typecheck/build passes: `npm run build`
 
 #### Manual
 

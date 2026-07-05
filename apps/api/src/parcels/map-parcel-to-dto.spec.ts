@@ -31,6 +31,7 @@ describe('mapParcelToDto', () => {
       customCarrierLabel: null,
       trackingNumber: '520000012680041086770098',
       trackingUrl: resolveTrackingUrl(baseParcel),
+      trackingUrlOverride: null,
       orderDate: '2026-01-15',
       status: ParcelStatus.NEW,
       source: ParcelSource.GMAIL,
@@ -47,5 +48,16 @@ describe('mapParcelToDto', () => {
     });
 
     expect(dto.trackingUrl).toBeNull();
+    expect(dto.trackingUrlOverride).toBeNull();
+  });
+
+  it('exposes raw override separately from resolved tracking URL', () => {
+    const dto = mapParcelToDto({
+      ...baseParcel,
+      trackingUrl: 'https://example.com/custom-track',
+    });
+
+    expect(dto.trackingUrlOverride).toBe('https://example.com/custom-track');
+    expect(dto.trackingUrl).toBe('https://example.com/custom-track');
   });
 });

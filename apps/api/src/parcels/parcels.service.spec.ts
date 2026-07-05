@@ -2,11 +2,13 @@ import {
   Carrier,
   ParcelSource,
   ParcelStatus,
+  Prisma,
   StatusEventSource,
 } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 
 import { ParcelsService } from './parcels.service';
+import { ParcelValidationError } from './parcel-validation.error';
 
 describe('ParcelsService', () => {
   let service: ParcelsService;
@@ -16,6 +18,8 @@ describe('ParcelsService', () => {
       findFirst: jest.Mock;
       findFirstOrThrow: jest.Mock;
       updateMany: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
     };
     parcelStatusEvent: {
       create: jest.Mock;
@@ -46,6 +50,8 @@ describe('ParcelsService', () => {
         findFirst: jest.fn(),
         findFirstOrThrow: jest.fn(),
         updateMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
       },
       parcelStatusEvent: {
         create: jest.fn().mockResolvedValue({}),
@@ -180,5 +186,240 @@ describe('ParcelsService', () => {
     await expect(
       service.markDelivered('user-1', 'missing-parcel'),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  describe('createForUser', () => {
+    const validBody = {
+      store: 'Allegro',
+      carrier: Carrier.INPOST,
+      trackingNumber: '520000012680041086770098',
+      orderDate: '2026-03-01',
+    };
+
+    it('creates a manual parcel with NEW status and normalized tracking number', async () => {
+      const created = {
+        ...baseParcel,
+        id: 'parcel-new',
+        source: ParcelSource.MANUAL,
+        status: ParcelStatus.NEW,
+        store: 'Allegro',
+        trackingNumber: '520000012680041086770098',
+      };
+      prisma.parcel.findFirst.mockResolvedValue(null);
+      prisma.parcel.create.mockResolvedValue(created);
+
+      const result = await service.createForUser('user-1', validBody);
+
+      expect(prisma.parcel.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          source: ParcelSource.MANUAL,
+          status: ParcelStatus.NEW,
+          store: 'Allegro',
+          trackingNumber: '520000012680041086770098',
+          orderDate: new Date('2026-03-01T00:00:00.000Z'),
+        }) as object,
+      });
+      expect(result.source).toBe('MANUAL');
+      expect(result.status).toBe('NEW');
+      expect(result.trackingUrlOverride).toBeNull();
+      expect(result.trackingUrl).toContain('inpost');
+    });
+
+    it('stores uppercase trimmed tracking number', async () => {
+      prisma.parcel.findFirst.mockResolvedValue(null);
+      prisma.parcel.create.mockResolvedValue({
+        ...baseParcel,
+        source: ParcelSource.MANUAL,
+        trackingNumber: 'ABC123',
+      });
+
+      await service.createForUser('user-1', {
+        ...validBody,
+        trackingNumber: '  abc 123  ',
+      });
+
+      expect(prisma.parcel.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          trackingNumber: 'ABC123',
+        }) as object,
+      });
+    });
+
+    it('rejects missing store, tracking, order date, and CUSTOM without label', async () => {
+      await expect(
+        service.createForUser('user-1', {
+          ...validBody,
+          store: '  ',
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'store', message: 'Store is required' }],
+      });
+
+      await expect(
+        service.createForUser('user-1', {
+          ...validBody,
+          trackingNumber: '',
+        }),
+      ).rejects.toMatchObject({
+        errors: [
+          { field: 'trackingNumber', message: 'Tracking number is required' },
+        ],
+      });
+
+      await expect(
+        service.createForUser('user-1', {
+          ...validBody,
+          orderDate: 'not-a-date',
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'orderDate', message: expect.any(String) as string }],
+      });
+
+      await expect(
+        service.createForUser('user-1', {
+          ...validBody,
+          carrier: Carrier.CUSTOM,
+        }),
+      ).rejects.toMatchObject({
+        errors: [
+          {
+            field: 'customCarrierLabel',
+            message: 'Custom carrier label is required when carrier is Custom',
+          },
+        ],
+      });
+    });
+
+    it('rejects unsafe tracking URL override', async () => {
+      await expect(
+        service.createForUser('user-1', {
+          ...validBody,
+          trackingUrl: 'javascript:alert(1)',
+        }),
+      ).rejects.toMatchObject({
+        errors: [
+          {
+            field: 'trackingUrl',
+            message: 'Tracking URL must be a valid http or https URL',
+          },
+        ],
+      });
+    });
+
+    it('rejects duplicate tracking number', async () => {
+      prisma.parcel.findFirst.mockResolvedValue({ id: 'existing' });
+
+      await expect(service.createForUser('user-1', validBody)).rejects.toThrow(
+        ParcelValidationError,
+      );
+    });
+
+    it('maps Prisma P2002 to duplicate tracking validation error', async () => {
+      prisma.parcel.findFirst.mockResolvedValue(null);
+      prisma.parcel.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      await expect(
+        service.createForUser('user-1', validBody),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
+    });
+  });
+
+  describe('getByIdForUser', () => {
+    it('returns mapped parcel for owner', async () => {
+      prisma.parcel.findFirst.mockResolvedValue(baseParcel);
+
+      const result = await service.getByIdForUser('user-1', 'parcel-1');
+
+      expect(result.id).toBe('parcel-1');
+      expect(result.trackingUrlOverride).toBeNull();
+      expect(result.trackingUrl).toContain('inpost');
+    });
+
+    it('throws NotFoundException for missing parcel', async () => {
+      prisma.parcel.findFirst.mockResolvedValue(null);
+
+      await expect(service.getByIdForUser('user-1', 'missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('updateForUser', () => {
+    it('updates partial fields', async () => {
+      const updated = { ...baseParcel, description: 'Updated item' };
+      prisma.parcel.findFirst.mockResolvedValue(baseParcel);
+      prisma.parcel.update.mockResolvedValue(updated);
+
+      const result = await service.updateForUser('user-1', 'parcel-1', {
+        description: 'Updated item',
+      });
+
+      expect(prisma.parcel.update).toHaveBeenCalledWith({
+        where: { id: 'parcel-1' },
+        data: { description: 'Updated item' },
+      });
+      expect(result.description).toBe('Updated item');
+    });
+
+    it('clears tracking URL override with empty string', async () => {
+      const withOverride = {
+        ...baseParcel,
+        trackingUrl: 'https://example.com/track',
+      };
+      const cleared = { ...withOverride, trackingUrl: null };
+      prisma.parcel.findFirst.mockResolvedValue(withOverride);
+      prisma.parcel.update.mockResolvedValue(cleared);
+
+      const result = await service.updateForUser('user-1', 'parcel-1', {
+        trackingUrl: '',
+      });
+
+      expect(prisma.parcel.update).toHaveBeenCalledWith({
+        where: { id: 'parcel-1' },
+        data: { trackingUrl: null },
+      });
+      expect(result.trackingUrlOverride).toBeNull();
+      expect(result.trackingUrl).toContain('inpost');
+    });
+
+    it('rejects empty patch body', async () => {
+      prisma.parcel.findFirst.mockResolvedValue(baseParcel);
+
+      await expect(
+        service.updateForUser('user-1', 'parcel-1', {}),
+      ).rejects.toMatchObject({
+        errors: [{ message: 'Request body must include at least one field' }],
+      });
+    });
+
+    it('rejects duplicate tracking number on another parcel', async () => {
+      prisma.parcel.findFirst
+        .mockResolvedValueOnce(baseParcel)
+        .mockResolvedValueOnce({ id: 'other-parcel' });
+
+      await expect(
+        service.updateForUser('user-1', 'parcel-1', {
+          trackingNumber: 'NEWTRACK123',
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
+    });
+
+    it('throws NotFoundException when parcel is missing', async () => {
+      prisma.parcel.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.updateForUser('user-1', 'missing', { store: 'Shop' }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 });

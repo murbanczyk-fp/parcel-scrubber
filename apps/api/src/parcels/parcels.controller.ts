@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -13,7 +15,12 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { SessionUser } from '../auth/types';
-import type { ParcelDto } from './parcel.dto';
+import type {
+  CreateParcelBody,
+  ParcelDto,
+  UpdateParcelBody,
+} from './parcel.dto';
+import { ParcelValidationError } from './parcel-validation.error';
 import { ParcelsService } from './parcels.service';
 
 function parseListStatus(status: string | undefined): 'active' | 'archived' {
@@ -41,6 +48,35 @@ export class ParcelsController {
     });
   }
 
+  @Post()
+  createParcel(
+    @CurrentUser() user: SessionUser,
+    @Body() body: CreateParcelBody,
+  ): Promise<ParcelDto> {
+    return this.handleValidation(() =>
+      this.parcels.createForUser(user.id, body),
+    );
+  }
+
+  @Get(':id')
+  getParcel(
+    @CurrentUser() user: SessionUser,
+    @Param('id') id: string,
+  ): Promise<ParcelDto> {
+    return this.parcels.getByIdForUser(user.id, id);
+  }
+
+  @Patch(':id')
+  updateParcel(
+    @CurrentUser() user: SessionUser,
+    @Param('id') id: string,
+    @Body() body: UpdateParcelBody,
+  ): Promise<ParcelDto> {
+    return this.handleValidation(() =>
+      this.parcels.updateForUser(user.id, id, body),
+    );
+  }
+
   @Post(':id/deliver')
   @HttpCode(HttpStatus.OK)
   deliverParcel(
@@ -57,5 +93,19 @@ export class ParcelsController {
     @Param('id') id: string,
   ): Promise<ParcelDto> {
     return this.parcels.markRemoved(user.id, id);
+  }
+
+  private async handleValidation(
+    fn: () => Promise<ParcelDto>,
+  ): Promise<ParcelDto> {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err instanceof ParcelValidationError) {
+        throw new BadRequestException({ errors: err.errors });
+      }
+
+      throw err;
+    }
   }
 }
