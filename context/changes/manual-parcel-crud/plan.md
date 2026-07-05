@@ -479,8 +479,8 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Manual
 
-- [ ] 3.3 `/active/new` renders form with today’s date while signed in
-- [ ] 3.4 Direct `/active/:id/edit` loads existing parcel fields
+- [x] 3.3 `/active/new` renders form with today’s date while signed in — 7e117df
+- [x] 3.4 Direct `/active/:id/edit` loads existing parcel fields — 7e117df
 
 ### Phase 4: List integration
 
@@ -491,6 +491,6 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Manual
 
-- [ ] 4.3 Add parcel from Active → appears in table with correct link
-- [ ] 4.4 Edit from Active and Archive → changes persist
-- [ ] 4.5 URL override clear reverts to generated link; duplicate tracking shows field error
+- [x] 4.3 Add parcel from Active → appears in table with correct link — 1fc68e7
+- [x] 4.4 Edit from Active and Archive → changes persist — 1fc68e7
+- [x] 4.5 URL override clear reverts to generated link; duplicate tracking shows field error — 1fc68e7
