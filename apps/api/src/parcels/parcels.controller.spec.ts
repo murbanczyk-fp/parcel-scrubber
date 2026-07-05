@@ -56,6 +56,7 @@ describe('ParcelsController', () => {
     updateForUser: jest.Mock;
     markDelivered: jest.Mock;
     markRemoved: jest.Mock;
+    reactivateParcel: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -69,6 +70,7 @@ describe('ParcelsController', () => {
         ...sampleParcel,
         status: 'REMOVED',
       }),
+      reactivateParcel: jest.fn().mockResolvedValue(sampleParcel),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -124,7 +126,7 @@ describe('ParcelsController', () => {
     );
   });
 
-  it('delegates deliver and remove to the service', async () => {
+  it('delegates deliver, remove, and reactivate to the service', async () => {
     await expect(
       controller.deliverParcel(sessionUser, 'parcel-1'),
     ).resolves.toEqual(sampleParcel);
@@ -140,6 +142,14 @@ describe('ParcelsController', () => {
       status: 'REMOVED',
     });
     expect(parcelsService.markRemoved).toHaveBeenCalledWith(
+      sessionUser.id,
+      'parcel-1',
+    );
+
+    await expect(
+      controller.reactivateParcel(sessionUser, 'parcel-1'),
+    ).resolves.toEqual(sampleParcel);
+    expect(parcelsService.reactivateParcel).toHaveBeenCalledWith(
       sessionUser.id,
       'parcel-1',
     );
@@ -324,6 +334,33 @@ describe('ParcelsController', () => {
       const server = app.getHttpServer() as Server;
 
       await request(server).post('/parcels/missing/remove').expect(404);
+    });
+
+    it('POST /parcels/:id/reactivate returns 200 with parcel body', async () => {
+      parcelsService.reactivateParcel.mockResolvedValue(sampleParcel);
+      await createApp();
+
+      const server = app.getHttpServer() as Server;
+
+      const response = await request(server)
+        .post('/parcels/parcel-1/reactivate')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        id: 'parcel-1',
+        status: 'NEW',
+      });
+    });
+
+    it('POST /parcels/:id/reactivate returns 404 when parcel is not found', async () => {
+      parcelsService.reactivateParcel.mockRejectedValue(
+        new NotFoundException('Parcel not found'),
+      );
+      await createApp();
+
+      const server = app.getHttpServer() as Server;
+
+      await request(server).post('/parcels/missing/reactivate').expect(404);
     });
 
     it('POST /parcels creates a parcel', async () => {

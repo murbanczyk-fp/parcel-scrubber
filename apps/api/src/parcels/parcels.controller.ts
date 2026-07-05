@@ -95,6 +95,15 @@ export class ParcelsController {
     return this.parcels.markRemoved(user.id, id);
   }
 
+  @Post(':id/reactivate')
+  @HttpCode(HttpStatus.OK)
+  reactivateParcel(
+    @CurrentUser() user: SessionUser,
+    @Param('id') id: string,
+  ): Promise<ParcelDto> {
+    return this.parcels.reactivateParcel(user.id, id);
+  }
+
   private async handleValidation(
     fn: () => Promise<ParcelDto>,
   ): Promise<ParcelDto> {

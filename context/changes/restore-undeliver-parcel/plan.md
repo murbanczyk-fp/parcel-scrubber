@@ -223,9 +223,9 @@ None. No schema changes.
 
 #### Automated
 
-- [ ] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels`
-- [ ] 1.2 Lint passes: `npm run lint -w @parcel-scrubber/api`
-- [ ] 1.3 Type checking passes via test compile
+- [x] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels`
+- [x] 1.2 Lint passes: `npm run lint -w @parcel-scrubber/api`
+- [x] 1.3 Type checking passes via test compile
 
 #### Manual
 

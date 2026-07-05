@@ -1,7 +1,7 @@
 ---
 change_id: restore-undeliver-parcel
 title: Restore undeliver parcel
-status: plan_reviewed
+status: implementing
 created: 2026-07-05
 updated: 2026-07-05
 archived_at: null
