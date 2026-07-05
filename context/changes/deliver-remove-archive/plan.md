@@ -412,11 +412,11 @@ No schema migration. Existing parcels with active statuses work unchanged. Manua
 
 #### Automated
 
-- [x] 4.1 `npm run lint` passes
-- [x] 4.2 `npm run test` passes (unit tests; e2e verified in Phase 2)
-- [x] 4.3 `npm run build` passes
+- [x] 4.1 `npm run lint` passes — 099baee
+- [x] 4.2 `npm run test` passes (unit tests; e2e verified in Phase 2) — 099baee
+- [x] 4.3 `npm run build` passes — 099baee
 
 #### Manual
 
-- [x] 4.4 Delivered one-click archives with toast; Remove uses confirm dialog
-- [x] 4.5 Archive reflects actions; optimistic rollback on API failure verified
+- [x] 4.4 Delivered one-click archives with toast; Remove uses confirm dialog — 099baee
+- [x] 4.5 Archive reflects actions; optimistic rollback on API failure verified — 099baee
