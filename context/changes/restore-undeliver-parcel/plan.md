@@ -246,11 +246,11 @@ None. No schema changes.
 
 #### Automated
 
-- [x] 3.1 Lint passes: `npm run lint -w @parcel-scrubber/web`
-- [x] 3.2 Web unit tests pass: `npm run test:web`
-- [x] 3.3 Full monorepo lint + test: `npm run lint` and `npm run test`
+- [x] 3.1 Lint passes: `npm run lint -w @parcel-scrubber/web` — b358218
+- [x] 3.2 Web unit tests pass: `npm run test:web` — b358218
+- [x] 3.3 Full monorepo lint + test: `npm run lint` and `npm run test` — b358218
 
 #### Manual
 
-- [ ] 3.4 Archive Delivered/Removed rows restore to Active with toast; old order dates work
-- [ ] 3.5 Double-click idempotent; sync does not re-archive; error rollback reloads row
+- [x] 3.4 Archive Delivered/Removed rows restore to Active with toast; old order dates work — b358218
+- [x] 3.5 Double-click idempotent; sync does not re-archive; error rollback reloads row — b358218
