@@ -5,7 +5,7 @@ import {
   Prisma,
   StatusEventSource,
 } from '@prisma/client';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
 import { ParcelsService } from './parcels.service';
 import { ParcelValidationError } from './parcel-validation.error';
