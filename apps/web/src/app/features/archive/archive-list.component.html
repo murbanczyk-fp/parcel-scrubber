@@ -59,6 +59,14 @@
               >
                 <p-button label="Edit" size="small" severity="secondary" [outlined]="true" />
               </a>
+              <p-button
+                label="Restore"
+                size="small"
+                [attr.data-testid]="'restore-parcel-' + parcel.id"
+                [disabled]="isActionInFlight(parcel.id)"
+                [loading]="isActionInFlight(parcel.id)"
+                (onClick)="onRestore(parcel)"
+              />
             </td>
           </tr>
         </ng-template>

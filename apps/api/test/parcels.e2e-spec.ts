@@ -361,9 +361,7 @@ describe('Parcels HTTP (e2e)', () => {
     const otherAgent = createAuthenticatedAgent(otherUser);
     const ownerAgent = createAuthenticatedAgent(owner);
 
-    await otherAgent
-      .post(`/api/parcels/${parcel.id}/reactivate`)
-      .expect(404);
+    await otherAgent.post(`/api/parcels/${parcel.id}/reactivate`).expect(404);
     await ownerAgent
       .post('/api/parcels/missing-parcel-id/reactivate')
       .expect(404);

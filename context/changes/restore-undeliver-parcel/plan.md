@@ -235,20 +235,20 @@ None. No schema changes.
 
 #### Automated
 
-- [x] 2.1 E2e tests pass: `npm run test:api -- --testPathPattern=parcels.e2e`
-- [x] 2.2 Full API test suite passes: `npm run test:api`
+- [x] 2.1 E2e tests pass: `npm run test:api -- --testPathPattern=parcels.e2e` — 0d3708b
+- [x] 2.2 Full API test suite passes: `npm run test:api` — 0d3708b
 
 #### Manual
 
-- [x] 2.3 N/A — e2e-only phase (confirm automated green before Phase 3)
+- [x] 2.3 N/A — e2e-only phase (confirm automated green before Phase 3) — 0d3708b
 
 ### Phase 3: Archive UI — Restore action
 
 #### Automated
 
-- [ ] 3.1 Lint passes: `npm run lint -w @parcel-scrubber/web`
-- [ ] 3.2 Web unit tests pass: `npm run test:web`
-- [ ] 3.3 Full monorepo lint + test: `npm run lint` and `npm run test`
+- [x] 3.1 Lint passes: `npm run lint -w @parcel-scrubber/web`
+- [x] 3.2 Web unit tests pass: `npm run test:web`
+- [x] 3.3 Full monorepo lint + test: `npm run lint` and `npm run test`
 
 #### Manual
 

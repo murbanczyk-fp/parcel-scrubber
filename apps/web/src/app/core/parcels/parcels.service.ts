@@ -55,6 +55,12 @@ export class ParcelsService {
     );
   }
 
+  reactivateParcel(id: string): Promise<ParcelDto> {
+    return firstValueFrom(
+      this.http.post<ParcelDto>(`/api/parcels/${id}/reactivate`, null),
+    );
+  }
+
   startSync(): Promise<{ jobId: string }> {
     return firstValueFrom(
       this.http.post<{ jobId: string }>('/api/sync', null),
