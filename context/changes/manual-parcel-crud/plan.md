@@ -94,6 +94,7 @@ Add service methods and controller routes for manual parcel CRUD with field vali
 
 - `CreateParcelBody`: `store`, `carrier`, `trackingNumber`, `orderDate` (ISO date string `YYYY-MM-DD`), optional `description`, optional `trackingUrl`, optional `customCarrierLabel` (required in validation when `carrier === CUSTOM`).
 - `UpdateParcelBody`: partial pick of writable fields — `store`, `description`, `carrier`, `customCarrierLabel`, `trackingNumber`, `trackingUrl`, `orderDate`. No `status`, `source`, or `id`.
+- Extend response `ParcelDto`: add `trackingUrlOverride: string | null` (raw DB column); keep `trackingUrl` as resolved URL via `resolveTrackingUrl` for list links and display.
 
 #### 3. ParcelsService — create, get, update
 
@@ -111,6 +112,7 @@ Add service methods and controller routes for manual parcel CRUD with field vali
   - Check duplicate: `findFirst({ userId, trackingNumber })` → throw `ParcelValidationError` on conflict (prefer explicit check; also catch Prisma `P2002` as fallback → same 400).
   - `prisma.parcel.create` with `userId`, `source: MANUAL`, `status: NEW`, normalized fields, `orderDate` as `Date` (date-only semantics per `@db.Date`).
   - Return `mapParcelToDto(created)`.
+- `mapParcelToDto` (extend): set `trackingUrlOverride: parcel.trackingUrl` (stored override only); set `trackingUrl: resolveTrackingUrl(parcel)` (resolved link for lists and tracking column).
 - `getByIdForUser(userId: string, parcelId: string): Promise<ParcelDto>`
   - `findFirst({ id: parcelId, userId })`; missing → `NotFoundException('Parcel not found')`.
   - Return mapped DTO.
@@ -123,7 +125,7 @@ Add service methods and controller routes for manual parcel CRUD with field vali
   - `prisma.parcel.update` with only provided fields; never update `source` or `status`.
   - Return `mapParcelToDto(updated)`.
 - Private `validateCreateBody` / `validateUpdateBody` helpers collecting field errors then throw `ParcelValidationError` if any.
-- Private `parseOrderDate(value: string): Date` — accept `YYYY-MM-DD`; reject invalid dates with field error.
+- Private `parseOrderDate(value: string): Date` — accept `YYYY-MM-DD`; parse as UTC date-only via `` `${value}T00:00:00.000Z` `` (matches `mapParcelToDto` output convention); reject invalid calendar dates with field error.
 
 #### 4. ParcelsController — routes
 
@@ -159,6 +161,7 @@ Add service methods and controller routes for manual parcel CRUD with field vali
 - Update duplicate tracking on another parcel → validation error.
 - Get/update NotFound for wrong user.
 - Normalized tracking number stored uppercase trimmed.
+- `mapParcelToDto` exposes `trackingUrlOverride` (raw) and `trackingUrl` (resolved).
 
 #### 6. Controller unit tests
 
@@ -241,6 +244,7 @@ Add `ParcelFormComponent` with reactive form, PrimeNG inputs (including Select a
 **Contract**:
 
 - `CreateParcelPayload` and `UpdateParcelPayload` type aliases aligned with API bodies.
+- Extend `ParcelDto` with `trackingUrlOverride: string | null` (keep in sync with API response shape — update `parcels.types.ts` in the same commit as API `parcel.dto.ts`).
 - Reuse existing `ParcelCarrier` union for carrier dropdown values.
 
 #### 2. ParcelsService HTTP methods
@@ -272,7 +276,7 @@ Add `ParcelFormComponent` with reactive form, PrimeNG inputs (including Select a
 - Form fields: store (text), carrier (`p-select` or equivalent), customCarrierLabel (visible when CUSTOM), trackingNumber, orderDate (`p-datepicker`, default today on create), description (optional textarea or text), trackingUrl (optional — help text: “Leave empty to use carrier link; clear to revert”).
 - Client validators mirror API required rules: store, carrier, tracking number, order date; CUSTOM requires label.
 - On create init: `orderDate` defaults to today (local date, submit as `YYYY-MM-DD`).
-- On edit init: load via `getParcel(id)`; populate form including empty trackingUrl field when no override (display hint that clearing saves revert — edit mode sends `trackingUrl: ''` only when user clears the field).
+- On edit init: load via `getParcel(id)`; bind `trackingUrl` form control to `trackingUrlOverride` (empty when null — generated link shown in help text only, not the input). Edit mode sends `trackingUrl: ''` only when user clears the field.
 - Submit: create → `createParcel`; edit → `updateParcel` with dirty fields only (settings `buildPatch` pattern).
 - Cancel navigates to `returnPath` without save.
 - Save success: toast + navigate to `returnPath`.
@@ -342,7 +346,8 @@ Wire Add button on Active header and Edit actions on Active and Archive tables; 
 
 **Contract**:
 
-- Header actions: add **Add parcel** button (outline/secondary styling to complement Sync) linking to `/active/new` via `RouterLink` or `router.navigate`.
+- Header actions: add **Add parcel** button (outline/secondary styling to complement Sync) linking to `/active/new` via `RouterLink`.
+- Import `RouterLink` from `@angular/router` in component `imports`.
 - `data-testid="add-parcel"`.
 
 #### 2. Active list — Edit action
@@ -353,7 +358,8 @@ Wire Add button on Active header and Edit actions on Active and Archive tables; 
 
 **Contract**:
 
-- Actions column: add **Edit** button/link → `/active/{{ parcel.id }}/edit`.
+- Actions column: add **Edit** button/link → `/active/{{ parcel.id }}/edit` via `RouterLink`.
+- Import `RouterLink` if not already present.
 - `data-testid="'edit-parcel-' + parcel.id"`.
 - Coexist with Deliver/Remove buttons; no confirm dialog for edit navigation.
 
@@ -368,7 +374,8 @@ Wire Add button on Active header and Edit actions on Active and Archive tables; 
 
 **Contract**:
 
-- Add Actions column (or link in row) with **Edit** → `/archive/{{ parcel.id }}/edit`.
+- Add Actions column (or link in row) with **Edit** → `/archive/{{ parcel.id }}/edit` via `RouterLink`.
+- Import `RouterLink` from `@angular/router` in component `imports`.
 - Archive remains read-only for deliver/remove; edit only.
 
 #### 4. Post-save list refresh
@@ -479,10 +486,11 @@ No schema migrations. Deploy is code-only API + web. Rollback reverts routes and
 
 #### Automated
 
-- [ ] 4.1 Full monorepo tests pass: `npm run test`
+- [ ] 4.1 Lint passes: `npm run lint`
+- [ ] 4.2 Full monorepo tests pass: `npm run test`
 
 #### Manual
 
-- [ ] 4.2 Add parcel from Active → appears in table with correct link
-- [ ] 4.3 Edit from Active and Archive → changes persist
-- [ ] 4.4 URL override clear reverts to generated link; duplicate tracking shows field error
+- [ ] 4.3 Add parcel from Active → appears in table with correct link
+- [ ] 4.4 Edit from Active and Archive → changes persist
+- [ ] 4.5 URL override clear reverts to generated link; duplicate tracking shows field error
