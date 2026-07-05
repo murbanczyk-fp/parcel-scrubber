@@ -1,10 +1,10 @@
 ---
 change_id: manual-parcel-crud
 title: Manual parcel crud
-status: impl_reviewed
+status: archived
 created: 2026-07-05
 updated: 2026-07-05
-archived_at: null
+archived_at: 2026-07-05T17:12:00Z
 ---
 
 ## Notes

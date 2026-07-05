@@ -38,7 +38,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | F-06 | ai-email-parcel-extraction | (foundation) extract tracking number, carrier, and description from email body via OpenRouter | F-05 | FR-003, FR-004, FR-005 | done |
 | S-02 | gmail-sync-active-parcels | trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive) | S-01, F-03, F-05, F-06 | US-01, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-014, FR-017 | done |
 | S-03 | deliver-remove-archive | mark Delivered or remove from active list and browse the parcel in archive | S-02 | US-02, FR-009, FR-012, FR-013 | done |
-| S-04 | manual-parcel-crud | manually add or edit parcels (including order date and tracking URL override) | S-02 | FR-010, FR-011, FR-015 | proposed |
+| S-04 | manual-parcel-crud | manually add or edit parcels (including order date and tracking URL override) | S-02 | FR-010, FR-011, FR-015 | done |
 | S-05 | restore-undeliver-parcel | restore or undeliver any archived parcel back to the active list regardless of order date | S-03 | US-03, FR-016 | proposed |
 
 ## Streams
@@ -193,7 +193,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Secondary success criterion — parallel with S-03 after sync to fill gaps without blocking core import path.
-- **Status:** proposed
+- **Status:** done
 
 ### S-05: Restore or undeliver archived parcel
 
@@ -254,3 +254,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-06: (foundation) given email headers and body text (from F-05 `getMessage`), a service returns structured parcel fields — tracking number, carrier, optional description — via OpenRouter using `gpt-5.4-mini` or `gpt-5.4-nano`.** — Archived 2026-06-14 → `context/archive/2026-06-09-ai-email-parcel-extraction/`. Lesson: —.
 - **S-02: trigger Sync and see imported active parcels with order dates and carrier tracking links (no age-based auto-archive)** — Archived 2026-06-22 → `context/archive/2026-06-14-gmail-sync-active-parcels/`. Lesson: —.
 - **S-03: user can mark a parcel Delivered or remove it from the active list and find it in archive with order date and tracking link intact.** — Archived 2026-07-05 → `context/archive/2026-06-22-deliver-remove-archive/`. Lesson: —.
+- **S-04: user can manually add a parcel not found by sync and edit fields including order date and tracking URL.** — Archived 2026-07-05 → `context/archive/2026-07-05-manual-parcel-crud/`. Lesson: —.
