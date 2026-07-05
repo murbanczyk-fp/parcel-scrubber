@@ -257,6 +257,133 @@ describe('Parcels HTTP (e2e)', () => {
     await ownerAgent.post('/api/parcels/missing-parcel-id/remove').expect(404);
   });
 
+  it('reactivates a delivered parcel to active with a status event', async () => {
+    const user = await createTestUser();
+    const agent = createAuthenticatedAgent(user);
+    const parcel = await createParcel(user.id);
+
+    await agent.post(`/api/parcels/${parcel.id}/deliver`).expect(200);
+
+    const reactivateResponse = await agent
+      .post(`/api/parcels/${parcel.id}/reactivate`)
+      .expect(200);
+
+    expect(reactivateResponse.body).toMatchObject({
+      id: parcel.id,
+      status: 'NEW',
+    });
+
+    const activeIds = (
+      (await agent.get('/api/parcels?status=active').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(activeIds).toContain(parcel.id);
+
+    const archivedIds = (
+      (await agent.get('/api/parcels?status=archived').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(archivedIds).not.toContain(parcel.id);
+
+    const events = await prisma.parcelStatusEvent.findMany({
+      where: { parcelId: parcel.id },
+    });
+    expect(events).toHaveLength(2);
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fromStatus: ParcelStatus.DELIVERED,
+          toStatus: ParcelStatus.NEW,
+          source: StatusEventSource.USER,
+        }),
+      ]),
+    );
+  });
+
+  it('reactivates a removed parcel to active with a status event', async () => {
+    const user = await createTestUser();
+    const agent = createAuthenticatedAgent(user);
+    const parcel = await createParcel(user.id);
+
+    await agent.post(`/api/parcels/${parcel.id}/remove`).expect(200);
+
+    const reactivateResponse = await agent
+      .post(`/api/parcels/${parcel.id}/reactivate`)
+      .expect(200);
+
+    expect(reactivateResponse.body).toMatchObject({
+      id: parcel.id,
+      status: 'NEW',
+    });
+
+    const activeIds = (
+      (await agent.get('/api/parcels?status=active').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(activeIds).toContain(parcel.id);
+
+    const events = await prisma.parcelStatusEvent.findMany({
+      where: { parcelId: parcel.id },
+    });
+    expect(events).toHaveLength(2);
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fromStatus: ParcelStatus.REMOVED,
+          toStatus: ParcelStatus.NEW,
+          source: StatusEventSource.USER,
+        }),
+      ]),
+    );
+  });
+
+  it('is idempotent when reactivating an already active parcel', async () => {
+    const user = await createTestUser();
+    const agent = createAuthenticatedAgent(user);
+    const parcel = await createParcel(user.id);
+
+    await agent.post(`/api/parcels/${parcel.id}/deliver`).expect(200);
+    await agent.post(`/api/parcels/${parcel.id}/reactivate`).expect(200);
+    await agent.post(`/api/parcels/${parcel.id}/reactivate`).expect(200);
+
+    const eventCount = await prisma.parcelStatusEvent.count({
+      where: { parcelId: parcel.id },
+    });
+    expect(eventCount).toBe(2);
+  });
+
+  it('returns 404 when reactivating unknown parcel or another user parcel', async () => {
+    const owner = await createTestUser();
+    const otherUser = await createTestUser();
+    const parcel = await createParcel(owner.id, {
+      status: ParcelStatus.DELIVERED,
+    });
+    const otherAgent = createAuthenticatedAgent(otherUser);
+    const ownerAgent = createAuthenticatedAgent(owner);
+
+    await otherAgent
+      .post(`/api/parcels/${parcel.id}/reactivate`)
+      .expect(404);
+    await ownerAgent
+      .post('/api/parcels/missing-parcel-id/reactivate')
+      .expect(404);
+  });
+
+  it('returns 400 when reactivating an IN_TRANSIT parcel', async () => {
+    const user = await createTestUser();
+    const agent = createAuthenticatedAgent(user);
+    const parcel = await createParcel(user.id, {
+      status: ParcelStatus.IN_TRANSIT,
+    });
+
+    await agent.post(`/api/parcels/${parcel.id}/reactivate`).expect(400);
+
+    const eventCount = await prisma.parcelStatusEvent.count({
+      where: { parcelId: parcel.id },
+    });
+    expect(eventCount).toBe(0);
+  });
+
   it('returns 400 when status query parameter is omitted', async () => {
     const user = await createTestUser();
     const agent = createAuthenticatedAgent(user);

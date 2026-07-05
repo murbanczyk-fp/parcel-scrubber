@@ -223,24 +223,24 @@ None. No schema changes.
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels`
-- [x] 1.2 Lint passes: `npm run lint -w @parcel-scrubber/api`
-- [x] 1.3 Type checking passes via test compile
+- [x] 1.1 Unit tests pass: `npm run test:api -- --testPathPattern=parcels` — 4ef086f
+- [x] 1.2 Lint passes: `npm run lint -w @parcel-scrubber/api` — 4ef086f
+- [x] 1.3 Type checking passes via test compile — 4ef086f
 
 #### Manual
 
-- [ ] 1.4 N/A — API-only phase (confirm automated green before Phase 2)
+- [x] 1.4 N/A — API-only phase (confirm automated green before Phase 2) — 4ef086f
 
 ### Phase 2: Parcels e2e — reactivate scenarios
 
 #### Automated
 
-- [ ] 2.1 E2e tests pass: `npm run test:api -- --testPathPattern=parcels.e2e`
-- [ ] 2.2 Full API test suite passes: `npm run test:api`
+- [x] 2.1 E2e tests pass: `npm run test:api -- --testPathPattern=parcels.e2e`
+- [x] 2.2 Full API test suite passes: `npm run test:api`
 
 #### Manual
 
-- [ ] 2.3 N/A — e2e-only phase (confirm automated green before Phase 3)
+- [x] 2.3 N/A — e2e-only phase (confirm automated green before Phase 3)
 
 ### Phase 3: Archive UI — Restore action
 
