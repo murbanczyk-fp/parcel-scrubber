@@ -95,9 +95,16 @@ export class SyncService {
   ): Promise<void> {
     const message = await this.gmail.getMessage(userId, gmailMessageId);
     const internalDate = parseGmailDateHeader(message.date);
+    const { subject, from } = message;
 
     if (!internalDate) {
-      await this.createLedgerEntry(userId, gmailMessageId, new Date());
+      await this.createLedgerEntry(
+        userId,
+        gmailMessageId,
+        new Date(),
+        subject,
+        from,
+      );
       this.registry.increment(jobId, 'skipped');
       return;
     }
@@ -107,7 +114,13 @@ export class SyncService {
       extraction = await this.extraction.extractParcelFields(message);
     } catch (error) {
       if (error instanceof ExtractionError) {
-        await this.createLedgerEntry(userId, gmailMessageId, internalDate);
+        await this.createLedgerEntry(
+          userId,
+          gmailMessageId,
+          internalDate,
+          subject,
+          from,
+        );
         this.registry.increment(jobId, 'failed');
         return;
       }
@@ -119,7 +132,13 @@ export class SyncService {
       extraction.trackingNumber,
     );
     if (!normalizedTracking) {
-      await this.createLedgerEntry(userId, gmailMessageId, internalDate);
+      await this.createLedgerEntry(
+        userId,
+        gmailMessageId,
+        internalDate,
+        subject,
+        from,
+      );
       this.registry.increment(jobId, 'skipped');
       return;
     }
@@ -132,6 +151,8 @@ export class SyncService {
       userId,
       gmailMessageId,
       internalDate,
+      subject,
+      from,
       normalizedTracking,
       extraction,
       existing,
@@ -146,6 +167,8 @@ export class SyncService {
     userId: string,
     gmailMessageId: string,
     internalDate: Date,
+    subject: string,
+    from: string,
     trackingNumber: string,
     extraction: ExtractedParcelFields,
     existing: Parcel | null,
@@ -190,6 +213,8 @@ export class SyncService {
           userId,
           gmailMessageId,
           internalDate,
+          subject,
+          from,
         },
       });
 
@@ -225,12 +250,16 @@ export class SyncService {
     userId: string,
     gmailMessageId: string,
     internalDate: Date,
+    subject: string,
+    from: string,
   ): Promise<void> {
     await this.prisma.gmailMessage.create({
       data: {
         userId,
         gmailMessageId,
         internalDate,
+        subject,
+        from,
       },
     });
   }

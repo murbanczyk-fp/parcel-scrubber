@@ -96,6 +96,8 @@ model GmailMessage {
   userId         String   @map("user_id")
   gmailMessageId String   @map("gmail_message_id")
   internalDate   DateTime @map("internal_date")
+  subject        String?
+  from           String?  @map("from_address")
   threadId       String?  @map("thread_id")
   createdAt      DateTime @default(now()) @map("created_at")
 

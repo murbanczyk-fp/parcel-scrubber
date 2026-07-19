@@ -265,13 +265,13 @@ Personal mailbox volumes are small; embedding `messages[]` on list responses is 
 
 #### Automated
 
-- [ ] 1.1 Prisma migration applies cleanly
-- [ ] 1.2 API sync unit tests pass
-- [ ] 1.3 API lint passes for touched files
+- [x] 1.1 Prisma migration applies cleanly
+- [x] 1.2 API sync unit tests pass
+- [x] 1.3 API lint passes for touched files
 
 #### Manual
 
-- [ ] 1.4 Fresh-sync GmailMessage row has subject/from when Gmail returned them
+- [x] 1.4 Fresh-sync GmailMessage row has subject/from when Gmail returned them
 
 ### Phase 2: API embed messages on ParcelDto
 

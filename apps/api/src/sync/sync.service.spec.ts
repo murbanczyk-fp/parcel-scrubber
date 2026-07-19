@@ -114,7 +114,14 @@ describe('SyncService', () => {
       failed: 0,
     });
     expect(prisma.parcel.create).toHaveBeenCalled();
-    expect(prisma.gmailMessage.create).toHaveBeenCalled();
+    expect(prisma.gmailMessage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        gmailMessageId: 'msg-1',
+        subject: allegroInPostShipmentFixture.subject,
+        from: allegroInPostShipmentFixture.from,
+      }) as object,
+    });
     expect(prisma.parcelEmail.create).toHaveBeenCalled();
   });
 
@@ -191,7 +198,14 @@ describe('SyncService', () => {
 
     expect(extraction.extractParcelFields).toHaveBeenCalled();
     expect(prisma.parcel.create).not.toHaveBeenCalled();
-    expect(prisma.gmailMessage.create).toHaveBeenCalled();
+    expect(prisma.gmailMessage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        gmailMessageId: 'msg-1',
+        subject: allegroInPostShipmentFixture.subject,
+        from: 'noreply@inpost.pl',
+      }) as object,
+    });
     expect(registry.get(started!.jobId, 'user-1')).toMatchObject({
       skipped: 1,
       imported: 0,
@@ -308,7 +322,14 @@ describe('SyncService', () => {
       imported: 0,
       status: 'completed',
     });
-    expect(prisma.gmailMessage.create).toHaveBeenCalled();
+    expect(prisma.gmailMessage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        gmailMessageId: 'msg-1',
+        subject: allegroInPostShipmentFixture.subject,
+        from: 'noreply@inpost.pl',
+      }) as object,
+    });
     expect(prisma.parcel.create).not.toHaveBeenCalled();
   });
 
@@ -327,7 +348,14 @@ describe('SyncService', () => {
       imported: 0,
       status: 'completed',
     });
-    expect(prisma.gmailMessage.create).toHaveBeenCalled();
+    expect(prisma.gmailMessage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        gmailMessageId: 'msg-1',
+        subject: allegroInPostShipmentFixture.subject,
+        from: allegroInPostShipmentFixture.from,
+      }) as object,
+    });
     expect(prisma.parcel.create).not.toHaveBeenCalled();
   });
 
