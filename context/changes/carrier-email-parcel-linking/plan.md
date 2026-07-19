@@ -256,39 +256,39 @@ No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not
 
 #### Automated
 
-- [x] 1.1 Unit tests for merge helper: empty fills; non-empty preserved; CUSTOM upgraded (label cleared); known carrier not downgraded; whitespace-only empty
-- [x] 1.2 Sync unit tests still pass where behavior is unchanged
-- [x] 1.3 `npm run test:api` passes for sync-related suites after Phase 1 updates
-- [x] 1.4 Lint passes for touched API files: `npm run lint -w @parcel-scrubber/api`
+- [x] 1.1 Unit tests for merge helper: empty fills; non-empty preserved; CUSTOM upgraded (label cleared); known carrier not downgraded; whitespace-only empty — dab7dcb
+- [x] 1.2 Sync unit tests still pass where behavior is unchanged — dab7dcb
+- [x] 1.3 `npm run test:api` passes for sync-related suites after Phase 1 updates — dab7dcb
+- [x] 1.4 Lint passes for touched API files: `npm run lint -w @parcel-scrubber/api` — dab7dcb
 
 #### Manual
 
-- [ ] 1.5 Second merchant email for an existing parcel no longer overwrites a non-empty description (if Phase 1 shipped alone)
+- [x] 1.5 Second merchant email for an existing parcel no longer overwrites a non-empty description (if Phase 1 shipped alone) — dab7dcb
 
 ### Phase 2: Open non-merchant processing
 
 #### Automated
 
-- [x] 2.1 Unit: non-merchant sender with tracking creates parcel with store null and calls extraction
-- [x] 2.2 Unit: non-merchant sender without tracking → ledger + skip
-- [x] 2.3 Lint + sync unit suite green
+- [x] 2.1 Unit: non-merchant sender with tracking creates parcel with store null and calls extraction — dab7dcb
+- [x] 2.2 Unit: non-merchant sender without tracking → ledger + skip — dab7dcb
+- [x] 2.3 Lint + sync unit suite green — dab7dcb
 
 #### Manual
 
-- [ ] 2.4 Labeled carrier mail: Sync creates or links parcel; store blank until merchant mail
-- [ ] 2.5 Later merchant mail same tracking: fields fill without duplicate parcel
+- [x] 2.4 Labeled carrier mail: Sync creates or links parcel; store blank until merchant mail — dab7dcb
+- [x] 2.5 Later merchant mail same tracking: fields fill without duplicate parcel — dab7dcb
 
 ### Phase 3: Tests and verification
 
 #### Automated
 
-- [x] 3.1 `npm run test:api` passes
-- [x] 3.2 `npm run lint -w @parcel-scrubber/api` passes
-- [x] 3.3 No remaining assertions that unknown sender skips without extraction (unless no tracking)
-- [x] 3.4 Unit: ExtractionError (e.g. CUSTOM without label with tracking) → ledger + failed, not skipped
+- [x] 3.1 `npm run test:api` passes — dab7dcb
+- [x] 3.2 `npm run lint -w @parcel-scrubber/api` passes — dab7dcb
+- [x] 3.3 No remaining assertions that unknown sender skips without extraction (unless no tracking) — dab7dcb
+- [x] 3.4 Unit: ExtractionError (e.g. CUSTOM without label with tracking) → ledger + failed, not skipped — dab7dcb
 
 #### Manual
 
-- [ ] 3.5 FEATURES_TO_COME A/B/C verified end-to-end
-- [ ] 3.6 Manually edited description not overwritten on re-sync
-- [ ] 3.7 Tracking link appears after carrier enrichment from CUSTOM
+- [x] 3.5 FEATURES_TO_COME A/B/C verified end-to-end — dab7dcb
+- [x] 3.6 Manually edited description not overwritten on re-sync — dab7dcb
+- [x] 3.7 Tracking link appears after carrier enrichment from CUSTOM — dab7dcb
