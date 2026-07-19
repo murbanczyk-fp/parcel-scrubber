@@ -44,6 +44,21 @@ const DUPLICATE_TRACKING_MESSAGE =
 
 const CARRIER_VALUES = new Set<string>(Object.values(Carrier));
 
+const PARCEL_MESSAGES_INCLUDE = {
+  messages: {
+    include: {
+      gmailMessage: {
+        select: {
+          gmailMessageId: true,
+          internalDate: true,
+          subject: true,
+          from: true,
+        },
+      },
+    },
+  },
+} as const;
+
 function isCarrier(value: unknown): value is Carrier {
   return typeof value === 'string' && CARRIER_VALUES.has(value);
 }
@@ -65,6 +80,7 @@ export class ParcelsService {
             : { in: [...ARCHIVED_PARCEL_STATUSES] },
       },
       orderBy: [{ orderDate: 'desc' }, { createdAt: 'desc' }],
+      include: PARCEL_MESSAGES_INCLUDE,
     });
 
     return parcels.map(mapParcelToDto);
@@ -111,6 +127,7 @@ export class ParcelsService {
   async getByIdForUser(userId: string, parcelId: string): Promise<ParcelDto> {
     const parcel = await this.prisma.parcel.findFirst({
       where: { id: parcelId, userId },
+      include: PARCEL_MESSAGES_INCLUDE,
     });
 
     if (!parcel) {
@@ -174,6 +191,7 @@ export class ParcelsService {
 
       const updated = await this.prisma.parcel.findFirst({
         where: { id: parcelId, userId },
+        include: PARCEL_MESSAGES_INCLUDE,
       });
 
       if (!updated) {
@@ -571,6 +589,7 @@ export class ParcelsService {
   ): Promise<ParcelDto> {
     const parcel = await this.prisma.parcel.findFirst({
       where: { id: parcelId, userId },
+      include: PARCEL_MESSAGES_INCLUDE,
     });
 
     if (!parcel) {
@@ -596,6 +615,7 @@ export class ParcelsService {
       if (count === 0) {
         const current = await tx.parcel.findFirst({
           where: { id: parcelId, userId },
+          include: PARCEL_MESSAGES_INCLUDE,
         });
         if (!current) {
           throw new NotFoundException('Parcel not found');
@@ -614,6 +634,7 @@ export class ParcelsService {
 
       return tx.parcel.findFirstOrThrow({
         where: { id: parcelId, userId },
+        include: PARCEL_MESSAGES_INCLUDE,
       });
     });
 

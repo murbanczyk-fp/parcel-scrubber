@@ -9,6 +9,7 @@ import { MessageModule } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 
 import { ParcelsService } from '../../core/parcels/parcels.service';
+import { gmailMessageUrl } from '../../core/parcels/gmail-message-url';
 import { OrderDateLocalPipe } from '../../core/parcels/order-date.pipe';
 import type { ParcelDto } from '../../core/parcels/parcels.types';
 
@@ -39,6 +40,7 @@ export class ArchiveListComponent implements OnInit {
   protected readonly loadError = signal<string | null>(null);
   protected readonly parcels = signal<ParcelDto[]>([]);
   protected readonly actionInFlight = signal<ReadonlySet<string>>(new Set());
+  expandedRowKeys: Record<string, boolean> = {};
 
   ngOnInit(): void {
     void this.loadParcels();
@@ -58,6 +60,10 @@ export class ArchiveListComponent implements OnInit {
     }
 
     return parcel.status;
+  }
+
+  protected messageUrl(gmailMessageId: string): string {
+    return gmailMessageUrl(gmailMessageId);
   }
 
   protected isActionInFlight(parcelId: string): boolean {

@@ -41,7 +41,7 @@ Frequent Allegro and AliExpress buyers scatter shipment facts across Gmail; Parc
 | S-04 | manual-parcel-crud | manually add or edit parcels (including order date and tracking URL override) | S-02 | FR-010, FR-011, FR-015 | done |
 | S-05 | restore-undeliver-parcel | restore or undeliver any archived parcel back to the active list regardless of order date | S-03 | US-03, FR-016 | done |
 | S-06 | carrier-email-parcel-linking | carrier shipment emails import or enrich parcels by tracking number even without a known store sender | S-02 | US-06, FR-018 | done |
-| S-07 | parcel-email-expandable-rows | expand a parcel row to list linked Gmail messages with external links back to Gmail | S-02 | US-04, FR-019 | proposed |
+| S-07 | parcel-email-expandable-rows | expand a parcel row to list linked Gmail messages with external links back to Gmail | S-02 | US-04, FR-019 | done |
 | S-08 | merge-parcels | select multiple parcels and merge them into one when dedupe split the same shipment | S-02 | US-05, FR-020 | proposed |
 
 ## Streams
@@ -234,7 +234,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Requires API to return linked `gmailMessageId` values (and optional date/subject metadata) per parcel; `ParcelEmail` / `GmailMessage` models already exist from S-02.
-- **Status:** proposed
+- **Status:** done
 
 ### S-08: Merge parcels
 
@@ -301,3 +301,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-04: user can manually add a parcel not found by sync and edit fields including order date and tracking URL.** — Archived 2026-07-05 → `context/archive/2026-07-05-manual-parcel-crud/`. Lesson: —.
 - **S-05: user can restore any archived parcel to the active list regardless of order date, and can undeliver (reverse Delivered) the same way.** — Archived 2026-07-05 → `context/archive/2026-07-05-restore-undeliver-parcel/`. Lesson: —.
 - **S-06: user sees carrier-only shipment notifications appear as parcels (or enrich existing ones) after Sync, even when the sender is not Allegro/AliExpress. Sync no longer skips non-merchant messages when extraction yields a tracking number; it links by normalized tracking number, creates when new, and enriches null/empty fields when a later merchant email shares the same tracking number.** — Archived 2026-07-19 → `context/archive/2026-07-19-carrier-email-parcel-linking/`. Lesson: —.
+- **S-07: user can expand a parcel row on the active or archive table to see every Gmail message scanned for that parcel; each entry links to `https://mail.google.com/mail/u/0/#all/{gmailMessageId}` with a `pi-external-link` icon.** — Archived 2026-07-19 → `context/archive/2026-07-19-parcel-email-expandable-rows/`. Lesson: —.

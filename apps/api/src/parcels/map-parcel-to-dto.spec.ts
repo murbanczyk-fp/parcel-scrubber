@@ -37,6 +37,7 @@ describe('mapParcelToDto', () => {
       source: ParcelSource.GMAIL,
       createdAt: '2026-01-15T10:00:00.000Z',
       updatedAt: '2026-01-16T10:00:00.000Z',
+      messages: [],
     });
   });
 
@@ -59,5 +60,51 @@ describe('mapParcelToDto', () => {
 
     expect(dto.trackingUrlOverride).toBe('https://example.com/custom-track');
     expect(dto.trackingUrl).toBe('https://example.com/custom-track');
+  });
+
+  it('returns empty messages when relation is missing or empty', () => {
+    expect(mapParcelToDto(baseParcel).messages).toEqual([]);
+    expect(mapParcelToDto({ ...baseParcel, messages: [] }).messages).toEqual(
+      [],
+    );
+  });
+
+  it('maps messages sorted oldest-first and passes through null subject/from', () => {
+    const dto = mapParcelToDto({
+      ...baseParcel,
+      messages: [
+        {
+          gmailMessage: {
+            gmailMessageId: 'msg-newer',
+            internalDate: new Date('2026-01-20T12:00:00.000Z'),
+            subject: 'Shipped',
+            from: 'shop@example.com',
+          },
+        },
+        {
+          gmailMessage: {
+            gmailMessageId: 'msg-older',
+            internalDate: new Date('2026-01-10T08:00:00.000Z'),
+            subject: null,
+            from: null,
+          },
+        },
+      ],
+    });
+
+    expect(dto.messages).toEqual([
+      {
+        gmailMessageId: 'msg-older',
+        internalDate: '2026-01-10T08:00:00.000Z',
+        subject: null,
+        from: null,
+      },
+      {
+        gmailMessageId: 'msg-newer',
+        internalDate: '2026-01-20T12:00:00.000Z',
+        subject: 'Shipped',
+        from: 'shop@example.com',
+      },
+    ]);
   });
 });

@@ -37,6 +37,13 @@ export type UpdateParcelPayload = Partial<
   >
 >;
 
+export type ParcelMessageDto = {
+  gmailMessageId: string;
+  internalDate: string;
+  subject: string | null;
+  from: string | null;
+};
+
 export type ParcelDto = {
   id: string;
   store: string | null;
@@ -51,6 +58,7 @@ export type ParcelDto = {
   source: ParcelSource;
   createdAt: string;
   updatedAt: string;
+  messages: ParcelMessageDto[];
 };
 
 export type SyncJobPhase = 'listing' | 'processing' | 'done';
