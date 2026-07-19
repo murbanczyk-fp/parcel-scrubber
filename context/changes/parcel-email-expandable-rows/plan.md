@@ -282,19 +282,19 @@ Personal mailbox volumes are small; embedding `messages[]` on list responses is 
 
 #### Manual
 
-- [x] 2.3 GET /api/parcels?status=active returns messages for a synced parcel
+- [x] 2.3 GET /api/parcels?status=active returns messages for a synced parcel — 949f3ff
 
 ### Phase 3: Expandable rows UI on Active + Archive
 
 #### Automated
 
-- [x] 3.1 Web unit tests pass
-- [x] 3.2 Web lint passes
-- [x] 3.3 Full workspace lint and test pass
+- [x] 3.1 Web unit tests pass — 949f3ff
+- [x] 3.2 Web lint passes — 949f3ff
+- [x] 3.3 Full workspace lint and test pass — 949f3ff
 
 #### Manual
 
-- [x] 3.4 Active: expand synced parcel; Gmail link opens in new tab with subject/from when present
-- [x] 3.5 Active: zero-message parcel has no expand toggler
-- [x] 3.6 Archive: expand works for archived parcel with links
-- [x] 3.7 Legacy null-subject messages show date + link only (no truncated id label)
+- [x] 3.4 Active: expand synced parcel; Gmail link opens in new tab with subject/from when present — 949f3ff
+- [x] 3.5 Active: zero-message parcel has no expand toggler — 949f3ff
+- [x] 3.6 Archive: expand works for archived parcel with links — 949f3ff
+- [x] 3.7 Legacy null-subject messages show date + link only (no truncated id label) — 949f3ff
