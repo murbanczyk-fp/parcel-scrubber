@@ -1,7 +1,7 @@
 ---
 change_id: carrier-email-parcel-linking
 title: Carrier email parcel linking
-status: implemented
+status: impl_reviewed
 created: 2026-07-19
 updated: 2026-07-19
 archived_at: null
