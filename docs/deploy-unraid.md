@@ -134,6 +134,21 @@ The runner image must include `git` and the Docker CLI (`docker compose`). After
 
 **Alternative:** install the runner directly on the Unraid host (not in Docker) so host paths and Docker work without extra mounts.
 
+## 6. Clear parcel / sync data (keep login)
+
+From the directory that contains `docker-compose.yml` and `.env`, truncate parcel and Gmail ledger tables without removing users or settings. Useful before a fresh Sync while staying signed in.
+
+```bash
+docker compose exec -T postgres psql -U parcel -d parcel_scrubber -c \
+  'TRUNCATE TABLE "parcel_emails", "gmail_messages", "parcel_status_events", "parcels" CASCADE;'
+```
+
+Notes:
+
+- Target database is `parcel_scrubber` (`-d parcel_scrubber`), not `postgres`.
+- Table names must use **double quotes** (`"parcels"`). Single quotes are string literals and cause a syntax error.
+- For a full wipe (including users) or dump/restore, see [`backups/README.md`](../backups/README.md).
+
 ## Local development (without Docker)
 
 1. Start Postgres (e.g. `docker compose up -d postgres` only, or local install).

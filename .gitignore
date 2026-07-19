@@ -52,6 +52,7 @@ __screenshots__/
 
 # Database dumps (local backups — may contain user data)
 /backups/
+!/backups/README.md
 
 # System files
 .DS_Store
