@@ -79,11 +79,26 @@ describe('ParcelsService', () => {
         },
       },
       orderBy: [{ orderDate: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        messages: {
+          include: {
+            gmailMessage: {
+              select: {
+                gmailMessageId: true,
+                internalDate: true,
+                subject: true,
+                from: true,
+              },
+            },
+          },
+        },
+      },
     });
     expect(result[0]).toMatchObject({
       id: 'parcel-1',
       trackingUrl: expect.stringContaining('inpost') as string,
       orderDate: '2026-02-01',
+      messages: [],
     });
   });
 
@@ -100,7 +115,50 @@ describe('ParcelsService', () => {
         },
       },
       orderBy: [{ orderDate: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        messages: {
+          include: {
+            gmailMessage: {
+              select: {
+                gmailMessageId: true,
+                internalDate: true,
+                subject: true,
+                from: true,
+              },
+            },
+          },
+        },
+      },
     });
+  });
+
+  it('maps included messages on list responses', async () => {
+    prisma.parcel.findMany.mockResolvedValue([
+      {
+        ...baseParcel,
+        messages: [
+          {
+            gmailMessage: {
+              gmailMessageId: 'msg-1',
+              internalDate: new Date('2026-01-15T10:00:00.000Z'),
+              subject: 'Your package',
+              from: 'shop@example.com',
+            },
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.listForUser('user-1', { status: 'active' });
+
+    expect(result[0].messages).toEqual([
+      {
+        gmailMessageId: 'msg-1',
+        internalDate: '2026-01-15T10:00:00.000Z',
+        subject: 'Your package',
+        from: 'shop@example.com',
+      },
+    ]);
   });
 
   it('marks a parcel delivered and writes a user status event', async () => {
@@ -322,6 +380,7 @@ describe('ParcelsService', () => {
       expect(result.status).toBe('NEW');
       expect(result.trackingUrlOverride).toBeNull();
       expect(result.trackingUrl).toContain('inpost');
+      expect(result.messages).toEqual([]);
     });
 
     it('stores uppercase trimmed tracking number', async () => {
@@ -436,9 +495,54 @@ describe('ParcelsService', () => {
 
       const result = await service.getByIdForUser('user-1', 'parcel-1');
 
+      expect(prisma.parcel.findFirst).toHaveBeenCalledWith({
+        where: { id: 'parcel-1', userId: 'user-1' },
+        include: {
+          messages: {
+            include: {
+              gmailMessage: {
+                select: {
+                  gmailMessageId: true,
+                  internalDate: true,
+                  subject: true,
+                  from: true,
+                },
+              },
+            },
+          },
+        },
+      });
       expect(result.id).toBe('parcel-1');
       expect(result.trackingUrlOverride).toBeNull();
       expect(result.trackingUrl).toContain('inpost');
+      expect(result.messages).toEqual([]);
+    });
+
+    it('maps included messages on get-by-id', async () => {
+      prisma.parcel.findFirst.mockResolvedValue({
+        ...baseParcel,
+        messages: [
+          {
+            gmailMessage: {
+              gmailMessageId: 'msg-2',
+              internalDate: new Date('2026-02-01T09:00:00.000Z'),
+              subject: null,
+              from: 'carrier@example.com',
+            },
+          },
+        ],
+      });
+
+      const result = await service.getByIdForUser('user-1', 'parcel-1');
+
+      expect(result.messages).toEqual([
+        {
+          gmailMessageId: 'msg-2',
+          internalDate: '2026-02-01T09:00:00.000Z',
+          subject: null,
+          from: 'carrier@example.com',
+        },
+      ]);
     });
 
     it('throws NotFoundException for missing parcel', async () => {
