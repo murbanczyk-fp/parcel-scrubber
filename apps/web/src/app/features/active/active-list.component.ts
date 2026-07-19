@@ -17,6 +17,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { TableModule } from 'primeng/table';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { gmailMessageUrl } from '../../core/parcels/gmail-message-url';
 import { ParcelsService } from '../../core/parcels/parcels.service';
 import { OrderDateLocalPipe } from '../../core/parcels/order-date.pipe';
 import type { ParcelDto, SyncJobDto } from '../../core/parcels/parcels.types';
@@ -58,6 +59,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
   protected readonly syncJob = signal<SyncJobDto | null>(null);
   protected readonly authRequired = signal(false);
   protected readonly actionInFlight = signal<ReadonlySet<string>>(new Set());
+  expandedRowKeys: Record<string, boolean> = {};
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -75,6 +77,10 @@ export class ActiveListComponent implements OnInit, OnDestroy {
     }
 
     return CARRIER_LABELS[parcel.carrier];
+  }
+
+  protected messageUrl(gmailMessageId: string): string {
+    return gmailMessageUrl(gmailMessageId);
   }
 
   protected progressPercent(job: SyncJobDto): number {

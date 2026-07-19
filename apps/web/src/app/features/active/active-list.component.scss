@@ -69,6 +69,39 @@
   text-decoration: underline;
 }
 
+.active-list__expand-col {
+  width: 3rem;
+}
+
+.active-list__messages {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  list-style: none;
+}
+
+.active-list__message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+}
+
+.active-list__message-subject {
+  font-weight: 600;
+}
+
+.active-list__message-from,
+.active-list__message-date {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.active-list__message-link {
+  color: var(--p-primary-color);
+  text-decoration: none;
+}
+
 .active-list__actions {
   white-space: nowrap;
   > * {

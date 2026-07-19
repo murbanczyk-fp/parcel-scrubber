@@ -17,11 +17,13 @@
       <p-table
         [value]="parcels()"
         dataKey="id"
+        [expandedRowKeys]="expandedRowKeys"
         styleClass="archive-list__table"
         data-testid="archive-list-table"
       >
         <ng-template #header>
           <tr>
+            <th class="archive-list__expand-col"></th>
             <th>Store</th>
             <th>Description</th>
             <th>Order date</th>
@@ -31,8 +33,22 @@
             <th>Actions</th>
           </tr>
         </ng-template>
-        <ng-template #body let-parcel>
+        <ng-template #body let-parcel let-expanded="expanded">
           <tr>
+            <td>
+              @if (parcel.messages.length > 0) {
+                <p-button
+                  type="button"
+                  [pRowToggler]="parcel"
+                  [text]="true"
+                  [rounded]="true"
+                  [plain]="true"
+                  [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                  [attr.data-testid]="'expand-parcel-' + parcel.id"
+                  [attr.aria-label]="expanded ? 'Collapse linked emails' : 'Expand linked emails'"
+                />
+              }
+            </td>
             <td>{{ parcel.store ?? '—' }}</td>
             <td>{{ parcel.description ?? '—' }}</td>
             <td>{{ parcel.orderDate | orderDateLocal | date: 'mediumDate' }}</td>
@@ -67,6 +83,37 @@
                 [loading]="isActionInFlight(parcel.id)"
                 (onClick)="onRestore(parcel)"
               />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #expandedrow let-parcel>
+          <tr>
+            <td colspan="8">
+              <ul class="archive-list__messages" [attr.data-testid]="'parcel-messages-' + parcel.id">
+                @for (message of parcel.messages; track message.gmailMessageId) {
+                  <li class="archive-list__message">
+                    @if (message.subject) {
+                      <span class="archive-list__message-subject">{{ message.subject }}</span>
+                    }
+                    @if (message.from) {
+                      <span class="archive-list__message-from">{{ message.from }}</span>
+                    }
+                    <span class="archive-list__message-date">
+                      {{ message.internalDate | date: 'medium' }}
+                    </span>
+                    <a
+                      class="archive-list__message-link"
+                      [href]="messageUrl(message.gmailMessageId)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      [attr.data-testid]="'gmail-link-' + message.gmailMessageId"
+                      [attr.aria-label]="'Open message in Gmail'"
+                    >
+                      <i class="pi pi-external-link" aria-hidden="true"></i>
+                    </a>
+                  </li>
+                }
+              </ul>
             </td>
           </tr>
         </ng-template>
