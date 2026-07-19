@@ -169,6 +169,14 @@ Add PrimeNG multi-row expansion to Active and Archive parcel tables, gated on li
 
 **Contract**: Add `ParcelMessageDto` (or equivalent) and `messages: ParcelMessageDto[]` on `ParcelDto`, matching API field names/nullability.
 
+#### 1b. Gmail message URL helper
+
+**File**: `apps/web/src/app/core/parcels/gmail-message-url.ts`
+
+**Intent**: Share the FR-019 Gmail outbound URL between Active and Archive lists (and their specs) without a shared expandable-table abstraction.
+
+**Contract**: `gmailMessageUrl(gmailMessageId)` returns `https://mail.google.com/mail/u/0/#all/{gmailMessageId}`.
+
 #### 2. Active list row expansion
 
 **Files**: `apps/web/src/app/features/active/active-list.component.{ts,html,scss}`
@@ -178,7 +186,7 @@ Add PrimeNG multi-row expansion to Active and Archive parcel tables, gated on li
 **Contract**:
 - Use PrimeNG `p-table` row expansion with `expandedRowKeys` (multi-expand allowed). Reuse the existing `dataKey="id"` (already set on Active and Archive tables) — required for `expandedRowKeys`; do not omit or rename it.
 - Show row toggler only when `parcel.messages.length > 0`.
-- Expanded content lists each message: subject when non-null; from when non-null; date; link to `https://mail.google.com/mail/u/0/#all/{gmailMessageId}` with `pi-external-link`, `target="_blank"`, and `rel="noopener noreferrer"`.
+- Expanded content lists each message: subject when non-null; from when non-null; date; link via `gmailMessageUrl(gmailMessageId)` with `pi-external-link`, `target="_blank"`, and `rel="noopener noreferrer"`.
 - When subject is null: date + link only (no truncated id label).
 
 #### 3. Archive list row expansion
@@ -187,7 +195,7 @@ Add PrimeNG multi-row expansion to Active and Archive parcel tables, gated on li
 
 **Intent**: Same expand behavior on the archive table so provenance is available for delivered/removed parcels.
 
-**Contract**: Same expansion rules as Active (multi-expand, gated toggler, subject/from/date/link presentation, Gmail URL + icon). Preserve existing Status column and Restore/Edit actions.
+**Contract**: Same expansion rules as Active (multi-expand, gated toggler, subject/from/date/link presentation, Gmail URL via `gmailMessageUrl` + icon). Preserve existing Status column and Restore/Edit actions.
 
 #### 4. Web component specs
 

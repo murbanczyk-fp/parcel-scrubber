@@ -1,7 +1,7 @@
 ---
 change_id: parcel-email-expandable-rows
 title: Parcel email expandable rows
-status: implemented
+status: impl_reviewed
 created: 2026-07-19
 updated: 2026-07-19
 archived_at: null
