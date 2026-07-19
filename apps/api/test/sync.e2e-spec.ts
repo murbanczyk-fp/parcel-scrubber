@@ -170,7 +170,7 @@ describe('SyncService (e2e)', () => {
     expect(await prisma.parcel.count({ where: { userId: user.id } })).toBe(1);
   });
 
-  it('keeps archived parcel status when tracking matches on resync', async () => {
+  it('keeps archived parcel status and only fills empty metadata on resync', async () => {
     const user = await createTestUser();
     const orderDate = new Date('2026-01-01');
 
@@ -182,6 +182,7 @@ describe('SyncService (e2e)', () => {
         status: ParcelStatus.DELIVERED,
         source: ParcelSource.GMAIL,
         orderDate,
+        store: null,
         description: 'Old description',
       },
     });
@@ -203,24 +204,104 @@ describe('SyncService (e2e)', () => {
       where: { userId: user.id },
     });
     expect(parcel.status).toBe(ParcelStatus.DELIVERED);
-    expect(parcel.description).toBe('Updated description');
+    expect(parcel.store).toBe('Allegro');
+    expect(parcel.description).toBe('Old description');
   });
 
-  it('ledgers unknown sender without creating a parcel', async () => {
+  it('imports a non-merchant sender with tracking as a null-store parcel', async () => {
+    const user = await createTestUser();
+    gmailService.listMatchingEmailIds.mockResolvedValue(['msg-1']);
+    gmailService.getMessage.mockResolvedValue({
+      ...allegroInPostShipmentFixture,
+      from: 'noreply@inpost.pl',
+    });
+    extractionService.extractParcelFields.mockResolvedValue({
+      store: null,
+      trackingNumber: '520000012680041086770098',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      description: 'Paczka w drodze',
+    });
+
+    const started = registry.start(user.id);
+    await syncService.runJob(user.id, started!.jobId);
+
+    expect(extractionService.extractParcelFields).toHaveBeenCalled();
+    const parcels = await prisma.parcel.findMany({
+      where: { userId: user.id },
+    });
+    expect(parcels).toHaveLength(1);
+    expect(parcels[0]).toMatchObject({
+      store: null,
+      trackingNumber: '520000012680041086770098',
+      description: 'Paczka w drodze',
+    });
+  });
+
+  it('enriches empty fields when merchant mail matches carrier tracking', async () => {
+    const user = await createTestUser();
+    await prisma.parcel.create({
+      data: {
+        userId: user.id,
+        trackingNumber: '520000012680041086770098',
+        carrier: Carrier.INPOST,
+        status: ParcelStatus.NEW,
+        source: ParcelSource.GMAIL,
+        orderDate: new Date('2026-01-01'),
+        store: null,
+        description: 'Carrier text',
+      },
+    });
+
+    gmailService.listMatchingEmailIds.mockResolvedValue(['msg-1']);
+    gmailService.getMessage.mockResolvedValue(allegroInPostShipmentFixture);
+    extractionService.extractParcelFields.mockResolvedValue({
+      store: 'Allegro',
+      trackingNumber: '520000012680041086770098',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      description: 'Merchant description',
+    });
+
+    const started = registry.start(user.id);
+    await syncService.runJob(user.id, started!.jobId);
+
+    const parcels = await prisma.parcel.findMany({
+      where: { userId: user.id },
+    });
+    expect(parcels).toHaveLength(1);
+    expect(parcels[0]).toMatchObject({
+      store: 'Allegro',
+      description: 'Carrier text',
+    });
+  });
+
+  it('ledgers non-merchant sender without tracking and skips', async () => {
     const user = await createTestUser();
     gmailService.listMatchingEmailIds.mockResolvedValue(['msg-1']);
     gmailService.getMessage.mockResolvedValue({
       ...allegroInPostShipmentFixture,
       from: 'spam@example.com',
     });
+    extractionService.extractParcelFields.mockResolvedValue({
+      store: null,
+      trackingNumber: null,
+      carrier: Carrier.CUSTOM,
+      customCarrierLabel: null,
+      description: null,
+    });
 
     const started = registry.start(user.id);
     await syncService.runJob(user.id, started!.jobId);
 
-    expect(extractionService.extractParcelFields).not.toHaveBeenCalled();
+    expect(extractionService.extractParcelFields).toHaveBeenCalled();
     expect(await prisma.parcel.count({ where: { userId: user.id } })).toBe(0);
     expect(
       await prisma.gmailMessage.count({ where: { userId: user.id } }),
     ).toBe(1);
+    expect(registry.get(started!.jobId, user.id)).toMatchObject({
+      skipped: 1,
+      imported: 0,
+    });
   });
 });

@@ -135,23 +135,181 @@ describe('SyncService', () => {
     });
   });
 
-  it('ledgers unknown sender without creating a parcel', async () => {
+  it('creates a parcel with null store for non-merchant sender with tracking', async () => {
     gmail.listMatchingEmailIds.mockResolvedValue(['msg-1']);
     gmail.getMessage.mockResolvedValue({
       ...allegroInPostShipmentFixture,
-      from: 'spam@example.com',
+      from: 'noreply@inpost.pl',
+    });
+    extraction.extractParcelFields.mockResolvedValue({
+      store: null,
+      trackingNumber: '520000012680041086770098',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      description: 'Paczka w drodze',
     });
 
     const started = registry.start('user-1');
     await service.runJob('user-1', started!.jobId);
 
-    expect(extraction.extractParcelFields).not.toHaveBeenCalled();
+    expect(extraction.extractParcelFields).toHaveBeenCalled();
+    expect(prisma.parcel.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        trackingNumber: '520000012680041086770098',
+        status: ParcelStatus.NEW,
+        source: ParcelSource.GMAIL,
+        store: null,
+        description: 'Paczka w drodze',
+        carrier: Carrier.INPOST,
+        customCarrierLabel: null,
+      }) as object,
+    });
+    expect(registry.get(started!.jobId, 'user-1')).toMatchObject({
+      imported: 1,
+      skipped: 0,
+      failed: 0,
+    });
+  });
+
+  it('ledgers non-merchant sender without tracking and skips', async () => {
+    gmail.listMatchingEmailIds.mockResolvedValue(['msg-1']);
+    gmail.getMessage.mockResolvedValue({
+      ...allegroInPostShipmentFixture,
+      from: 'noreply@inpost.pl',
+    });
+    extraction.extractParcelFields.mockResolvedValue({
+      store: null,
+      trackingNumber: null,
+      carrier: Carrier.CUSTOM,
+      customCarrierLabel: null,
+      description: null,
+    });
+
+    const started = registry.start('user-1');
+    await service.runJob('user-1', started!.jobId);
+
+    expect(extraction.extractParcelFields).toHaveBeenCalled();
     expect(prisma.parcel.create).not.toHaveBeenCalled();
     expect(prisma.gmailMessage.create).toHaveBeenCalled();
     expect(registry.get(started!.jobId, 'user-1')).toMatchObject({
       skipped: 1,
       imported: 0,
+      failed: 0,
     });
+  });
+
+  it('fills only empty fields when enriching an existing parcel', async () => {
+    gmail.listMatchingEmailIds.mockResolvedValue(['msg-1']);
+    gmail.getMessage.mockResolvedValue(allegroInPostShipmentFixture);
+    extraction.extractParcelFields.mockResolvedValue({
+      store: 'Allegro',
+      trackingNumber: '520000012680041086770098',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      description: 'Merchant description',
+    });
+    prisma.parcel.findFirst.mockResolvedValue({
+      id: 'parcel-existing',
+      userId: 'user-1',
+      status: ParcelStatus.NEW,
+      source: ParcelSource.GMAIL,
+      store: null,
+      description: 'Keep me',
+      carrier: Carrier.CUSTOM,
+      customCarrierLabel: 'Courier',
+      trackingNumber: '520000012680041086770098',
+      orderDate: new Date('2026-01-01'),
+      trackingUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const started = registry.start('user-1');
+    await service.runJob('user-1', started!.jobId);
+
+    expect(prisma.parcel.create).not.toHaveBeenCalled();
+    expect(prisma.parcel.update).toHaveBeenCalledWith({
+      where: { id: 'parcel-existing' },
+      data: {
+        store: 'Allegro',
+        description: 'Keep me',
+        carrier: Carrier.INPOST,
+        customCarrierLabel: null,
+      },
+    });
+    expect(registry.get(started!.jobId, 'user-1')).toMatchObject({
+      imported: 1,
+      processed: 1,
+    });
+  });
+
+  it('does not clobber non-empty fields on re-sync', async () => {
+    gmail.listMatchingEmailIds.mockResolvedValue(['msg-1']);
+    gmail.getMessage.mockResolvedValue(allegroInPostShipmentFixture);
+    extraction.extractParcelFields.mockResolvedValue({
+      store: 'AliExpress',
+      trackingNumber: '520000012680041086770098',
+      carrier: Carrier.DPD,
+      customCarrierLabel: null,
+      description: 'Should not win',
+    });
+    prisma.parcel.findFirst.mockResolvedValue({
+      id: 'parcel-existing',
+      userId: 'user-1',
+      status: ParcelStatus.IN_TRANSIT,
+      source: ParcelSource.GMAIL,
+      store: 'Allegro',
+      description: 'User edit',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      trackingNumber: '520000012680041086770098',
+      orderDate: new Date('2026-01-01'),
+      trackingUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const started = registry.start('user-1');
+    await service.runJob('user-1', started!.jobId);
+
+    expect(prisma.parcel.update).toHaveBeenCalledWith({
+      where: { id: 'parcel-existing' },
+      data: {
+        store: 'Allegro',
+        description: 'User edit',
+        carrier: Carrier.INPOST,
+        customCarrierLabel: null,
+      },
+    });
+    expect(registry.get(started!.jobId, 'user-1')).toMatchObject({
+      imported: 0,
+    });
+  });
+
+  it('ledgers ExtractionError as failed without creating a parcel', async () => {
+    gmail.listMatchingEmailIds.mockResolvedValue(['msg-1']);
+    gmail.getMessage.mockResolvedValue({
+      ...allegroInPostShipmentFixture,
+      from: 'noreply@inpost.pl',
+    });
+    extraction.extractParcelFields.mockRejectedValue(
+      new ExtractionError(
+        'customCarrierLabel is required when carrier is CUSTOM',
+      ),
+    );
+
+    const started = registry.start('user-1');
+    await service.runJob('user-1', started!.jobId);
+
+    expect(registry.get(started!.jobId, 'user-1')).toMatchObject({
+      failed: 1,
+      skipped: 0,
+      imported: 0,
+      status: 'completed',
+    });
+    expect(prisma.gmailMessage.create).toHaveBeenCalled();
+    expect(prisma.parcel.create).not.toHaveBeenCalled();
   });
 
   it('ledgers extraction failures and continues', async () => {
@@ -173,7 +331,7 @@ describe('SyncService', () => {
     expect(prisma.parcel.create).not.toHaveBeenCalled();
   });
 
-  it('keeps archived parcel status while refreshing metadata', async () => {
+  it('keeps archived parcel status and only fills empty metadata', async () => {
     gmail.listMatchingEmailIds.mockResolvedValue(['msg-1']);
     gmail.getMessage.mockResolvedValue(allegroInPostShipmentFixture);
     extraction.extractParcelFields.mockResolvedValue({
@@ -188,7 +346,7 @@ describe('SyncService', () => {
       userId: 'user-1',
       status: ParcelStatus.DELIVERED,
       source: ParcelSource.GMAIL,
-      store: 'Allegro',
+      store: null,
       description: 'Old',
       carrier: Carrier.INPOST,
       customCarrierLabel: null,
@@ -207,7 +365,7 @@ describe('SyncService', () => {
       where: { id: 'parcel-archived' },
       data: {
         store: 'Allegro',
-        description: 'Updated description',
+        description: 'Old',
         carrier: Carrier.INPOST,
         customCarrierLabel: null,
       },
