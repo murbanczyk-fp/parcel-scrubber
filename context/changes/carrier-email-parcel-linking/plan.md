@@ -20,6 +20,7 @@ After Sync:
 - When a merchant email later shares that tracking number, sync fills only **null or empty** fields (e.g. `store`, `description`) and links the message — no second parcel.
 - Non-empty parcel fields (including user edits) are never overwritten by sync.
 - Messages with no usable tracking still ledger + skip (no repeat OpenRouter on re-sync).
+- `ExtractionError` (including tracking present but `CUSTOM` without `customCarrierLabel`) still ledger + **failed** — validation unchanged; those Gmail ids do not retry until ledger cleanup.
 - Displayed tracking links update when `carrier` is enriched from `CUSTOM` to a known carrier, without sync writing `trackingUrl` (existing read-time resolution).
 
 ### Key Discoveries:
@@ -39,7 +40,7 @@ After Sync:
 - Configurable merchant/carrier allowlists in settings
 - Carrier sender allowlist (all labeled messages are extraction candidates)
 - Persisting generated tracking URLs from sync
-- Changing Manual CRUD store-required validation
+- Changing Manual CRUD store-required validation (edit form still requires store — carrier-created null-store parcels need store filled before a manual save succeeds; list `—` display is unchanged)
 - “Merchant wins over non-empty carrier description” special cases (strict fill-null only)
 - Sentinel store values (`Other` / `Carrier`) — carrier-only keeps `store` null
 - Schema migrations (nullable store and linking tables already exist)
@@ -57,7 +58,7 @@ Extraction, Gmail ledger, `ParcelEmail` linking, and `orderDate` recompute stay 
 
 ### Carrier “empty” for merge
 
-`Parcel.carrier` is non-null with default `CUSTOM`. For fill-null merge, treat `carrier === CUSTOM` as empty when the incoming extraction has a non-`CUSTOM` carrier so carrier-first (or incomplete) parcels can gain InPost/DPD/etc. later. If both sides are `CUSTOM`, still fill `customCarrierLabel` only when existing label is null/empty. Do not “downgrade” a known carrier to `CUSTOM`.
+`Parcel.carrier` is non-null with default `CUSTOM`. For fill-null merge, treat `carrier === CUSTOM` as empty when the incoming extraction has a non-`CUSTOM` carrier so carrier-first (or incomplete) parcels can gain InPost/DPD/etc. later. If both sides are `CUSTOM`, still fill `customCarrierLabel` only when existing label is null/empty. Do not “downgrade” a known carrier to `CUSTOM`. When the merged carrier is non-`CUSTOM`, always persist `customCarrierLabel: null` (mirror `ParcelsService` clear-on-leave-CUSTOM) so upgrades never leave a stale label beside InPost/DPD/etc.
 
 ### Tracking URL (decision 6A)
 
@@ -66,6 +67,10 @@ Do **not** write `trackingUrl` in sync. When merge fills `carrier` and DB `track
 ### String emptiness
 
 Treat `null` and whitespace-only strings as empty for `store`, `description`, and `customCarrierLabel`.
+
+### ExtractionError vs no-tracking (counters)
+
+Keep existing sync counters: no usable tracking after a successful extract → ledger + `skipped`; `ExtractionError` (invalid carrier, `CUSTOM` without label when tracking is present, etc.) → ledger + `failed`. Do not soften `validateExtractedFields` in this change. Gate removal makes the failed path more visible for misc labeled mail — document it; retry only via ledger cleanup (same as pre-change unknown-sender skips).
 
 ---
 
@@ -97,7 +102,7 @@ Replace blind field overwrite on parcel update with a null/empty merge used for 
 
 #### Automated Verification:
 
-- Unit tests for merge helper: empty fills; non-empty preserved; `CUSTOM` upgraded by known carrier; known carrier not downgraded; whitespace-only treated as empty
+- Unit tests for merge helper: empty fills; non-empty preserved; `CUSTOM` upgraded by known carrier (and `customCarrierLabel` cleared); known carrier not downgraded; whitespace-only treated as empty
 - Existing sync unit tests still pass where behavior is unchanged (new parcel import, ledger skip, extraction failure)
 - `npm run test:api` (or workspace equivalent) passes for sync-related suites after Phase 1 test updates if any overwrite assumptions break
 - Lint passes for touched API files: `npm run lint -w @parcel-scrubber/api`
@@ -130,7 +135,7 @@ Remove the merchant-only gate so carrier and other labeled senders are extracted
 
 **File**: n/a
 
-**Intent**: Rely on existing null-store extraction and nullable `Parcel.store`.
+**Intent**: Rely on existing null-store extraction and nullable `Parcel.store`. Extraction prompt may stay merchant-framed; do not retune it in this slice — if carrier QA shows weak carrier/label quality, note for a follow-up.
 
 **Contract**: Unchanged public APIs; Sync job counters semantics unchanged (`imported` / `skipped` / `failed`).
 
@@ -170,6 +175,7 @@ Replace obsolete “unknown sender → skip without extraction” expectations a
 - Non-merchant + tracking → create (`store` null), extraction called, `imported` incremented
 - Existing parcel + later extraction with store/description → fills only empty fields; preserves non-empty
 - Non-merchant + no tracking → ledger, no parcel, `skipped`
+- Non-merchant + tracking but `ExtractionError` (e.g. `CUSTOM` without label) → ledger, no parcel, `failed` (not `skipped`)
 - Archived match still does not change status; metadata fill-null only; `imported` stays 0
 
 #### 2. Sync e2e tests
@@ -195,6 +201,7 @@ Replace obsolete “unknown sender → skip without extraction” expectations a
 - `npm run test:api` passes
 - `npm run lint -w @parcel-scrubber/api` passes
 - No remaining assertions that unknown sender skips without calling extraction (unless no tracking)
+- Unit coverage distinguishes no-tracking → `skipped` vs `ExtractionError` → `failed`
 
 #### Manual Verification:
 
@@ -211,7 +218,7 @@ Replace obsolete “unknown sender → skip without extraction” expectations a
 ### Unit Tests:
 
 - Merge helper emptiness and carrier upgrade/downgrade rules
-- SyncService: carrier create, enrich fill, no-clobber, no-tracking skip, archived status preserved
+- SyncService: carrier create, enrich fill, no-clobber, no-tracking skip, ExtractionError → failed, archived status preserved
 
 ### Integration Tests:
 
@@ -223,6 +230,7 @@ Replace obsolete “unknown sender → skip without extraction” expectations a
 2. Label matching Allegro/AliExpress order email with same tracking; Sync → one parcel, store/description filled
 3. Edit description manually; Sync another message for same tracking → description unchanged
 4. Confirm list tracking link after carrier enrichment
+5. Optional: open edit on a carrier-created null-store parcel — form still requires store before save (expected; UI out of scope)
 
 ## Performance Considerations
 
@@ -230,7 +238,7 @@ All labeled messages now hit OpenRouter once (then ledger). Cost is bounded by l
 
 ## Migration Notes
 
-No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not reprocess ledgered unknown-sender ids that were skipped under the old gate — those Gmail ids stay skipped forever unless ledger rows are deleted. Call this out: users who labeled carrier mail **before** this change may need a one-time ledger cleanup for those message ids, or to remove/re-add the Gmail label and clear corresponding `GmailMessage` rows. Prefer documenting this over auto-deleting ledger data.
+No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not reprocess ledgered unknown-sender ids that were skipped under the old gate — those Gmail ids stay skipped forever unless ledger rows are deleted. Call this out: users who labeled carrier mail **before** this change may need a one-time ledger cleanup for those message ids, or to remove/re-add the Gmail label and clear corresponding `GmailMessage` rows. Prefer documenting this over auto-deleting ledger data. The same forever-ledger applies to post-change `ExtractionError` / `failed` rows (e.g. tracking + `CUSTOM` without label) — cleanup is the only retry path; validation is intentionally unchanged.
 
 ## References
 
@@ -248,7 +256,7 @@ No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not
 
 #### Automated
 
-- [ ] 1.1 Unit tests for merge helper: empty fills; non-empty preserved; CUSTOM upgraded; known carrier not downgraded; whitespace-only empty
+- [ ] 1.1 Unit tests for merge helper: empty fills; non-empty preserved; CUSTOM upgraded (label cleared); known carrier not downgraded; whitespace-only empty
 - [ ] 1.2 Sync unit tests still pass where behavior is unchanged
 - [ ] 1.3 `npm run test:api` passes for sync-related suites after Phase 1 updates
 - [ ] 1.4 Lint passes for touched API files: `npm run lint -w @parcel-scrubber/api`
@@ -277,9 +285,10 @@ No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not
 - [ ] 3.1 `npm run test:api` passes
 - [ ] 3.2 `npm run lint -w @parcel-scrubber/api` passes
 - [ ] 3.3 No remaining assertions that unknown sender skips without extraction (unless no tracking)
+- [ ] 3.4 Unit: ExtractionError (e.g. CUSTOM without label with tracking) → ledger + failed, not skipped
 
 #### Manual
 
-- [ ] 3.4 FEATURES_TO_COME A/B/C verified end-to-end
-- [ ] 3.5 Manually edited description not overwritten on re-sync
-- [ ] 3.6 Tracking link appears after carrier enrichment from CUSTOM
+- [ ] 3.5 FEATURES_TO_COME A/B/C verified end-to-end
+- [ ] 3.6 Manually edited description not overwritten on re-sync
+- [ ] 3.7 Tracking link appears after carrier enrichment from CUSTOM

@@ -25,7 +25,7 @@ After Sync, carrier-only messages appear as parcels (or attach to an existing tr
 | Tracking URL | Rely on read-time `resolveTrackingUrl`; sync does not write URL | Enriching `carrier` from `CUSTOM` is enough; preserves manual overrides |
 | UI scope | Sync/API only | S-06 is a sync behavior slice |
 | No tracking after extract | Ledger + skip | Avoids repeat OpenRouter on junk labeled mail |
-| Carrier empty for merge | Treat `CUSTOM` as empty when incoming has a known carrier | Default carrier would otherwise block enrichment |
+| Carrier empty for merge | Treat `CUSTOM` as empty when incoming has a known carrier; clear `customCarrierLabel` when merged carrier is non-`CUSTOM` | Default carrier would otherwise block enrichment; stale labels must not survive upgrades (mirror manual PATCH) |
 
 ## Scope
 
@@ -62,8 +62,10 @@ Displayed tracking link updates when `carrier` is enriched; DB `trackingUrl` ove
 ## Open Risks & Assumptions
 
 - Gmail ids ledgered under the old unknown-sender skip will not reprocess without manual ledger cleanup.
+- `ExtractionError` (e.g. tracking + CUSTOM without label) ledgers as `failed` forever until cleanup — validation unchanged.
+- Extraction prompt remains merchant-framed (`extraction-prompt.ts`); accepted for S-06 — revisit if carrier extraction quality is poor in manual QA.
 - Weak carrier descriptions can block better later merchant text until edit/merge (accepted).
-- Manual create still requires store; only sync may create null-store parcels.
+- Manual create/edit still requires store; only sync may create null-store parcels (list shows `—`; filling store in the form before save is expected).
 
 ## Success Criteria (Summary)
 
