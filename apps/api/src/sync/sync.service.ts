@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ParcelSource, ParcelStatus, type Parcel } from '@prisma/client';
-import { detectStoreFromSender } from '../extraction/detect-store-from-sender';
 import { ExtractionService } from '../extraction/extraction.service';
 import { ExtractionError } from '../extraction/types';
 import type { ExtractedParcelFields } from '../extraction/types';
@@ -11,6 +10,10 @@ import { isArchivedStatus } from '../parcels/is-archived-status';
 import { normalizeTrackingNumber } from '../parcels/normalize-tracking-number';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
+import {
+  mergeParcelFieldsFromExtraction,
+  parcelFieldsChanged,
+} from './merge-parcel-fields-from-extraction';
 import { SyncJobRegistry } from './sync-job.registry';
 
 @Injectable()
@@ -99,12 +102,6 @@ export class SyncService {
       return;
     }
 
-    if (detectStoreFromSender(message.from) === null) {
-      await this.createLedgerEntry(userId, gmailMessageId, internalDate);
-      this.registry.increment(jobId, 'skipped');
-      return;
-    }
-
     let extraction: ExtractedParcelFields;
     try {
       extraction = await this.extraction.extractParcelFields(message);
@@ -153,12 +150,7 @@ export class SyncService {
     extraction: ExtractedParcelFields,
     existing: Parcel | null,
   ): Promise<boolean> {
-    const fieldData = {
-      store: extraction.store,
-      description: extraction.description,
-      carrier: extraction.carrier,
-      customCarrierLabel: extraction.customCarrierLabel,
-    };
+    const fieldData = mergeParcelFieldsFromExtraction(existing, extraction);
 
     return this.prisma.$transaction(async (tx) => {
       let parcelId: string;
@@ -242,18 +234,4 @@ export class SyncService {
       },
     });
   }
-}
-
-type ParcelFieldData = Pick<
-  Parcel,
-  'store' | 'description' | 'carrier' | 'customCarrierLabel'
->;
-
-function parcelFieldsChanged(existing: Parcel, next: ParcelFieldData): boolean {
-  return (
-    existing.store !== next.store ||
-    existing.description !== next.description ||
-    existing.carrier !== next.carrier ||
-    existing.customCarrierLabel !== next.customCarrierLabel
-  );
 }

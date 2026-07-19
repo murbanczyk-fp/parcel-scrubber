@@ -256,10 +256,10 @@ No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not
 
 #### Automated
 
-- [ ] 1.1 Unit tests for merge helper: empty fills; non-empty preserved; CUSTOM upgraded (label cleared); known carrier not downgraded; whitespace-only empty
-- [ ] 1.2 Sync unit tests still pass where behavior is unchanged
-- [ ] 1.3 `npm run test:api` passes for sync-related suites after Phase 1 updates
-- [ ] 1.4 Lint passes for touched API files: `npm run lint -w @parcel-scrubber/api`
+- [x] 1.1 Unit tests for merge helper: empty fills; non-empty preserved; CUSTOM upgraded (label cleared); known carrier not downgraded; whitespace-only empty
+- [x] 1.2 Sync unit tests still pass where behavior is unchanged
+- [x] 1.3 `npm run test:api` passes for sync-related suites after Phase 1 updates
+- [x] 1.4 Lint passes for touched API files: `npm run lint -w @parcel-scrubber/api`
 
 #### Manual
 
@@ -269,9 +269,9 @@ No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not
 
 #### Automated
 
-- [ ] 2.1 Unit: non-merchant sender with tracking creates parcel with store null and calls extraction
-- [ ] 2.2 Unit: non-merchant sender without tracking → ledger + skip
-- [ ] 2.3 Lint + sync unit suite green
+- [x] 2.1 Unit: non-merchant sender with tracking creates parcel with store null and calls extraction
+- [x] 2.2 Unit: non-merchant sender without tracking → ledger + skip
+- [x] 2.3 Lint + sync unit suite green
 
 #### Manual
 
@@ -282,10 +282,10 @@ No Prisma migration. Existing parcels and ledger rows are fine. Re-sync will not
 
 #### Automated
 
-- [ ] 3.1 `npm run test:api` passes
-- [ ] 3.2 `npm run lint -w @parcel-scrubber/api` passes
-- [ ] 3.3 No remaining assertions that unknown sender skips without extraction (unless no tracking)
-- [ ] 3.4 Unit: ExtractionError (e.g. CUSTOM without label with tracking) → ledger + failed, not skipped
+- [x] 3.1 `npm run test:api` passes
+- [x] 3.2 `npm run lint -w @parcel-scrubber/api` passes
+- [x] 3.3 No remaining assertions that unknown sender skips without extraction (unless no tracking)
+- [x] 3.4 Unit: ExtractionError (e.g. CUSTOM without label with tracking) → ledger + failed, not skipped
 
 #### Manual
 
