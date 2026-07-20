@@ -20,9 +20,14 @@ describe('ParcelsService', () => {
       updateMany: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
+      deleteMany: jest.Mock;
     };
     parcelStatusEvent: {
       create: jest.Mock;
+    };
+    parcelEmail: {
+      create: jest.Mock;
+      findMany: jest.Mock;
     };
     $transaction: jest.Mock;
   };
@@ -52,9 +57,14 @@ describe('ParcelsService', () => {
         updateMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       parcelStatusEvent: {
         create: jest.fn().mockResolvedValue({}),
+      },
+      parcelEmail: {
+        create: jest.fn().mockResolvedValue({}),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       $transaction: jest.fn(),
     };
@@ -664,6 +674,247 @@ describe('ParcelsService', () => {
       await expect(
         service.updateForUser('user-1', 'missing', { store: 'Shop' }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('mergeForUser', () => {
+    const mergeFields = {
+      store: 'Allegro',
+      description: 'Merged item',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      trackingNumber: '520000012680041086770098',
+      trackingUrl: null,
+    };
+
+    const olderParcel = {
+      ...baseParcel,
+      id: 'parcel-older',
+      createdAt: new Date('2026-01-01T10:00:00.000Z'),
+      orderDate: new Date('2026-02-10'),
+      description: 'Older',
+      messages: [{ gmailMessageId: 'msg-old' }],
+    };
+
+    const newerParcel = {
+      ...baseParcel,
+      id: 'parcel-newer',
+      createdAt: new Date('2026-02-01T10:00:00.000Z'),
+      orderDate: new Date('2026-01-05'),
+      trackingNumber: 'OTHERTRACK123',
+      description: 'Newer',
+      messages: [{ gmailMessageId: 'msg-new' }],
+    };
+
+    it('merges into the oldest survivor, reparents emails, and deletes losers', async () => {
+      const merged = {
+        ...olderParcel,
+        description: 'Merged item',
+        orderDate: new Date('2026-01-01T08:00:00.000Z'),
+        messages: [
+          {
+            gmailMessage: {
+              gmailMessageId: 'msg-old',
+              internalDate: new Date('2026-01-01T08:00:00.000Z'),
+              subject: 'Old',
+              from: null,
+            },
+          },
+          {
+            gmailMessage: {
+              gmailMessageId: 'msg-new',
+              internalDate: new Date('2026-01-15T08:00:00.000Z'),
+              subject: 'New',
+              from: null,
+            },
+          },
+        ],
+      };
+
+      prisma.parcel.findMany.mockResolvedValue([newerParcel, olderParcel]);
+      prisma.parcel.findFirst.mockResolvedValue(null);
+      prisma.parcel.update.mockResolvedValue({});
+      prisma.parcelEmail.findMany.mockResolvedValue([
+        {
+          gmailMessage: {
+            internalDate: new Date('2026-01-01T08:00:00.000Z'),
+          },
+        },
+        {
+          gmailMessage: {
+            internalDate: new Date('2026-01-15T08:00:00.000Z'),
+          },
+        },
+      ]);
+      prisma.parcel.findFirstOrThrow.mockResolvedValue(merged);
+
+      const result = await service.mergeForUser('user-1', {
+        parcelIds: ['parcel-newer', 'parcel-older'],
+        fields: mergeFields,
+      });
+
+      expect(prisma.parcel.update).toHaveBeenNthCalledWith(1, {
+        where: { id: 'parcel-older' },
+        data: {
+          store: 'Allegro',
+          description: 'Merged item',
+          carrier: Carrier.INPOST,
+          customCarrierLabel: null,
+          trackingNumber: '520000012680041086770098',
+          trackingUrl: null,
+        },
+      });
+      expect(prisma.parcelEmail.create).toHaveBeenCalledWith({
+        data: {
+          parcelId: 'parcel-older',
+          gmailMessageId: 'msg-new',
+          userId: 'user-1',
+        },
+      });
+      expect(prisma.parcel.update).toHaveBeenNthCalledWith(2, {
+        where: { id: 'parcel-older' },
+        data: { orderDate: new Date('2026-01-01T08:00:00.000Z') },
+      });
+      expect(prisma.parcel.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ['parcel-newer'] }, userId: 'user-1' },
+      });
+      expect(prisma.parcelStatusEvent.create).not.toHaveBeenCalled();
+      expect(result.id).toBe('parcel-older');
+      expect(result.description).toBe('Merged item');
+      expect(result.orderDate).toBe('2026-01-01');
+      expect(result.messages).toHaveLength(2);
+    });
+
+    it('uses min parcel orderDate when no messages remain after merge', async () => {
+      const withoutMessages = [
+        { ...olderParcel, messages: [] },
+        { ...newerParcel, messages: [] },
+      ];
+      prisma.parcel.findMany.mockResolvedValue(withoutMessages);
+      prisma.parcel.findFirst.mockResolvedValue(null);
+      prisma.parcel.update.mockResolvedValue({});
+      prisma.parcelEmail.findMany.mockResolvedValue([]);
+      prisma.parcel.findFirstOrThrow.mockResolvedValue({
+        ...olderParcel,
+        messages: [],
+        orderDate: new Date('2026-01-05'),
+      });
+
+      await service.mergeForUser('user-1', {
+        parcelIds: ['parcel-older', 'parcel-newer'],
+        fields: mergeFields,
+      });
+
+      expect(prisma.parcel.update).toHaveBeenNthCalledWith(2, {
+        where: { id: 'parcel-older' },
+        data: { orderDate: new Date('2026-01-05') },
+      });
+    });
+
+    it('prefers DELIVERED and writes a status event when merging archived parcels', async () => {
+      const removed = {
+        ...olderParcel,
+        status: ParcelStatus.REMOVED,
+      };
+      const delivered = {
+        ...newerParcel,
+        status: ParcelStatus.DELIVERED,
+      };
+      prisma.parcel.findMany.mockResolvedValue([removed, delivered]);
+      prisma.parcel.findFirst.mockResolvedValue(null);
+      prisma.parcel.update.mockResolvedValue({});
+      prisma.parcelEmail.findMany.mockResolvedValue([]);
+      prisma.parcel.findFirstOrThrow.mockResolvedValue({
+        ...removed,
+        status: ParcelStatus.DELIVERED,
+        messages: [],
+      });
+
+      const result = await service.mergeForUser('user-1', {
+        parcelIds: ['parcel-older', 'parcel-newer'],
+        fields: mergeFields,
+      });
+
+      expect(prisma.parcel.update).toHaveBeenNthCalledWith(1, {
+        where: { id: 'parcel-older' },
+        data: expect.objectContaining({
+          status: ParcelStatus.DELIVERED,
+        }) as object,
+      });
+      expect(prisma.parcelStatusEvent.create).toHaveBeenCalledWith({
+        data: {
+          parcelId: 'parcel-older',
+          fromStatus: ParcelStatus.REMOVED,
+          toStatus: ParcelStatus.DELIVERED,
+          source: StatusEventSource.USER,
+        },
+      });
+      expect(result.status).toBe('DELIVERED');
+    });
+
+    it('rejects tracking numbers that collide outside the selection', async () => {
+      prisma.parcel.findMany.mockResolvedValue([olderParcel, newerParcel]);
+      prisma.parcel.findFirst.mockResolvedValue({ id: 'outside-parcel' });
+
+      await expect(
+        service.mergeForUser('user-1', {
+          parcelIds: ['parcel-older', 'parcel-newer'],
+          fields: mergeFields,
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects mixed active and archived parcel ids', async () => {
+      prisma.parcel.findMany.mockResolvedValue([
+        olderParcel,
+        { ...newerParcel, status: ParcelStatus.DELIVERED },
+      ]);
+
+      await expect(
+        service.mergeForUser('user-1', {
+          parcelIds: ['parcel-older', 'parcel-newer'],
+          fields: mergeFields,
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'parcelIds' }],
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when any id is missing or not owned', async () => {
+      prisma.parcel.findMany.mockResolvedValue([olderParcel]);
+
+      await expect(
+        service.mergeForUser('user-1', {
+          parcelIds: ['parcel-older', 'parcel-newer'],
+          fields: mergeFields,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects fewer than two distinct parcel ids', async () => {
+      await expect(
+        service.mergeForUser('user-1', {
+          parcelIds: ['parcel-older'],
+          fields: mergeFields,
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'parcelIds' }],
+      });
+
+      await expect(
+        service.mergeForUser('user-1', {
+          parcelIds: ['parcel-older', 'parcel-older'],
+          fields: mergeFields,
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'parcelIds' }],
+      });
+
+      expect(prisma.parcel.findMany).not.toHaveBeenCalled();
     });
   });
 });

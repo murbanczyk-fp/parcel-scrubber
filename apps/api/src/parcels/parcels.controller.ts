@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { SessionUser } from '../auth/types';
 import type {
   CreateParcelBody,
+  MergeParcelsBody,
   ParcelDto,
   UpdateParcelBody,
 } from './parcel.dto';
@@ -55,6 +56,17 @@ export class ParcelsController {
   ): Promise<ParcelDto> {
     return this.handleValidation(() =>
       this.parcels.createForUser(user.id, body),
+    );
+  }
+
+  @Post('merge')
+  @HttpCode(HttpStatus.OK)
+  mergeParcels(
+    @CurrentUser() user: SessionUser,
+    @Body() body: MergeParcelsBody,
+  ): Promise<ParcelDto> {
+    return this.handleValidation(() =>
+      this.parcels.mergeForUser(user.id, body),
     );
   }
 
