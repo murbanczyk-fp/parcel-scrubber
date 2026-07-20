@@ -317,32 +317,32 @@ No Prisma schema migration. Existing partial unique index and cascades are suffi
 
 #### Automated
 
-- [ ] 2.1 Parcel merge e2e scenarios pass against Postgres
-- [ ] 2.2 API lint clean for e2e touches
+- [x] 2.1 Parcel merge e2e scenarios pass against Postgres — 1045230
+- [x] 2.2 API lint clean for e2e touches — 1045230
 
 #### Manual
 
-- [ ] 2.3 Human confirmation to proceed to Phase 3
+- [x] 2.3 Human confirmation to proceed to Phase 3 — 1045230
 
 ### Phase 3: Active list merge UI
 
 #### Automated
 
-- [ ] 3.1 Web unit tests pass for active list + merge dialog
-- [ ] 3.2 Web workspace lint passes
+- [x] 3.1 Web unit tests pass for active list + merge dialog — 92c4bfe
+- [x] 3.2 Web workspace lint passes — 92c4bfe
 
 #### Manual
 
 - [ ] 3.3 Active merge dialog resolves conflicts and updates the list
 - [ ] 3.4 Three-parcel description options omit empty; cancel is a no-op
-- [ ] 3.5 Human confirmation to proceed to Phase 4
+- [x] 3.5 Human confirmation to proceed to Phase 4 — 92c4bfe
 
 ### Phase 4: Archive list parity
 
 #### Automated
 
-- [ ] 4.1 Archive list merge specs + web tests pass
-- [ ] 4.2 Repo lint passes
+- [x] 4.1 Archive list merge specs + web tests pass — 92c4bfe
+- [x] 4.2 Repo lint passes — 92c4bfe
 
 #### Manual
 
