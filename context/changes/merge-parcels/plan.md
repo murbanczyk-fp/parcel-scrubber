@@ -306,12 +306,12 @@ No Prisma schema migration. Existing partial unique index and cascades are suffi
 
 #### Automated
 
-- [x] 1.1 Unit tests pass for merge service / helpers
-- [x] 1.2 API workspace lint passes
+- [x] 1.1 Unit tests pass for merge service / helpers — a89db33
+- [x] 1.2 API workspace lint passes — a89db33
 
 #### Manual
 
-- [x] 1.3 Human confirmation to proceed to Phase 2
+- [x] 1.3 Human confirmation to proceed to Phase 2 — a89db33
 
 ### Phase 2: API e2e coverage
 
