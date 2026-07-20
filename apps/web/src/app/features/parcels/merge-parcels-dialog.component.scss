@@ -1,0 +1,29 @@
+.merge-dialog__intro,
+.merge-dialog__unanimous {
+  margin: 0 0 1rem;
+  color: var(--p-text-muted-color);
+}
+
+.merge-dialog__field {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+
+.merge-dialog__field legend {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.merge-dialog__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.merge-dialog__other-input {
+  display: block;
+  width: 100%;
+  margin: 0.35rem 0 0.5rem 1.75rem;
+}

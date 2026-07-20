@@ -1,0 +1,126 @@
+<p-dialog
+  header="Merge parcels"
+  [modal]="true"
+  [visible]="visible()"
+  [style]="{ width: 'min(32rem, 95vw)' }"
+  [closable]="!submitting()"
+  [dismissableMask]="!submitting()"
+  (visibleChange)="onVisibleChange($event)"
+>
+  <p class="merge-dialog__intro">
+    Choose a value for each conflicting field. Order date will be set to the
+    oldest linked message ({{ orderDatePreview() }}).
+  </p>
+
+  @for (conflict of textConflicts(); track conflict.field) {
+    <fieldset class="merge-dialog__field">
+      <legend>{{ fieldLabels[conflict.field] }}</legend>
+      @for (option of conflict.options; track option) {
+        <div class="merge-dialog__option">
+          <p-radioButton
+            [name]="conflict.field"
+            [inputId]="conflict.field + '-opt-' + option"
+            [value]="option"
+            [ngModel]="textModel(conflict.field)"
+            (ngModelChange)="setTextModel(conflict.field, $event)"
+          />
+          <label [for]="conflict.field + '-opt-' + option">{{ option }}</label>
+        </div>
+      }
+      <div class="merge-dialog__option">
+        <p-radioButton
+          [name]="conflict.field"
+          [inputId]="conflict.field + '-empty'"
+          [value]="emptyKey"
+          [ngModel]="textModel(conflict.field)"
+          (ngModelChange)="setTextModel(conflict.field, $event)"
+        />
+        <label [for]="conflict.field + '-empty'">Leave empty</label>
+      </div>
+      <div class="merge-dialog__option">
+        <p-radioButton
+          [name]="conflict.field"
+          [inputId]="conflict.field + '-other'"
+          [value]="otherKey"
+          [ngModel]="textModel(conflict.field)"
+          (ngModelChange)="setTextModel(conflict.field, $event)"
+        />
+        <label [for]="conflict.field + '-other'">Other…</label>
+      </div>
+      @if (textModel(conflict.field) === otherKey) {
+        <input
+          pInputText
+          class="merge-dialog__other-input"
+          [attr.data-testid]="'merge-other-' + conflict.field"
+          [ngModel]="otherText()[conflict.field] ?? ''"
+          (ngModelChange)="onOtherText(conflict.field, $event)"
+          [placeholder]="'Enter ' + fieldLabels[conflict.field].toLowerCase()"
+        />
+      }
+    </fieldset>
+  }
+
+  @if (carrierConflict(); as carrier) {
+    <fieldset class="merge-dialog__field">
+      <legend>{{ fieldLabels.carrier }}</legend>
+      @for (option of carrier.options; track carrierOptionKey(option)) {
+        <div class="merge-dialog__option">
+          <p-radioButton
+            name="carrier"
+            [inputId]="'carrier-opt-' + carrierOptionKey(option)"
+            [value]="carrierOptionKey(option)"
+            [ngModel]="carrierSelection()"
+            (ngModelChange)="carrierSelection.set($event)"
+          />
+          <label [for]="'carrier-opt-' + carrierOptionKey(option)">
+            {{ option.label }}
+          </label>
+        </div>
+      }
+      <div class="merge-dialog__option">
+        <p-radioButton
+          name="carrier"
+          inputId="carrier-other"
+          [value]="otherKey"
+          [ngModel]="carrierSelection()"
+          (ngModelChange)="carrierSelection.set($event)"
+        />
+        <label for="carrier-other">Other…</label>
+      </div>
+      @if (carrierSelection() === otherKey) {
+        <input
+          pInputText
+          class="merge-dialog__other-input"
+          data-testid="merge-other-carrier"
+          [ngModel]="otherCarrierLabel()"
+          (ngModelChange)="onOtherCarrierLabel($event)"
+          placeholder="Custom carrier label"
+        />
+      }
+    </fieldset>
+  }
+
+  @if (textConflicts().length === 0 && !carrierConflict()) {
+    <p class="merge-dialog__unanimous">
+      All fields match. Confirm to merge into one parcel.
+    </p>
+  }
+
+  <ng-template #footer>
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      [text]="true"
+      [disabled]="submitting()"
+      data-testid="merge-cancel"
+      (onClick)="onCancel()"
+    />
+    <p-button
+      label="Merge"
+      data-testid="merge-confirm"
+      [disabled]="!canConfirm()"
+      [loading]="submitting()"
+      (onClick)="onConfirm()"
+    />
+  </ng-template>
+</p-dialog>
