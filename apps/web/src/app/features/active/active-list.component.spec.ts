@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
@@ -202,6 +202,95 @@ describe('ActiveListComponent', () => {
     fixture.detectChanges();
 
     expect(component.mergeDialogVisible()).toBe(true);
+  });
+
+  it('toasts the first validation error when merge returns 400', async () => {
+    const second: ParcelDto = { ...baseParcel, id: 'parcel-2', description: 'B' };
+    const mergeParcels = vi.fn().mockRejectedValue(
+      new HttpErrorResponse({
+        status: 400,
+        error: {
+          errors: [{ field: 'trackingNumber', message: 'Tracking already used' }],
+        },
+      }),
+    );
+    const addMessage = vi.fn();
+
+    await TestBed.resetTestingModule();
+    listActiveMock = vi.fn().mockResolvedValue([baseParcel, second]);
+    await TestBed.configureTestingModule({
+      imports: [ActiveListComponent],
+      providers: [
+        {
+          provide: MessageService,
+          useValue: { add: addMessage },
+        },
+        ConfirmationService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ParcelsService,
+          useValue: {
+            listActive: listActiveMock,
+            startSync: vi.fn(),
+            getSyncJob: vi.fn(),
+            deliverParcel: vi.fn(),
+            removeParcel: vi.fn(),
+            mergeParcels,
+          },
+        },
+        {
+          provide: AuthService,
+          useValue: { signIn: vi.fn() },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(ActiveListComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as ActiveListComponent & {
+      parcels: () => ParcelDto[];
+      onMergeConfirmed: (payload: {
+        parcelIds: string[];
+        fields: {
+          store: string | null;
+          description: string | null;
+          carrier: ParcelDto['carrier'];
+          customCarrierLabel: string | null;
+          trackingNumber: string | null;
+          trackingUrl: string | null;
+        };
+      }) => Promise<void>;
+    };
+    component.selectedParcels = [baseParcel, second];
+    await component.onMergeConfirmed({
+      parcelIds: ['parcel-1', 'parcel-2'],
+      fields: {
+        store: 'Allegro',
+        description: 'Merged',
+        carrier: 'INPOST',
+        customCarrierLabel: null,
+        trackingNumber: '520000012680041086770098',
+        trackingUrl: null,
+      },
+    });
+    fixture.detectChanges();
+
+    expect(mergeParcels).toHaveBeenCalled();
+    expect(addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Tracking already used',
+      }),
+    );
+    expect(component.parcels().map((p) => p.id)).toEqual([
+      'parcel-1',
+      'parcel-2',
+    ]);
   });
 
   it('updates the list after a successful merge', async () => {

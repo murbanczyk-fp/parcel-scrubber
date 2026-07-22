@@ -115,6 +115,14 @@ export function buildCarrierConflict(
   );
   const first = keys[0];
   if (keys.every((key) => key === first)) {
+    // Sync may leave CUSTOM with no label; API still requires one on merge.
+    const sample = parcels[0];
+    if (
+      sample?.carrier === 'CUSTOM' &&
+      !(sample.customCarrierLabel?.trim())
+    ) {
+      return { options: [] };
+    }
     return null;
   }
 

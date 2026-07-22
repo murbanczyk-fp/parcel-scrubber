@@ -182,6 +182,26 @@ describe('ArchiveListComponent', () => {
     expect(component.canMerge()).toBe(true);
   });
 
+  it('opens the merge dialog with the current selection', async () => {
+    const second: ParcelDto = {
+      ...baseParcel,
+      id: 'parcel-2',
+      status: 'REMOVED',
+      description: 'B',
+    };
+    const fixture = await renderWithParcels([baseParcel, second]);
+    const component = fixture.componentInstance as ArchiveListComponent & {
+      mergeDialogVisible: () => boolean;
+      onOpenMerge: () => void;
+    };
+
+    component.selectedParcels = [baseParcel, second];
+    component.onOpenMerge();
+    fixture.detectChanges();
+
+    expect(component.mergeDialogVisible()).toBe(true);
+  });
+
   it('updates the archive list after a successful merge', async () => {
     const second: ParcelDto = {
       ...baseParcel,

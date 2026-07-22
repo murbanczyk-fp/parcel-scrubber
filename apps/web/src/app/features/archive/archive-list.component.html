@@ -38,6 +38,7 @@
       <p-table
         [value]="parcels()"
         dataKey="id"
+        selectionMode="multiple"
         [(selection)]="selectedParcels"
         [expandedRowKeys]="expandedRowKeys"
         styleClass="archive-list__table"

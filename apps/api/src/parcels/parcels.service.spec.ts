@@ -733,7 +733,7 @@ describe('ParcelsService', () => {
 
       prisma.parcel.findMany.mockResolvedValue([newerParcel, olderParcel]);
       prisma.parcel.findFirst.mockResolvedValue(null);
-      prisma.parcel.update.mockResolvedValue({});
+      prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
       prisma.parcelEmail.findMany.mockResolvedValue([
         {
           gmailMessage: {
@@ -753,8 +753,8 @@ describe('ParcelsService', () => {
         fields: mergeFields,
       });
 
-      expect(prisma.parcel.update).toHaveBeenNthCalledWith(1, {
-        where: { id: 'parcel-older' },
+      expect(prisma.parcel.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { id: 'parcel-older', userId: 'user-1' },
         data: {
           store: 'Allegro',
           description: 'Merged item',
@@ -771,8 +771,8 @@ describe('ParcelsService', () => {
           userId: 'user-1',
         },
       });
-      expect(prisma.parcel.update).toHaveBeenNthCalledWith(2, {
-        where: { id: 'parcel-older' },
+      expect(prisma.parcel.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { id: 'parcel-older', userId: 'user-1' },
         data: { orderDate: new Date('2026-01-01T08:00:00.000Z') },
       });
       expect(prisma.parcel.deleteMany).toHaveBeenCalledWith({
@@ -792,7 +792,7 @@ describe('ParcelsService', () => {
       ];
       prisma.parcel.findMany.mockResolvedValue(withoutMessages);
       prisma.parcel.findFirst.mockResolvedValue(null);
-      prisma.parcel.update.mockResolvedValue({});
+      prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
       prisma.parcelEmail.findMany.mockResolvedValue([]);
       prisma.parcel.findFirstOrThrow.mockResolvedValue({
         ...olderParcel,
@@ -805,8 +805,8 @@ describe('ParcelsService', () => {
         fields: mergeFields,
       });
 
-      expect(prisma.parcel.update).toHaveBeenNthCalledWith(2, {
-        where: { id: 'parcel-older' },
+      expect(prisma.parcel.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { id: 'parcel-older', userId: 'user-1' },
         data: { orderDate: new Date('2026-01-05') },
       });
     });
@@ -822,7 +822,7 @@ describe('ParcelsService', () => {
       };
       prisma.parcel.findMany.mockResolvedValue([removed, delivered]);
       prisma.parcel.findFirst.mockResolvedValue(null);
-      prisma.parcel.update.mockResolvedValue({});
+      prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
       prisma.parcelEmail.findMany.mockResolvedValue([]);
       prisma.parcel.findFirstOrThrow.mockResolvedValue({
         ...removed,
@@ -835,8 +835,8 @@ describe('ParcelsService', () => {
         fields: mergeFields,
       });
 
-      expect(prisma.parcel.update).toHaveBeenNthCalledWith(1, {
-        where: { id: 'parcel-older' },
+      expect(prisma.parcel.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { id: 'parcel-older', userId: 'user-1' },
         data: expect.objectContaining({
           status: ParcelStatus.DELIVERED,
         }) as object,
@@ -864,7 +864,8 @@ describe('ParcelsService', () => {
       ).rejects.toMatchObject({
         errors: [{ field: 'trackingNumber' }],
       });
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(prisma.parcel.updateMany).not.toHaveBeenCalled();
     });
 
     it('rejects mixed active and archived parcel ids', async () => {
@@ -915,6 +916,20 @@ describe('ParcelsService', () => {
       });
 
       expect(prisma.parcel.findMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects whitespace-only tracking numbers instead of clearing them', async () => {
+      prisma.parcel.findMany.mockResolvedValue([olderParcel, newerParcel]);
+
+      await expect(
+        service.mergeForUser('user-1', {
+          parcelIds: ['parcel-older', 'parcel-newer'],
+          fields: { ...mergeFields, trackingNumber: '   ' },
+        }),
+      ).rejects.toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 });

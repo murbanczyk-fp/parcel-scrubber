@@ -133,7 +133,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
         life: 4000,
       });
     } catch (err) {
-      this.handleMergeError(err);
+      await this.handleMergeError(err);
     } finally {
       this.merging.set(false);
     }
@@ -203,7 +203,7 @@ export class ActiveListComponent implements OnInit, OnDestroy {
     });
   }
 
-  private handleMergeError(err: unknown): void {
+  private async handleMergeError(err: unknown): Promise<void> {
     if (err instanceof HttpErrorResponse && err.status === 400) {
       const body = err.error as { errors?: { message: string }[] };
       const firstMessage = body?.errors?.[0]?.message;
@@ -223,6 +223,18 @@ export class ActiveListComponent implements OnInit, OnDestroy {
         detail: 'Sign in with Google again to continue.',
         life: 8000,
       });
+      return;
+    }
+
+    if (err instanceof HttpErrorResponse && err.status === 404) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Parcel not found',
+        life: 4000,
+      });
+      this.selectedParcels = [];
+      this.mergeDialogVisible.set(false);
+      await this.loadParcels();
       return;
     }
 

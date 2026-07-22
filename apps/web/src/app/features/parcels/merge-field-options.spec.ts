@@ -75,6 +75,63 @@ describe('merge-field-options', () => {
     expect(formatCarrierOption('DHL', null)).toBe('DHL');
   });
 
+  it('forces a carrier conflict when all parcels are CUSTOM with empty labels', () => {
+    const parcels = [
+      {
+        ...base,
+        id: 'a',
+        carrier: 'CUSTOM' as const,
+        customCarrierLabel: null,
+      },
+      {
+        ...base,
+        id: 'b',
+        carrier: 'CUSTOM' as const,
+        customCarrierLabel: null,
+      },
+    ];
+    const conflict = buildCarrierConflict(parcels);
+
+    expect(conflict).toEqual({ options: [] });
+    expect(
+      isMergeFormComplete({
+        textConflicts: [],
+        textChoices: {},
+        otherText: {},
+        carrierConflict: conflict,
+        carrierChoice: null,
+        otherCarrierLabel: '',
+      }),
+    ).toBe(false);
+    expect(
+      isMergeFormComplete({
+        textConflicts: [],
+        textChoices: {},
+        otherText: {},
+        carrierConflict: conflict,
+        carrierChoice: { kind: 'other' },
+        otherCarrierLabel: 'Courier',
+      }),
+    ).toBe(true);
+
+    expect(
+      buildCarrierConflict([
+        {
+          ...base,
+          id: 'a',
+          carrier: 'CUSTOM' as const,
+          customCarrierLabel: '  ',
+        },
+        {
+          ...base,
+          id: 'b',
+          carrier: 'CUSTOM' as const,
+          customCarrierLabel: '  ',
+        },
+      ]),
+    ).toEqual({ options: [] });
+  });
+
   it('previews order date from oldest message then falls back to parcels', () => {
     expect(
       previewOrderDate([

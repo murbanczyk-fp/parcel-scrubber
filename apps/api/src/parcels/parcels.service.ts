@@ -289,22 +289,6 @@ export class ParcelsService {
 
     const validated = this.validateMergeFields(body?.fields);
 
-    if (validated.trackingNumber !== null) {
-      const duplicate = await this.prisma.parcel.findFirst({
-        where: {
-          userId,
-          trackingNumber: validated.trackingNumber,
-          NOT: { id: { in: parcelIds } },
-        },
-      });
-
-      if (duplicate) {
-        throw new ParcelValidationError([
-          { field: 'trackingNumber', message: DUPLICATE_TRACKING_MESSAGE },
-        ]);
-      }
-    }
-
     const survivor = selectSurvivor(parcels);
     const loserIds = parcels
       .filter((parcel) => parcel.id !== survivor.id)
@@ -331,8 +315,24 @@ export class ParcelsService {
 
     try {
       const merged = await this.prisma.$transaction(async (tx) => {
-        await tx.parcel.update({
-          where: { id: survivor.id },
+        if (validated.trackingNumber !== null) {
+          const duplicate = await tx.parcel.findFirst({
+            where: {
+              userId,
+              trackingNumber: validated.trackingNumber,
+              NOT: { id: { in: parcelIds } },
+            },
+          });
+
+          if (duplicate) {
+            throw new ParcelValidationError([
+              { field: 'trackingNumber', message: DUPLICATE_TRACKING_MESSAGE },
+            ]);
+          }
+        }
+
+        const { count: survivorUpdateCount } = await tx.parcel.updateMany({
+          where: { id: survivor.id, userId },
           data: {
             store: validated.store,
             description: validated.description,
@@ -343,6 +343,10 @@ export class ParcelsService {
             ...(statusChanged ? { status: nextStatus } : {}),
           },
         });
+
+        if (survivorUpdateCount === 0) {
+          throw new NotFoundException('Parcel not found');
+        }
 
         if (statusChanged) {
           await tx.parcelStatusEvent.create({
@@ -381,8 +385,8 @@ export class ParcelsService {
               )
             : orderDateFallback(parcels);
 
-        await tx.parcel.update({
-          where: { id: survivor.id },
+        await tx.parcel.updateMany({
+          where: { id: survivor.id, userId },
           data: { orderDate },
         });
 
@@ -475,7 +479,17 @@ export class ParcelsService {
       return null;
     }
 
-    return normalizeTrackingNumber(value);
+    const normalized = normalizeTrackingNumber(value);
+
+    if (normalized === null) {
+      errors.push({
+        field: 'trackingNumber',
+        message: 'Tracking number is invalid',
+      });
+      return null;
+    }
+
+    return normalized;
   }
 
   private normalizeNullableText(
