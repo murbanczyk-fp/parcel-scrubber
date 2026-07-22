@@ -333,8 +333,8 @@ No Prisma schema migration. Existing partial unique index and cascades are suffi
 
 #### Manual
 
-- [ ] 3.3 Active merge dialog resolves conflicts and updates the list
-- [ ] 3.4 Three-parcel description options omit empty; cancel is a no-op
+- [x] 3.3 Active merge dialog resolves conflicts and updates the list
+- [x] 3.4 Three-parcel description options omit empty; cancel is a no-op
 - [x] 3.5 Human confirmation to proceed to Phase 4 — 92c4bfe
 
 ### Phase 4: Archive list parity
@@ -346,5 +346,5 @@ No Prisma schema migration. Existing partial unique index and cascades are suffi
 
 #### Manual
 
-- [ ] 4.3 Archive Delivered+Removed merge yields Delivered survivor with all messages
-- [ ] 4.4 Selection does not leak across Active/Archive navigation
+- [x] 4.3 Archive Delivered+Removed merge yields Delivered survivor with all messages
+- [x] 4.4 Selection does not leak across Active/Archive navigation
