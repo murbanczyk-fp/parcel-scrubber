@@ -57,6 +57,7 @@ describe('ParcelsController', () => {
     markDelivered: jest.Mock;
     markRemoved: jest.Mock;
     reactivateParcel: jest.Mock;
+    mergeForUser: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -71,6 +72,7 @@ describe('ParcelsController', () => {
         status: 'REMOVED',
       }),
       reactivateParcel: jest.fn().mockResolvedValue(sampleParcel),
+      mergeForUser: jest.fn().mockResolvedValue(sampleParcel),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -187,6 +189,28 @@ describe('ParcelsController', () => {
       sessionUser.id,
       'parcel-1',
       patchBody,
+    );
+  });
+
+  it('delegates merge to the service', async () => {
+    const mergeBody = {
+      parcelIds: ['parcel-1', 'parcel-2'],
+      fields: {
+        store: 'Allegro',
+        description: null,
+        carrier: 'INPOST',
+        customCarrierLabel: null,
+        trackingNumber: '520000012680041086770098',
+        trackingUrl: null,
+      },
+    };
+
+    await expect(
+      controller.mergeParcels(sessionUser, mergeBody as never),
+    ).resolves.toEqual(sampleParcel);
+    expect(parcelsService.mergeForUser).toHaveBeenCalledWith(
+      sessionUser.id,
+      mergeBody,
     );
   });
 
@@ -388,6 +412,36 @@ describe('ParcelsController', () => {
           trackingNumber: '520000012680041086770098',
           orderDate: '2026-01-15',
         },
+      );
+    });
+
+    it('POST /parcels/merge returns 200 with merged parcel', async () => {
+      parcelsService.mergeForUser.mockResolvedValue(sampleParcel);
+      await createApp();
+
+      const server = app.getHttpServer() as Server;
+
+      const mergeBody = {
+        parcelIds: ['parcel-1', 'parcel-2'],
+        fields: {
+          store: 'Allegro',
+          description: null,
+          carrier: 'INPOST',
+          customCarrierLabel: null,
+          trackingNumber: '520000012680041086770098',
+          trackingUrl: null,
+        },
+      };
+
+      const response = await request(server)
+        .post('/parcels/merge')
+        .send(mergeBody)
+        .expect(200);
+
+      expect(response.body).toMatchObject({ id: 'parcel-1' });
+      expect(parcelsService.mergeForUser).toHaveBeenCalledWith(
+        sessionUser.id,
+        mergeBody,
       );
     });
 

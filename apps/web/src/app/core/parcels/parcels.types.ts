@@ -37,6 +37,20 @@ export type UpdateParcelPayload = Partial<
   >
 >;
 
+export type MergeParcelsFields = {
+  store: string | null;
+  description: string | null;
+  carrier: ParcelCarrier;
+  customCarrierLabel: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+};
+
+export type MergeParcelsPayload = {
+  parcelIds: string[];
+  fields: MergeParcelsFields;
+};
+
 export type ParcelMessageDto = {
   gmailMessageId: string;
   internalDate: string;

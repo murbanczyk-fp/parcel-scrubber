@@ -599,4 +599,256 @@ describe('Parcels HTTP (e2e)', () => {
       });
     });
   });
+
+  describe('merge parcels', () => {
+    type MergeParcelResponse = {
+      id: string;
+      description: string | null;
+      status: string;
+      orderDate: string;
+      messages: Array<{ gmailMessageId: string }>;
+    };
+
+    async function linkMessage(
+      userId: string,
+      parcelId: string,
+      gmailMessageId: string,
+      internalDate: Date,
+    ): Promise<void> {
+      await prisma.gmailMessage.create({
+        data: {
+          userId,
+          gmailMessageId,
+          internalDate,
+          subject: `Subject ${gmailMessageId}`,
+          from: 'shop@example.com',
+        },
+      });
+      await prisma.parcelEmail.create({
+        data: { parcelId, gmailMessageId, userId },
+      });
+    }
+
+    const mergeFields = {
+      store: 'Allegro',
+      description: 'Merged description',
+      carrier: 'INPOST' as const,
+      customCarrierLabel: null,
+      trackingNumber: 'MERGEDTRACK123456',
+      trackingUrl: null,
+    };
+
+    it('merges two active parcels, reparents messages, and deletes losers', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const older = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-02-10'),
+          trackingNumber: 'OLDERTRACK111',
+          carrier: Carrier.INPOST,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.NEW,
+          description: 'Older desc',
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+        },
+      });
+      const newer = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-01-05'),
+          trackingNumber: 'NEWERTRACK222',
+          carrier: Carrier.INPOST,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.NEW,
+          description: 'Newer desc',
+          createdAt: new Date('2026-02-01T10:00:00.000Z'),
+        },
+      });
+
+      await linkMessage(
+        user.id,
+        older.id,
+        'msg-old',
+        new Date('2026-01-02T08:00:00.000Z'),
+      );
+      await linkMessage(
+        user.id,
+        newer.id,
+        'msg-new',
+        new Date('2026-01-20T08:00:00.000Z'),
+      );
+
+      const response = await agent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [newer.id, older.id],
+          fields: {
+            ...mergeFields,
+            description: 'Merged description',
+            trackingNumber: 'OLDERTRACK111',
+          },
+        })
+        .expect(200);
+
+      const body = response.body as MergeParcelResponse;
+      expect(body.id).toBe(older.id);
+      expect(body.description).toBe('Merged description');
+      expect(body.orderDate).toBe('2026-01-02');
+      expect(body.messages.map((m) => m.gmailMessageId).sort()).toEqual([
+        'msg-new',
+        'msg-old',
+      ]);
+
+      expect(await prisma.parcel.count({ where: { userId: user.id } })).toBe(1);
+      expect(
+        await prisma.parcel.findUnique({ where: { id: newer.id } }),
+      ).toBeNull();
+    });
+
+    it('rejects tracking collision with a parcel outside the selection', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const a = await createParcel(user.id, { trackingNumber: 'MERGEA111' });
+      const b = await createParcel(user.id, { trackingNumber: 'MERGEB222' });
+      await createParcel(user.id, { trackingNumber: 'OUTSIDETRACK333' });
+
+      const response = await agent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [a.id, b.id],
+          fields: {
+            ...mergeFields,
+            trackingNumber: 'OUTSIDETRACK333',
+          },
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'trackingNumber' }],
+      });
+      expect(await prisma.parcel.count({ where: { userId: user.id } })).toBe(3);
+    });
+
+    it('returns 404 when another user parcel id is included', async () => {
+      const owner = await createTestUser();
+      const other = await createTestUser();
+      const ownerAgent = createAuthenticatedAgent(owner);
+
+      const own = await createParcel(owner.id, { trackingNumber: 'OWNTRACK1' });
+      const foreign = await createParcel(other.id, {
+        trackingNumber: 'FOREIGNTRACK1',
+      });
+
+      await ownerAgent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [own.id, foreign.id],
+          fields: mergeFields,
+        })
+        .expect(404);
+    });
+
+    it('returns 400 when fewer than two parcels are selected', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await createParcel(user.id);
+
+      const response = await agent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [parcel.id],
+          fields: mergeFields,
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'parcelIds' }],
+      });
+    });
+
+    it('prefers DELIVERED when merging delivered and removed archived parcels', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const removed = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-01-15'),
+          trackingNumber: 'ARCHREMOVED1',
+          carrier: Carrier.INPOST,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.REMOVED,
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+        },
+      });
+      const delivered = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-01-16'),
+          trackingNumber: 'ARCHDELIVERED1',
+          carrier: Carrier.INPOST,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.DELIVERED,
+          createdAt: new Date('2026-02-01T10:00:00.000Z'),
+        },
+      });
+
+      const response = await agent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [removed.id, delivered.id],
+          fields: {
+            ...mergeFields,
+            trackingNumber: 'ARCHREMOVED1',
+          },
+        })
+        .expect(200);
+
+      const body = response.body as MergeParcelResponse;
+      expect(body.id).toBe(removed.id);
+      expect(body.status).toBe('DELIVERED');
+
+      const events = await prisma.parcelStatusEvent.findMany({
+        where: { parcelId: removed.id },
+      });
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            fromStatus: ParcelStatus.REMOVED,
+            toStatus: ParcelStatus.DELIVERED,
+            source: StatusEventSource.USER,
+          }),
+        ]),
+      );
+    });
+
+    it('returns 400 when mixing active and archived parcel ids', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const active = await createParcel(user.id, {
+        trackingNumber: 'MIXACTIVE1',
+      });
+      const archived = await createParcel(user.id, {
+        trackingNumber: 'MIXARCHIVED1',
+        status: ParcelStatus.DELIVERED,
+      });
+
+      const response = await agent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [active.id, archived.id],
+          fields: mergeFields,
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'parcelIds' }],
+      });
+      expect(await prisma.parcel.count({ where: { userId: user.id } })).toBe(2);
+    });
+  });
 });

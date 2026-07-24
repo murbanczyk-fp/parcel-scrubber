@@ -20,7 +20,12 @@ import { AuthService } from '../../core/auth/auth.service';
 import { gmailMessageUrl } from '../../core/parcels/gmail-message-url';
 import { ParcelsService } from '../../core/parcels/parcels.service';
 import { OrderDateLocalPipe } from '../../core/parcels/order-date.pipe';
-import type { ParcelDto, SyncJobDto } from '../../core/parcels/parcels.types';
+import type {
+  MergeParcelsPayload,
+  ParcelDto,
+  SyncJobDto,
+} from '../../core/parcels/parcels.types';
+import { MergeParcelsDialogComponent } from '../parcels/merge-parcels-dialog.component';
 
 const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
   INPOST: 'InPost',
@@ -42,6 +47,7 @@ const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
     MessageModule,
     ProgressBarModule,
     TableModule,
+    MergeParcelsDialogComponent,
   ],
   templateUrl: './active-list.component.html',
   styleUrl: './active-list.component.scss',
@@ -59,6 +65,9 @@ export class ActiveListComponent implements OnInit, OnDestroy {
   protected readonly syncJob = signal<SyncJobDto | null>(null);
   protected readonly authRequired = signal(false);
   protected readonly actionInFlight = signal<ReadonlySet<string>>(new Set());
+  protected readonly mergeDialogVisible = signal(false);
+  protected readonly merging = signal(false);
+  selectedParcels: ParcelDto[] = [];
   expandedRowKeys: Record<string, boolean> = {};
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -89,6 +98,45 @@ export class ActiveListComponent implements OnInit, OnDestroy {
     }
 
     return Math.round((job.processed / job.total) * 100);
+  }
+
+  protected canMerge(): boolean {
+    return this.selectedParcels.length >= 2 && !this.merging();
+  }
+
+  protected onOpenMerge(): void {
+    if (!this.canMerge()) {
+      return;
+    }
+    this.mergeDialogVisible.set(true);
+  }
+
+  protected async onMergeConfirmed(payload: MergeParcelsPayload): Promise<void> {
+    if (this.merging()) {
+      return;
+    }
+
+    this.merging.set(true);
+
+    try {
+      const survivor = await this.parcelsService.mergeParcels(payload);
+      const selectedIds = new Set(payload.parcelIds);
+      this.parcels.set([
+        survivor,
+        ...this.parcels().filter((parcel) => !selectedIds.has(parcel.id)),
+      ]);
+      this.selectedParcels = [];
+      this.mergeDialogVisible.set(false);
+      this.messages.add({
+        severity: 'success',
+        summary: 'Parcels merged',
+        life: 4000,
+      });
+    } catch (err) {
+      await this.handleMergeError(err);
+    } finally {
+      this.merging.set(false);
+    }
   }
 
   protected async onSync(): Promise<void> {
@@ -152,6 +200,48 @@ export class ActiveListComponent implements OnInit, OnDestroy {
           'Removed from active list',
         );
       },
+    });
+  }
+
+  private async handleMergeError(err: unknown): Promise<void> {
+    if (err instanceof HttpErrorResponse && err.status === 400) {
+      const body = err.error as { errors?: { message: string }[] };
+      const firstMessage = body?.errors?.[0]?.message;
+      this.messages.add({
+        severity: 'error',
+        summary: firstMessage ?? 'Could not merge parcels',
+        life: 5000,
+      });
+      return;
+    }
+
+    if (err instanceof HttpErrorResponse && err.status === 401) {
+      this.authRequired.set(true);
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Session expired',
+        detail: 'Sign in with Google again to continue.',
+        life: 8000,
+      });
+      return;
+    }
+
+    if (err instanceof HttpErrorResponse && err.status === 404) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Parcel not found',
+        life: 4000,
+      });
+      this.selectedParcels = [];
+      this.mergeDialogVisible.set(false);
+      await this.loadParcels();
+      return;
+    }
+
+    this.messages.add({
+      severity: 'error',
+      summary: 'Could not merge parcels',
+      life: 4000,
     });
   }
 

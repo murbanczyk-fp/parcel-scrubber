@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   CreateParcelPayload,
+  MergeParcelsPayload,
   ParcelDto,
   SyncJobDto,
   UpdateParcelPayload,
@@ -40,6 +41,12 @@ export class ParcelsService {
   updateParcel(id: string, body: UpdateParcelPayload): Promise<ParcelDto> {
     return firstValueFrom(
       this.http.patch<ParcelDto>(`/api/parcels/${id}`, body),
+    );
+  }
+
+  mergeParcels(body: MergeParcelsPayload): Promise<ParcelDto> {
+    return firstValueFrom(
+      this.http.post<ParcelDto>('/api/parcels/merge', body),
     );
   }
 

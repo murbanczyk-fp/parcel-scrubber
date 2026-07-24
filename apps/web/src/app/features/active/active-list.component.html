@@ -1,10 +1,27 @@
 <section class="active-list">
   <p-confirmDialog />
+  <app-merge-parcels-dialog
+    [parcels]="selectedParcels"
+    [visible]="mergeDialogVisible()"
+    [submitting]="merging()"
+    (visibleChange)="mergeDialogVisible.set($event)"
+    (confirmed)="onMergeConfirmed($event)"
+  />
   <p-card>
     <ng-template #header>
       <div class="active-list__header">
         <h1 class="active-list__title">Active parcels</h1>
         <div class="active-list__header-actions">
+          <p-button
+            label="Merge"
+            icon="pi pi-objects-column"
+            severity="secondary"
+            [outlined]="true"
+            data-testid="merge-parcels"
+            [disabled]="!canMerge()"
+            [loading]="merging()"
+            (onClick)="onOpenMerge()"
+          />
           <a routerLink="/active/new" data-testid="add-parcel">
             <p-button
               label="Add parcel"
@@ -74,11 +91,16 @@
       <p-table
         [value]="parcels()"
         dataKey="id"
+        selectionMode="multiple"
+        [(selection)]="selectedParcels"
         [expandedRowKeys]="expandedRowKeys"
         styleClass="active-list__table"
       >
         <ng-template #header>
           <tr>
+            <th class="active-list__select-col">
+              <p-tableHeaderCheckbox />
+            </th>
             <th class="active-list__expand-col"></th>
             <th>Store</th>
             <th>Description</th>
@@ -90,6 +112,9 @@
         </ng-template>
         <ng-template #body let-parcel let-expanded="expanded">
           <tr>
+            <td>
+              <p-tableCheckbox [value]="parcel" />
+            </td>
             <td>
               @if (parcel.messages.length > 0) {
                 <p-button
@@ -150,7 +175,7 @@
         </ng-template>
         <ng-template #expandedrow let-parcel>
           <tr>
-            <td colspan="7">
+            <td colspan="8">
               <ul class="active-list__messages" [attr.data-testid]="'parcel-messages-' + parcel.id">
                 @for (message of parcel.messages; track message.gmailMessageId) {
                   <li class="active-list__message">

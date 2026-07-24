@@ -1,8 +1,21 @@
 @import '../placeholder-page';
 
+.archive-list__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 0;
+}
+
+.archive-list__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .archive-list__title {
   margin: 0;
-  padding: 1.25rem 1.25rem 0;
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 2rem;
@@ -24,6 +37,10 @@
 }
 
 .archive-list__expand-col {
+  width: 3rem;
+}
+
+.archive-list__select-col {
   width: 3rem;
 }
 

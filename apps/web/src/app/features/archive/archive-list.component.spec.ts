@@ -45,6 +45,7 @@ describe('ArchiveListComponent', () => {
           useValue: {
             listArchived: listArchivedMock,
             reactivateParcel: vi.fn(),
+            mergeParcels: vi.fn(),
           },
         },
       ],
@@ -160,5 +161,117 @@ describe('ArchiveListComponent', () => {
     expect(
       messages.query(By.css('.archive-list__message-subject')),
     ).toBeNull();
+  });
+
+  it('disables Merge until at least two parcels are selected', async () => {
+    const second: ParcelDto = {
+      ...baseParcel,
+      id: 'parcel-2',
+      status: 'REMOVED',
+      description: 'B',
+    };
+    const fixture = await renderWithParcels([baseParcel, second]);
+    const component = fixture.componentInstance as ArchiveListComponent & {
+      canMerge: () => boolean;
+    };
+
+    expect(component.canMerge()).toBe(false);
+
+    component.selectedParcels = [baseParcel, second];
+    fixture.detectChanges();
+    expect(component.canMerge()).toBe(true);
+  });
+
+  it('opens the merge dialog with the current selection', async () => {
+    const second: ParcelDto = {
+      ...baseParcel,
+      id: 'parcel-2',
+      status: 'REMOVED',
+      description: 'B',
+    };
+    const fixture = await renderWithParcels([baseParcel, second]);
+    const component = fixture.componentInstance as ArchiveListComponent & {
+      mergeDialogVisible: () => boolean;
+      onOpenMerge: () => void;
+    };
+
+    component.selectedParcels = [baseParcel, second];
+    component.onOpenMerge();
+    fixture.detectChanges();
+
+    expect(component.mergeDialogVisible()).toBe(true);
+  });
+
+  it('updates the archive list after a successful merge', async () => {
+    const second: ParcelDto = {
+      ...baseParcel,
+      id: 'parcel-2',
+      status: 'REMOVED',
+      description: 'B',
+    };
+    const survivor: ParcelDto = {
+      ...baseParcel,
+      status: 'DELIVERED',
+      description: 'Merged',
+    };
+    const mergeParcels = vi.fn().mockResolvedValue(survivor);
+
+    await TestBed.resetTestingModule();
+    listArchivedMock = vi.fn().mockResolvedValue([baseParcel, second]);
+    await TestBed.configureTestingModule({
+      imports: [ArchiveListComponent],
+      providers: [
+        MessageService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ParcelsService,
+          useValue: {
+            listArchived: listArchivedMock,
+            reactivateParcel: vi.fn(),
+            mergeParcels,
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(ArchiveListComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as ArchiveListComponent & {
+      parcels: () => ParcelDto[];
+      onMergeConfirmed: (payload: {
+        parcelIds: string[];
+        fields: {
+          store: string | null;
+          description: string | null;
+          carrier: ParcelDto['carrier'];
+          customCarrierLabel: string | null;
+          trackingNumber: string | null;
+          trackingUrl: string | null;
+        };
+      }) => Promise<void>;
+    };
+    component.selectedParcels = [baseParcel, second];
+    await component.onMergeConfirmed({
+      parcelIds: ['parcel-1', 'parcel-2'],
+      fields: {
+        store: 'Allegro',
+        description: 'Merged',
+        carrier: 'INPOST',
+        customCarrierLabel: null,
+        trackingNumber: '520000012680041086770098',
+        trackingUrl: null,
+      },
+    });
+    fixture.detectChanges();
+
+    expect(mergeParcels).toHaveBeenCalled();
+    expect(component.parcels().map((p) => p.id)).toEqual(['parcel-1']);
+    expect(component.parcels()[0].status).toBe('DELIVERED');
+    expect(component.selectedParcels).toEqual([]);
   });
 });

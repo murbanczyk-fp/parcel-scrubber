@@ -1,7 +1,28 @@
 <section class="archive-list">
+  <app-merge-parcels-dialog
+    [parcels]="selectedParcels"
+    [visible]="mergeDialogVisible()"
+    [submitting]="merging()"
+    (visibleChange)="mergeDialogVisible.set($event)"
+    (confirmed)="onMergeConfirmed($event)"
+  />
   <p-card>
     <ng-template #header>
-      <h1 class="archive-list__title">Archived parcels</h1>
+      <div class="archive-list__header">
+        <h1 class="archive-list__title">Archived parcels</h1>
+        <div class="archive-list__header-actions">
+          <p-button
+            label="Merge"
+            icon="pi pi-objects-column"
+            severity="secondary"
+            [outlined]="true"
+            data-testid="merge-parcels"
+            [disabled]="!canMerge()"
+            [loading]="merging()"
+            (onClick)="onOpenMerge()"
+          />
+        </div>
+      </div>
     </ng-template>
 
     @if (loading()) {
@@ -17,12 +38,17 @@
       <p-table
         [value]="parcels()"
         dataKey="id"
+        selectionMode="multiple"
+        [(selection)]="selectedParcels"
         [expandedRowKeys]="expandedRowKeys"
         styleClass="archive-list__table"
         data-testid="archive-list-table"
       >
         <ng-template #header>
           <tr>
+            <th class="archive-list__select-col">
+              <p-tableHeaderCheckbox />
+            </th>
             <th class="archive-list__expand-col"></th>
             <th>Store</th>
             <th>Description</th>
@@ -35,6 +61,9 @@
         </ng-template>
         <ng-template #body let-parcel let-expanded="expanded">
           <tr>
+            <td>
+              <p-tableCheckbox [value]="parcel" />
+            </td>
             <td>
               @if (parcel.messages.length > 0) {
                 <p-button
@@ -88,7 +117,7 @@
         </ng-template>
         <ng-template #expandedrow let-parcel>
           <tr>
-            <td colspan="8">
+            <td colspan="9">
               <ul class="archive-list__messages" [attr.data-testid]="'parcel-messages-' + parcel.id">
                 @for (message of parcel.messages; track message.gmailMessageId) {
                   <li class="archive-list__message">

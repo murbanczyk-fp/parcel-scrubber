@@ -11,7 +11,11 @@ import { TableModule } from 'primeng/table';
 import { ParcelsService } from '../../core/parcels/parcels.service';
 import { gmailMessageUrl } from '../../core/parcels/gmail-message-url';
 import { OrderDateLocalPipe } from '../../core/parcels/order-date.pipe';
-import type { ParcelDto } from '../../core/parcels/parcels.types';
+import type {
+  MergeParcelsPayload,
+  ParcelDto,
+} from '../../core/parcels/parcels.types';
+import { MergeParcelsDialogComponent } from '../parcels/merge-parcels-dialog.component';
 
 const CARRIER_LABELS: Record<ParcelDto['carrier'], string> = {
   INPOST: 'InPost',
@@ -28,7 +32,16 @@ const STATUS_LABELS: Record<'DELIVERED' | 'REMOVED', string> = {
 
 @Component({
   selector: 'app-archive-list',
-  imports: [DatePipe, OrderDateLocalPipe, RouterLink, ButtonModule, CardModule, MessageModule, TableModule],
+  imports: [
+    DatePipe,
+    OrderDateLocalPipe,
+    RouterLink,
+    ButtonModule,
+    CardModule,
+    MessageModule,
+    TableModule,
+    MergeParcelsDialogComponent,
+  ],
   templateUrl: './archive-list.component.html',
   styleUrl: './archive-list.component.scss',
 })
@@ -40,6 +53,9 @@ export class ArchiveListComponent implements OnInit {
   protected readonly loadError = signal<string | null>(null);
   protected readonly parcels = signal<ParcelDto[]>([]);
   protected readonly actionInFlight = signal<ReadonlySet<string>>(new Set());
+  protected readonly mergeDialogVisible = signal(false);
+  protected readonly merging = signal(false);
+  selectedParcels: ParcelDto[] = [];
   expandedRowKeys: Record<string, boolean> = {};
 
   ngOnInit(): void {
@@ -70,8 +86,93 @@ export class ArchiveListComponent implements OnInit {
     return this.actionInFlight().has(parcelId);
   }
 
+  protected canMerge(): boolean {
+    return this.selectedParcels.length >= 2 && !this.merging();
+  }
+
+  protected onOpenMerge(): void {
+    if (!this.canMerge()) {
+      return;
+    }
+    this.mergeDialogVisible.set(true);
+  }
+
+  protected async onMergeConfirmed(payload: MergeParcelsPayload): Promise<void> {
+    if (this.merging()) {
+      return;
+    }
+
+    this.merging.set(true);
+
+    try {
+      const survivor = await this.parcelsService.mergeParcels(payload);
+      const selectedIds = new Set(payload.parcelIds);
+      const remaining = this.parcels().filter(
+        (parcel) => !selectedIds.has(parcel.id),
+      );
+      const archivedStatuses = new Set(['DELIVERED', 'REMOVED']);
+      this.parcels.set(
+        archivedStatuses.has(survivor.status)
+          ? [survivor, ...remaining]
+          : remaining,
+      );
+      this.selectedParcels = [];
+      this.mergeDialogVisible.set(false);
+      this.messages.add({
+        severity: 'success',
+        summary: 'Parcels merged',
+        life: 4000,
+      });
+    } catch (err) {
+      await this.handleMergeError(err);
+    } finally {
+      this.merging.set(false);
+    }
+  }
+
   protected onRestore(parcel: ParcelDto): void {
     void this.runRestoreAction(parcel);
+  }
+
+  private async handleMergeError(err: unknown): Promise<void> {
+    if (err instanceof HttpErrorResponse && err.status === 400) {
+      const body = err.error as { errors?: { message: string }[] };
+      const firstMessage = body?.errors?.[0]?.message;
+      this.messages.add({
+        severity: 'error',
+        summary: firstMessage ?? 'Could not merge parcels',
+        life: 5000,
+      });
+      return;
+    }
+
+    if (err instanceof HttpErrorResponse && err.status === 401) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Session expired',
+        detail: 'Sign in with Google again to continue.',
+        life: 8000,
+      });
+      return;
+    }
+
+    if (err instanceof HttpErrorResponse && err.status === 404) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Parcel not found',
+        life: 4000,
+      });
+      this.selectedParcels = [];
+      this.mergeDialogVisible.set(false);
+      await this.loadParcels();
+      return;
+    }
+
+    this.messages.add({
+      severity: 'error',
+      summary: 'Could not merge parcels',
+      life: 4000,
+    });
   }
 
   private async runRestoreAction(parcel: ParcelDto): Promise<void> {

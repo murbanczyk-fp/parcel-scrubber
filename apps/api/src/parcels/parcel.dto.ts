@@ -23,6 +23,20 @@ export type UpdateParcelBody = Partial<
   >
 >;
 
+export type MergeParcelsFields = {
+  store: string | null;
+  description: string | null;
+  carrier: Carrier;
+  customCarrierLabel: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+};
+
+export type MergeParcelsBody = {
+  parcelIds: string[];
+  fields: MergeParcelsFields;
+};
+
 export type ParcelMessageDto = {
   gmailMessageId: string;
   internalDate: string;

@@ -19,6 +19,12 @@ import {
 } from './is-archived-status';
 import { isSafeHttpUrl } from './is-safe-http-url';
 import { mapParcelToDto } from './map-parcel-to-dto';
+import {
+  distinctParcelIds,
+  orderDateFallback,
+  preferredArchiveStatus,
+  selectSurvivor,
+} from './merge-parcels';
 import { normalizeTrackingNumber } from './normalize-tracking-number';
 import {
   PARCEL_CUSTOM_CARRIER_LABEL_MAX_LENGTH,
@@ -27,6 +33,8 @@ import {
 } from './parcel-field-limits';
 import type {
   CreateParcelBody,
+  MergeParcelsBody,
+  MergeParcelsFields,
   ParcelDto,
   UpdateParcelBody,
 } from './parcel.dto';
@@ -229,6 +237,291 @@ export class ParcelsService {
     }
 
     return this.transitionStatus(userId, parcelId, ParcelStatus.NEW);
+  }
+
+  async mergeForUser(
+    userId: string,
+    body: MergeParcelsBody,
+  ): Promise<ParcelDto> {
+    const parcelIds = distinctParcelIds(
+      Array.isArray(body?.parcelIds)
+        ? body.parcelIds.filter((id): id is string => typeof id === 'string')
+        : [],
+    );
+
+    if (parcelIds.length < 2) {
+      throw new ParcelValidationError([
+        {
+          field: 'parcelIds',
+          message: 'Select at least two parcels to merge',
+        },
+      ]);
+    }
+
+    const parcels = await this.prisma.parcel.findMany({
+      where: { userId, id: { in: parcelIds } },
+      include: {
+        messages: {
+          select: { gmailMessageId: true },
+        },
+      },
+    });
+
+    if (parcels.length !== parcelIds.length) {
+      throw new NotFoundException('Parcel not found');
+    }
+
+    const anyArchived = parcels.some((parcel) =>
+      isArchivedStatus(parcel.status),
+    );
+    const anyActive = parcels.some(
+      (parcel) => !isArchivedStatus(parcel.status),
+    );
+
+    if (anyArchived && anyActive) {
+      throw new ParcelValidationError([
+        {
+          field: 'parcelIds',
+          message: 'Cannot merge active and archived parcels together',
+        },
+      ]);
+    }
+
+    const validated = this.validateMergeFields(body?.fields);
+
+    const survivor = selectSurvivor(parcels);
+    const loserIds = parcels
+      .filter((parcel) => parcel.id !== survivor.id)
+      .map((parcel) => parcel.id);
+    const preferredStatus = preferredArchiveStatus(
+      parcels.map((parcel) => parcel.status),
+    );
+    const nextStatus = preferredStatus ?? survivor.status;
+    const statusChanged = nextStatus !== survivor.status;
+
+    const allMessageIds = [
+      ...new Set(
+        parcels.flatMap((parcel) =>
+          parcel.messages.map((message) => message.gmailMessageId),
+        ),
+      ),
+    ];
+    const survivorMessageIds = new Set(
+      survivor.messages.map((message) => message.gmailMessageId),
+    );
+    const missingMessageIds = allMessageIds.filter(
+      (gmailMessageId) => !survivorMessageIds.has(gmailMessageId),
+    );
+
+    try {
+      const merged = await this.prisma.$transaction(async (tx) => {
+        if (validated.trackingNumber !== null) {
+          const duplicate = await tx.parcel.findFirst({
+            where: {
+              userId,
+              trackingNumber: validated.trackingNumber,
+              NOT: { id: { in: parcelIds } },
+            },
+          });
+
+          if (duplicate) {
+            throw new ParcelValidationError([
+              { field: 'trackingNumber', message: DUPLICATE_TRACKING_MESSAGE },
+            ]);
+          }
+        }
+
+        const { count: survivorUpdateCount } = await tx.parcel.updateMany({
+          where: { id: survivor.id, userId },
+          data: {
+            store: validated.store,
+            description: validated.description,
+            carrier: validated.carrier,
+            customCarrierLabel: validated.customCarrierLabel,
+            trackingNumber: validated.trackingNumber,
+            trackingUrl: validated.trackingUrl,
+            ...(statusChanged ? { status: nextStatus } : {}),
+          },
+        });
+
+        if (survivorUpdateCount === 0) {
+          throw new NotFoundException('Parcel not found');
+        }
+
+        if (statusChanged) {
+          await tx.parcelStatusEvent.create({
+            data: {
+              parcelId: survivor.id,
+              fromStatus: survivor.status,
+              toStatus: nextStatus,
+              source: StatusEventSource.USER,
+            },
+          });
+        }
+
+        for (const gmailMessageId of missingMessageIds) {
+          await tx.parcelEmail.create({
+            data: {
+              parcelId: survivor.id,
+              gmailMessageId,
+              userId,
+            },
+          });
+        }
+
+        const links = await tx.parcelEmail.findMany({
+          where: { parcelId: survivor.id },
+          include: { gmailMessage: { select: { internalDate: true } } },
+        });
+
+        const orderDate =
+          links.length > 0
+            ? new Date(
+                Math.min(
+                  ...links.map((link) =>
+                    link.gmailMessage.internalDate.getTime(),
+                  ),
+                ),
+              )
+            : orderDateFallback(parcels);
+
+        await tx.parcel.updateMany({
+          where: { id: survivor.id, userId },
+          data: { orderDate },
+        });
+
+        await tx.parcel.deleteMany({
+          where: { id: { in: loserIds }, userId },
+        });
+
+        return tx.parcel.findFirstOrThrow({
+          where: { id: survivor.id, userId },
+          include: PARCEL_MESSAGES_INCLUDE,
+        });
+      });
+
+      return mapParcelToDto(merged);
+    } catch (err) {
+      this.rethrowDuplicateTrackingError(err);
+    }
+  }
+
+  private validateMergeFields(fields: MergeParcelsFields | undefined): {
+    store: string | null;
+    description: string | null;
+    carrier: Carrier;
+    customCarrierLabel: string | null;
+    trackingNumber: string | null;
+    trackingUrl: string | null;
+  } {
+    if (fields == null || typeof fields !== 'object') {
+      throw new ParcelValidationError([
+        { message: 'Request body must include merge fields' },
+      ]);
+    }
+
+    const errors: ParcelFieldError[] = [];
+
+    const store = this.normalizeNullableText(
+      fields.store,
+      'store',
+      PARCEL_STORE_MAX_LENGTH,
+      errors,
+    );
+    const description = this.normalizeNullableText(
+      fields.description,
+      'description',
+      PARCEL_DESCRIPTION_MAX_LENGTH,
+      errors,
+    );
+    const carrier = this.validateCarrier(fields.carrier, errors);
+    const customCarrierLabel = this.validateCustomCarrierLabel(
+      carrier,
+      fields.customCarrierLabel,
+      errors,
+    );
+    const trackingNumber = this.validateNullableTrackingNumber(
+      fields.trackingNumber,
+      errors,
+    );
+    const trackingUrl = this.validateTrackingUrlForClear(
+      fields.trackingUrl ?? null,
+      errors,
+    );
+
+    if (errors.length > 0) {
+      throw new ParcelValidationError(errors);
+    }
+
+    return {
+      store,
+      description,
+      carrier: carrier!,
+      customCarrierLabel,
+      trackingNumber,
+      trackingUrl,
+    };
+  }
+
+  private validateNullableTrackingNumber(
+    value: unknown,
+    errors: ParcelFieldError[],
+  ): string | null {
+    if (value == null) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      errors.push({
+        field: 'trackingNumber',
+        message: 'Tracking number is invalid',
+      });
+      return null;
+    }
+
+    const normalized = normalizeTrackingNumber(value);
+
+    if (normalized === null) {
+      errors.push({
+        field: 'trackingNumber',
+        message: 'Tracking number is invalid',
+      });
+      return null;
+    }
+
+    return normalized;
+  }
+
+  private normalizeNullableText(
+    value: unknown,
+    field: string,
+    maxLength: number,
+    errors: ParcelFieldError[],
+  ): string | null {
+    if (value == null) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      errors.push({ field, message: 'Must be a string or null' });
+      return null;
+    }
+
+    if (value.trim().length === 0) {
+      return null;
+    }
+
+    const trimmed = value.trim();
+
+    if (trimmed.length > maxLength) {
+      errors.push({
+        field,
+        message: `Must be at most ${maxLength} characters`,
+      });
+      return null;
+    }
+
+    return trimmed;
   }
 
   private validateCreateBody(body: CreateParcelBody): {
