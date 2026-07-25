@@ -65,7 +65,7 @@ orchestrator updates Status as artifacts appear on disk.
 |---|------------|-----------------|---------------|------------|--------|---------------|
 | 1 | Critical-path ownership & URL safety | Prove IDOR denial and unsafe tracking-URL rejection at the cheapest strong layer | #1, #2 | unit gaps + HTTP e2e | researched | testing-critical-path-ownership-url-safety |
 | 2 | Merge & dedupe confidence | Prove merge/dedupe side effects and sync enrichment non-overwrite | #3, #4 | unit + service/integration | researched | merge-and-dedupe-confidence |
-| 3 | Carrier URL contract lock | Table-driven contract for generated carrier links | #5 | unit | not started | — |
+| 3 | Carrier URL contract lock | Table-driven contract for generated carrier links | #5 | unit | planned | carrier-url-contract-lock |
 
 ## 4. Stack
 
