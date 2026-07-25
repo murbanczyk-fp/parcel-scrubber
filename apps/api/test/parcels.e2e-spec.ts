@@ -595,9 +595,8 @@ describe('Parcels HTTP (e2e)', () => {
         data: { trackingUrl: unsafeOverride },
       });
 
-      const getBody = (
-        await agent.get(`/api/parcels/${parcel.id}`).expect(200)
-      ).body as ParcelResponse;
+      const getBody = (await agent.get(`/api/parcels/${parcel.id}`).expect(200))
+        .body as ParcelResponse;
       const listBody = (
         await agent.get('/api/parcels?status=active').expect(200)
       ).body as ParcelResponse[];

@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-07-24 (Phase 1 → change opened)
+> Last updated: 2026-07-25 (Phase 1 cookbook completed)
 
 ## 1. Strategy
 
@@ -111,11 +111,34 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.1 Adding a unit test (API)
 
-- TBD — see §3 Phase 1 for unsafe-URL / ownership helper patterns; Phase 3 for carrier URL table-driven pattern.
+- Co-locate API unit tests as `*.spec.ts` under `apps/api/src/`. URL
+  allowlist and resolver rules may call the helper directly; see
+  `is-safe-http-url.spec.ts` and `resolve-tracking-url.spec.ts`.
+- At an HTTP boundary, use an independent oracle instead of importing the
+  production URL validator. Parse the response with `new URL(...)` and
+  compare its protocol with the literal `http:` / `https:` contract.
+- Controller or service tests backed by mocked Prisma calls do not prove
+  ownership isolation. Use real-database HTTP e2e for IDOR boundaries.
+- Carrier-template table-driven coverage remains deferred to §3 Phase 3 /
+  Risk #5.
 
 ### 6.2 Adding an HTTP e2e test (API)
 
-- TBD — see §3 Phase 1 for two-user IDOR and tracking-URL write-boundary patterns.
+- Put suites in `apps/api/test/*.e2e-spec.ts`. The parcel reference suite
+  checks that `E2E_DATABASE_URL` (or its default) names a database ending
+  in `_test`, deploys migrations during bootstrap, truncates application
+  tables before each test, and runs serially through
+  `apps/api/test/jest-e2e.json`.
+- Seed users through Prisma, sign each user's `SessionUser` with
+  `AuthService`, and attach the resulting JWT cookie to separate Supertest
+  agents. Live Google OAuth is not part of this setup.
+- Seed through the public HTTP write API when possible. Use Prisma directly
+  only for states that the public API should reject, such as a legacy unsafe
+  tracking-URL override.
+- Run one parcel suite with
+  `npm run test:e2e -w @parcel-scrubber/api -- parcels.e2e-spec`; run all API
+  e2e suites with `npm run test:e2e -w @parcel-scrubber/api`. These are
+  separate from API unit Jest, which runs through `npm run test:api`.
 
 ### 6.3 Adding a web unit test
 
@@ -123,15 +146,51 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.4 Adding a test for parcel ownership / IDOR
 
-- TBD — see §3 Phase 1 Risk #1 response guidance (cross-user 404/403 on mutate + list exclusion).
+- Create two users and a real parcel owned by User A, then issue requests
+  with User B's signed-cookie agent. Cross-user resource requests must
+  return 404, and User B's active and archived lists must exclude User A's
+  parcel id.
+- Prove the fixture exists through User A's list or a direct database read.
+  After a denied mutation, re-read the row and assert the attempted fields
+  did not change.
+- Exercise the real JWT, controller, service, and Postgres path; a mocked
+  Prisma `null` result is not IDOR proof. Parcel removal is
+  `POST /api/parcels/:id/remove`, a status transition, not HTTP DELETE.
 
 ### 6.5 Adding a test for tracking URL safety or carrier URL generation
 
-- TBD — see §3 Phase 1 Risk #2 (unsafe override) and Phase 3 Risk #5 (generated carrier contract).
+- At the write boundary, cover create/update rejection of non-HTTP(S)
+  values and acceptance of a known-safe HTTP(S) override. Assert the error
+  identifies `trackingUrl`; for an accepted override, assert both response
+  URL fields equal it.
+- To test read-time safety, seed a legacy unsafe override directly with
+  Prisma, then retrieve that parcel through both GET and list HTTP paths.
+  Find the list row by id rather than making assertions about unrelated
+  rows.
+- `trackingUrlOverride` is raw editing data and may preserve the unsafe
+  legacy value. The clickable `trackingUrl` is the safety boundary: if
+  non-null, parse it and independently require `http:` or `https:`.
+- Merge URL validation remains deferred to merge-focused work. Generated
+  carrier-template contracts remain deferred to §3 Phase 3 / Risk #5.
 
 ### 6.6 Per-rollout-phase notes
 
-(Optional. Filled after each phase ships.)
+#### Phase 1 — Critical-path ownership & URL safety
+
+- Change: `testing-critical-path-ownership-url-safety`; risks covered:
+  #1 (cross-user parcel access) and #2 (unsafe tracking URL).
+- Reference suite: `apps/api/test/parcels.e2e-spec.ts`.
+- Shipped five scenarios: cross-user active/archive list exclusion;
+  cross-user PATCH denial with persisted-state non-mutation; unsafe PATCH
+  rejection; safe HTTPS PATCH acceptance; and legacy unsafe override
+  protection across GET/list.
+- Prerequisite: a reachable Postgres test database whose name ends in
+  `_test`. Verify with the focused and full e2e commands in §6.2, then run
+  `npm run lint:api && npm run test:api`, `npm run lint`, and
+  `npm run test`.
+- No production or web behavior changed. Merge URL validation,
+  carrier-template contracts, and raw `trackingUrlOverride` sanitization
+  remain outside this rollout.
 
 ## 7. What We Deliberately Don't Test
 

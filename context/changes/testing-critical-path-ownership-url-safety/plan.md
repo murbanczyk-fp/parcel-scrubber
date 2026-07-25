@@ -272,14 +272,14 @@ No schema or data migration is required. The direct unsafe-row seed exists only 
 
 #### Automated
 
-- [x] 2.1 Focused parcel e2e suite passes with unsafe PATCH, safe PATCH, and legacy-read cases
-- [x] 2.2 Full API e2e suite passes
+- [x] 2.1 Focused parcel e2e suite passes with unsafe PATCH, safe PATCH, and legacy-read cases — 34bb53b
+- [x] 2.2 Full API e2e suite passes — 34bb53b
 
 ### Phase 3: Publish Reusable Test Recipes and Verify the Rollout
 
 #### Automated
 
-- [ ] 3.1 Test-plan cookbook contains reusable Phase 1 recipes and explicit later-phase deferrals
-- [ ] 3.2 API lint and unit tests pass
-- [ ] 3.3 Full API e2e suite passes
-- [ ] 3.4 Root lint and unit suites pass
+- [x] 3.1 Test-plan cookbook contains reusable Phase 1 recipes and explicit later-phase deferrals
+- [x] 3.2 API lint and unit tests pass
+- [x] 3.3 Full API e2e suite passes
+- [x] 3.4 Root lint and unit suites pass
