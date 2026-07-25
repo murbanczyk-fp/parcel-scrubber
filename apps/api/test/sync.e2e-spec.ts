@@ -343,7 +343,7 @@ describe('SyncService (e2e)', () => {
 
     const linkIds = (
       await prisma.parcelEmail.findMany({
-        where: { parcelId: parcels[0]!.id },
+        where: { parcelId: parcels[0].id },
         orderBy: { gmailMessageId: 'asc' },
       })
     ).map((link) => link.gmailMessageId);

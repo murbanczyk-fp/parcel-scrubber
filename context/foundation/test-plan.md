@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-07-25 (Phase 1 cookbook completed)
+> Last updated: 2026-07-25 (Phase 2 cookbook completed)
 
 ## 1. Strategy
 
@@ -191,6 +191,52 @@ the relevant rollout phase ships; before that, the sub-section reads
 - No production or web behavior changed. Merge URL validation,
   carrier-template contracts, and raw `trackingUrlOverride` sanitization
   remain outside this rollout.
+
+#### Phase 2 — Merge & dedupe confidence
+
+- Change: `merge-and-dedupe-confidence`; risks covered: #3 (incorrect
+  merge/dedupe relations) and #4 (sync enrichment overwrites non-empty
+  values). Reference suites:
+  `apps/api/test/parcels.e2e-spec.ts`,
+  `apps/api/test/sync.e2e-spec.ts`, and
+  `apps/api/src/sync/merge-parcel-fields-from-extraction.spec.ts`.
+- For manual merge, seed at least three parcels with literal `createdAt`
+  values and submit their IDs out of age order. Create an overlapping
+  Gmail message once, then add separate `ParcelEmail` links to the
+  survivor and a loser. After merging, assert the literal oldest survivor
+  ID and message date, one remaining parcel, no loser rows or links,
+  exactly one survivor link per Gmail ID, and retention of every
+  `GmailMessage` ledger row.
+- Manual merge fields are explicit client choices. Include a literal value
+  absent from every source parcel and assert it persists; do not claim
+  automatic source-field precedence.
+- For sync dedupe, return two literal Gmail IDs with different message
+  dates and tracking strings that differ in whitespace/case but have one
+  canonical identity. Assert one parcel with the literal canonical number,
+  the earlier message date, two ledger rows, and two links. Combine a
+  carrier-first extraction with a merchant extraction to prove that the
+  first non-empty values remain while empty metadata fills.
+- For enrichment preservation, establish non-empty values through
+  `ParcelsService.updateForUser`, leave one field empty, then sync a
+  conflicting extraction. Assert the edited literals remain, the empty
+  field fills, and status, source, tracking URL override, tracking
+  identity, parcel count, and new message link remain correct.
+- Treat `parcelFieldsChanged` as a pure unit seam: table-drive equality
+  and one change in each of store, description, carrier, and custom
+  carrier label. The current `CUSTOM`-to-known carrier upgrade, including
+  clearing `customCarrierLabel`, is intentional.
+- E2e expected values must be literal fixture values. Do not import
+  survivor selection, tracking normalization, order-date fallback, or
+  enrichment helpers to calculate expectations. Exact mocked Prisma call
+  shapes are wiring checks, not proof of constraints, cascades, or final
+  relational state.
+- Prerequisite: `E2E_DATABASE_URL` (or the local default) must point to a
+  disposable database whose name ends in `_test`. Focused commands:
+  `npm run test:e2e -w @parcel-scrubber/api -- parcels.e2e-spec`,
+  `npm run test:e2e -w @parcel-scrubber/api -- sync.e2e-spec`, and
+  `npm run test -w @parcel-scrubber/api -- merge-parcel-fields-from-extraction.spec`.
+  Generated carrier tracking-link templates remain deferred to §3
+  Phase 3 / Risk #5.
 
 ## 7. What We Deliberately Don't Test
 

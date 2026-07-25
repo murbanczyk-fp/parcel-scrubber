@@ -271,28 +271,28 @@ No schema or data migration is required. The e2e database must remain disposable
 
 #### Automated
 
-- [x] 2.1 Focused enrichment unit suite passes
-- [x] 2.2 Focused sync e2e suite passes
-- [x] 2.3 Same-tracking relational state and oldest date are proven
-- [x] 2.4 User-edit non-overwrite and empty-field fill are proven
-- [x] 2.5 Existing sync and enrichment tests remain green
+- [x] 2.1 Focused enrichment unit suite passes — 5fcab34
+- [x] 2.2 Focused sync e2e suite passes — 5fcab34
+- [x] 2.3 Same-tracking relational state and oldest date are proven — 5fcab34
+- [x] 2.4 User-edit non-overwrite and empty-field fill are proven — 5fcab34
+- [x] 2.5 Existing sync and enrichment tests remain green — 5fcab34
 
 #### Manual
 
-- [x] 2.6 Independent sync oracles are reviewable from fixtures
+- [x] 2.6 Independent sync oracles are reviewable from fixtures — 5fcab34
 
 ### Phase 3: Document Phase 2 Patterns and Run Quality Gates
 
 #### Automated
 
-- [ ] 3.1 Full API e2e suite passes
-- [ ] 3.2 API lint passes
-- [ ] 3.3 API unit suite passes
-- [ ] 3.4 Root lint passes
-- [ ] 3.5 Root unit suites pass
-- [ ] 3.6 Diff whitespace check passes
+- [x] 3.1 Full API e2e suite passes
+- [x] 3.2 API lint passes
+- [x] 3.3 API unit suite passes
+- [x] 3.4 Root lint passes
+- [x] 3.5 Root unit suites pass
+- [x] 3.6 Diff whitespace check passes
 
 #### Manual
 
-- [ ] 3.7 Phase 2 cookbook is grounded and preserves deferrals
-- [ ] 3.8 Final diff remains test-and-documentation only
+- [x] 3.7 Phase 2 cookbook is grounded and preserves deferrals
+- [x] 3.8 Final diff remains test-and-documentation only
