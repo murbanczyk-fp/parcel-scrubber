@@ -259,13 +259,13 @@ No schema or data migration is required. The e2e database must remain disposable
 
 #### Automated
 
-- [ ] 1.1 Focused parcel e2e suite passes
-- [ ] 1.2 Exact merge relational state is proven
-- [ ] 1.3 Existing merge scenarios remain green
+- [x] 1.1 Focused parcel e2e suite passes
+- [x] 1.2 Exact merge relational state is proven
+- [x] 1.3 Existing merge scenarios remain green
 
 #### Manual
 
-- [ ] 1.4 Independent merge oracle is reviewable from fixtures
+- [x] 1.4 Independent merge oracle is reviewable from fixtures
 
 ### Phase 2: Prove Sync Dedupe and Enrichment Non-Overwrite
 
