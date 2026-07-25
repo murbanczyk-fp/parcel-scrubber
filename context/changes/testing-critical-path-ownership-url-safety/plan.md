@@ -279,7 +279,7 @@ No schema or data migration is required. The direct unsafe-row seed exists only 
 
 #### Automated
 
-- [x] 3.1 Test-plan cookbook contains reusable Phase 1 recipes and explicit later-phase deferrals
-- [x] 3.2 API lint and unit tests pass
-- [x] 3.3 Full API e2e suite passes
-- [x] 3.4 Root lint and unit suites pass
+- [x] 3.1 Test-plan cookbook contains reusable Phase 1 recipes and explicit later-phase deferrals — e0e4878
+- [x] 3.2 API lint and unit tests pass — e0e4878
+- [x] 3.3 Full API e2e suite passes — e0e4878
+- [x] 3.4 Root lint and unit suites pass — e0e4878
