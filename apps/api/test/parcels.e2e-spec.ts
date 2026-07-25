@@ -149,6 +149,44 @@ describe('Parcels HTTP (e2e)', () => {
     expect(archivedIds).not.toContain(parcel.id);
   });
 
+  it("excludes another user's parcels from active and archived lists", async () => {
+    const owner = await createTestUser();
+    const otherUser = await createTestUser();
+    const ownerAgent = createAuthenticatedAgent(owner);
+    const otherAgent = createAuthenticatedAgent(otherUser);
+    const activeParcel = await createParcel(owner.id, {
+      trackingNumber: 'OWNERACTIVE123',
+    });
+    const archivedParcel = await createParcel(owner.id, {
+      status: ParcelStatus.DELIVERED,
+      trackingNumber: 'OWNERARCHIVED123',
+    });
+
+    const ownerActiveIds = (
+      (await ownerAgent.get('/api/parcels?status=active').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    const ownerArchivedIds = (
+      (await ownerAgent.get('/api/parcels?status=archived').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(ownerActiveIds).toContain(activeParcel.id);
+    expect(ownerArchivedIds).toContain(archivedParcel.id);
+
+    const otherActiveIds = (
+      (await otherAgent.get('/api/parcels?status=active').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    const otherArchivedIds = (
+      (await otherAgent.get('/api/parcels?status=archived').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(otherActiveIds).not.toContain(activeParcel.id);
+    expect(otherActiveIds).not.toContain(archivedParcel.id);
+    expect(otherArchivedIds).not.toContain(activeParcel.id);
+    expect(otherArchivedIds).not.toContain(archivedParcel.id);
+  });
+
   it('delivers a parcel, moves it to archived, and writes a status event', async () => {
     const user = await createTestUser();
     const agent = createAuthenticatedAgent(user);
@@ -521,6 +559,27 @@ describe('Parcels HTTP (e2e)', () => {
         id: parcel.id,
         store: 'Updated Store',
         description: 'New description',
+      });
+    });
+
+    it("PATCH /api/parcels/:id returns 404 for another user's parcel without changing it", async () => {
+      const owner = await createTestUser();
+      const otherUser = await createTestUser();
+      const otherAgent = createAuthenticatedAgent(otherUser);
+      const parcel = await createParcel(owner.id);
+
+      await otherAgent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ store: 'Hijacked Store', description: 'Changed by other user' })
+        .expect(404);
+
+      const persisted = await prisma.parcel.findUniqueOrThrow({
+        where: { id: parcel.id },
+      });
+      expect(persisted).toMatchObject({
+        userId: owner.id,
+        store: parcel.store,
+        description: parcel.description,
       });
     });
 
