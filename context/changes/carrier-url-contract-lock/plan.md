@@ -195,20 +195,20 @@ No database, API, persisted-data, or deployment migration is required. This chan
 
 #### Automated
 
-- [x] 1.1 API contract table contains exactly the four FR-014 known carriers with literal expected URLs
-- [x] 1.2 Builder tests pass for every contract row, CUSTOM, and encoded special characters
-- [x] 1.3 Resolver tests pass for every contract row and preserve all existing edge behavior
-- [x] 1.4 Focused API carrier URL tests pass
-- [x] 1.5 API lint passes
+- [x] 1.1 API contract table contains exactly the four FR-014 known carriers with literal expected URLs — bbbd33c
+- [x] 1.2 Builder tests pass for every contract row, CUSTOM, and encoded special characters — bbbd33c
+- [x] 1.3 Resolver tests pass for every contract row and preserve all existing edge behavior — bbbd33c
+- [x] 1.4 Focused API carrier URL tests pass — bbbd33c
+- [x] 1.5 API lint passes — bbbd33c
 
 ### Phase 2: Web Preview Parity
 
 #### Automated
 
-- [ ] 2.1 Web preview tests assert exact URLs for all four known carriers
-- [ ] 2.2 Web preview tests lock normalization, encoding, blank-input, and CUSTOM behavior
-- [ ] 2.3 Complete web unit suite passes
-- [ ] 2.4 Web lint passes
+- [x] 2.1 Web preview tests assert exact URLs for all four known carriers
+- [x] 2.2 Web preview tests lock normalization, encoding, blank-input, and CUSTOM behavior
+- [x] 2.3 Complete web unit suite passes
+- [x] 2.4 Web lint passes
 
 ### Phase 3: Rollout Documentation and Verification
 
