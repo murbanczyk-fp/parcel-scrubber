@@ -1,8 +1,22 @@
 import { Carrier } from '@prisma/client';
 
+import { CARRIER_URL_CONTRACT_CASES } from '../../test/fixtures/carrier-url-contract-cases';
 import { resolveTrackingUrl } from './resolve-tracking-url';
 
 describe('resolveTrackingUrl', () => {
+  it.each(CARRIER_URL_CONTRACT_CASES)(
+    'resolves the exact $carrier contract URL without an override',
+    ({ carrier, trackingNumber, expectedUrl }) => {
+      expect(
+        resolveTrackingUrl({
+          trackingUrl: null,
+          carrier,
+          trackingNumber,
+        }),
+      ).toBe(expectedUrl);
+    },
+  );
+
   it('returns trackingUrl override when set', () => {
     expect(
       resolveTrackingUrl({
@@ -33,15 +47,15 @@ describe('resolveTrackingUrl', () => {
     ).toBeNull();
   });
 
-  it('generates carrier URL with normalized tracking number', () => {
+  it('generates a carrier URL with normalized tracking number', () => {
     expect(
       resolveTrackingUrl({
         trackingUrl: null,
-        carrier: Carrier.INPOST,
-        trackingNumber: '5200 0001 2680 0410 8677 0098',
+        carrier: Carrier.DPD,
+        trackingNumber: ' 0000 1235 2512 3u ',
       }),
     ).toBe(
-      'https://inpost.pl/sledzenie-przesylek?number=520000012680041086770098',
+      'https://tracktrace.dpd.com.pl/parcelDetails?typ=1&p1=0000123525123U',
     );
   });
 

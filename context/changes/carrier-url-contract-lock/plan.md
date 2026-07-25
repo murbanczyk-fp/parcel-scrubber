@@ -195,11 +195,11 @@ No database, API, persisted-data, or deployment migration is required. This chan
 
 #### Automated
 
-- [ ] 1.1 API contract table contains exactly the four FR-014 known carriers with literal expected URLs
-- [ ] 1.2 Builder tests pass for every contract row, CUSTOM, and encoded special characters
-- [ ] 1.3 Resolver tests pass for every contract row and preserve all existing edge behavior
-- [ ] 1.4 Focused API carrier URL tests pass
-- [ ] 1.5 API lint passes
+- [x] 1.1 API contract table contains exactly the four FR-014 known carriers with literal expected URLs
+- [x] 1.2 Builder tests pass for every contract row, CUSTOM, and encoded special characters
+- [x] 1.3 Resolver tests pass for every contract row and preserve all existing edge behavior
+- [x] 1.4 Focused API carrier URL tests pass
+- [x] 1.5 API lint passes
 
 ### Phase 2: Web Preview Parity
 
