@@ -1,7 +1,7 @@
 ---
 change_id: merge-and-dedupe-confidence
 title: Merge and dedupe confidence tests
-status: implementing
+status: implemented
 created: 2026-07-25
 updated: 2026-07-25
 archived_at: null

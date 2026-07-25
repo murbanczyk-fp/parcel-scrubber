@@ -285,14 +285,14 @@ No schema or data migration is required. The e2e database must remain disposable
 
 #### Automated
 
-- [x] 3.1 Full API e2e suite passes
-- [x] 3.2 API lint passes
-- [x] 3.3 API unit suite passes
-- [x] 3.4 Root lint passes
-- [x] 3.5 Root unit suites pass
-- [x] 3.6 Diff whitespace check passes
+- [x] 3.1 Full API e2e suite passes — 264b211
+- [x] 3.2 API lint passes — 264b211
+- [x] 3.3 API unit suite passes — 264b211
+- [x] 3.4 Root lint passes — 264b211
+- [x] 3.5 Root unit suites pass — 264b211
+- [x] 3.6 Diff whitespace check passes — 264b211
 
 #### Manual
 
-- [x] 3.7 Phase 2 cookbook is grounded and preserves deferrals
-- [x] 3.8 Final diff remains test-and-documentation only
+- [x] 3.7 Phase 2 cookbook is grounded and preserves deferrals — 264b211
+- [x] 3.8 Final diff remains test-and-documentation only — 264b211
