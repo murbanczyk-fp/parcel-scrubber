@@ -265,15 +265,15 @@ No schema or data migration is required. The direct unsafe-row seed exists only 
 
 #### Automated
 
-- [x] 1.1 Focused parcel e2e suite passes with list-isolation and cross-user PATCH cases
-- [x] 1.2 Cross-user PATCH test proves the persisted owner row remains unchanged
+- [x] 1.1 Focused parcel e2e suite passes with list-isolation and cross-user PATCH cases — 4914fac
+- [x] 1.2 Cross-user PATCH test proves the persisted owner row remains unchanged — 4914fac
 
 ### Phase 2: Lock Tracking-URL Write and Read Boundaries
 
 #### Automated
 
-- [ ] 2.1 Focused parcel e2e suite passes with unsafe PATCH, safe PATCH, and legacy-read cases
-- [ ] 2.2 Full API e2e suite passes
+- [x] 2.1 Focused parcel e2e suite passes with unsafe PATCH, safe PATCH, and legacy-read cases
+- [x] 2.2 Full API e2e suite passes
 
 ### Phase 3: Publish Reusable Test Recipes and Verify the Rollout
 

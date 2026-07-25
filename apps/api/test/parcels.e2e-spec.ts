@@ -35,6 +35,15 @@ function assertE2eDatabaseUrl(url: string): void {
   }
 }
 
+function expectSafeClickableUrl(value: string | null): void {
+  if (value === null) {
+    return;
+  }
+
+  const protocol = new URL(value).protocol;
+  expect(protocol === 'http:' || protocol === 'https:').toBe(true);
+}
+
 describe('Parcels HTTP (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaClient;
@@ -524,6 +533,38 @@ describe('Parcels HTTP (e2e)', () => {
       });
     });
 
+    it('PATCH /api/parcels/:id rejects unsafe tracking URL override', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await createParcel(user.id);
+
+      const response = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ trackingUrl: 'javascript:alert(1)' })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'trackingUrl' }],
+      });
+    });
+
+    it('PATCH /api/parcels/:id accepts a safe HTTPS tracking URL override', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await createParcel(user.id);
+      const trackingUrl = 'https://example.test/track/parcel';
+
+      const response = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ trackingUrl })
+        .expect(200);
+      const body = response.body as ParcelResponse;
+
+      expect(body.trackingUrlOverride).toBe(trackingUrl);
+      expect(body.trackingUrl).toBe(trackingUrl);
+      expectSafeClickableUrl(body.trackingUrl);
+    });
+
     it('GET /api/parcels/:id returns parcel for owner and 404 for other user', async () => {
       const owner = await createTestUser();
       const otherUser = await createTestUser();
@@ -543,6 +584,34 @@ describe('Parcels HTTP (e2e)', () => {
       expect(body.trackingUrl).toContain('inpost');
 
       await otherAgent.get(`/api/parcels/${parcel.id}`).expect(404);
+    });
+
+    it('keeps a legacy unsafe override raw while returning safe clickable URLs', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const unsafeOverride = 'javascript:alert(1)';
+      const parcel = await prisma.parcel.update({
+        where: { id: (await createParcel(user.id)).id },
+        data: { trackingUrl: unsafeOverride },
+      });
+
+      const getBody = (
+        await agent.get(`/api/parcels/${parcel.id}`).expect(200)
+      ).body as ParcelResponse;
+      const listBody = (
+        await agent.get('/api/parcels?status=active').expect(200)
+      ).body as ParcelResponse[];
+      const listedParcel = listBody.find((row) => row.id === parcel.id);
+
+      expect(listedParcel).toBeDefined();
+      expect(getBody.trackingUrlOverride).toBe(unsafeOverride);
+      expect(listedParcel?.trackingUrlOverride).toBe(unsafeOverride);
+      expect(getBody.trackingUrl).not.toBeNull();
+      expect(listedParcel?.trackingUrl).not.toBeNull();
+      expectSafeClickableUrl(getBody.trackingUrl);
+      expectSafeClickableUrl(listedParcel?.trackingUrl ?? null);
+      expect(new URL(getBody.trackingUrl!).protocol).toBe('https:');
+      expect(new URL(listedParcel!.trackingUrl!).protocol).toBe('https:');
     });
 
     it('PATCH /api/parcels/:id updates fields', async () => {
