@@ -1,10 +1,10 @@
 ---
 change_id: testing-critical-path-ownership-url-safety
 title: Critical-path ownership and URL safety tests
-status: impl_reviewed
+status: archived
 created: 2026-07-24
 updated: 2026-07-25
-archived_at: null
+archived_at: 2026-07-25T09:27:55Z
 ---
 
 ## Notes
