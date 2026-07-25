@@ -840,6 +840,163 @@ describe('Parcels HTTP (e2e)', () => {
       ).toBeNull();
     });
 
+    it('merges three parcels without losing overlapping message links or ledger rows', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const survivor = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-03-01'),
+          trackingNumber: 'THREEOLDEST111',
+          carrier: Carrier.DPD,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.NEW,
+          store: 'Oldest source store',
+          description: 'Oldest source description',
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+        },
+      });
+      const middle = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-03-02'),
+          trackingNumber: 'THREEMIDDLE222',
+          carrier: Carrier.INPOST,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.NEW,
+          store: 'Middle source store',
+          description: 'Middle source description',
+          createdAt: new Date('2026-02-01T10:00:00.000Z'),
+        },
+      });
+      const newest = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-03-03'),
+          trackingNumber: 'THREENEWEST333',
+          carrier: Carrier.DHL,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.NEW,
+          store: 'Newest source store',
+          description: 'Newest source description',
+          createdAt: new Date('2026-03-01T10:00:00.000Z'),
+        },
+      });
+
+      await prisma.gmailMessage.createMany({
+        data: [
+          {
+            userId: user.id,
+            gmailMessageId: 'merge-shared',
+            internalDate: new Date('2026-02-10T08:00:00.000Z'),
+            subject: 'Shared message',
+            from: 'shop@example.com',
+          },
+          {
+            userId: user.id,
+            gmailMessageId: 'merge-oldest-date',
+            internalDate: new Date('2025-12-20T08:00:00.000Z'),
+            subject: 'Oldest dated message',
+            from: 'shop@example.com',
+          },
+          {
+            userId: user.id,
+            gmailMessageId: 'merge-newest-only',
+            internalDate: new Date('2026-02-20T08:00:00.000Z'),
+            subject: 'Newest parcel message',
+            from: 'shop@example.com',
+          },
+        ],
+      });
+      await prisma.parcelEmail.createMany({
+        data: [
+          {
+            userId: user.id,
+            parcelId: survivor.id,
+            gmailMessageId: 'merge-shared',
+          },
+          {
+            userId: user.id,
+            parcelId: middle.id,
+            gmailMessageId: 'merge-shared',
+          },
+          {
+            userId: user.id,
+            parcelId: middle.id,
+            gmailMessageId: 'merge-oldest-date',
+          },
+          {
+            userId: user.id,
+            parcelId: newest.id,
+            gmailMessageId: 'merge-newest-only',
+          },
+        ],
+      });
+
+      const response = await agent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [newest.id, survivor.id, middle.id],
+          fields: {
+            ...mergeFields,
+            store: 'Literal client-selected store',
+            description: 'Literal client-selected description',
+            trackingNumber: 'THREEOLDEST111',
+          },
+        })
+        .expect(200);
+
+      const body = response.body as MergeParcelResponse;
+      expect(body).toMatchObject({
+        id: survivor.id,
+        description: 'Literal client-selected description',
+        orderDate: '2025-12-20',
+      });
+
+      const persistedSurvivor = await prisma.parcel.findUniqueOrThrow({
+        where: { id: survivor.id },
+      });
+      expect(persistedSurvivor).toMatchObject({
+        store: 'Literal client-selected store',
+        description: 'Literal client-selected description',
+        orderDate: new Date('2025-12-20T00:00:00.000Z'),
+      });
+      expect(await prisma.parcel.count({ where: { userId: user.id } })).toBe(1);
+      expect(
+        await prisma.parcel.findMany({
+          where: { id: { in: [middle.id, newest.id] } },
+        }),
+      ).toEqual([]);
+
+      const survivorLinks = await prisma.parcelEmail.findMany({
+        where: { parcelId: survivor.id },
+        orderBy: { gmailMessageId: 'asc' },
+      });
+      expect(survivorLinks.map((link) => link.gmailMessageId)).toEqual([
+        'merge-newest-only',
+        'merge-oldest-date',
+        'merge-shared',
+      ]);
+      expect(
+        await prisma.parcelEmail.count({
+          where: { parcelId: { in: [middle.id, newest.id] } },
+        }),
+      ).toBe(0);
+
+      const retainedLedgerIds = (
+        await prisma.gmailMessage.findMany({
+          where: { userId: user.id },
+          orderBy: { gmailMessageId: 'asc' },
+        })
+      ).map((message) => message.gmailMessageId);
+      expect(retainedLedgerIds).toEqual([
+        'merge-newest-only',
+        'merge-oldest-date',
+        'merge-shared',
+      ]);
+    });
+
     it('rejects tracking collision with a parcel outside the selection', async () => {
       const user = await createTestUser();
       const agent = createAuthenticatedAgent(user);
