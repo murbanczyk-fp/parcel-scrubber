@@ -214,12 +214,12 @@ No database, API, persisted-data, or deployment migration is required. This chan
 
 #### Automated
 
-- [x] 3.1 Repository build passes
-- [x] 3.2 Repository lint passes
-- [x] 3.3 All API and web unit tests pass
-- [x] 3.4 Test-plan cookbook documents the shipped pattern and removes Phase 3 deferrals
+- [x] 3.1 Repository build passes — d04e47c
+- [x] 3.2 Repository lint passes — d04e47c
+- [x] 3.3 All API and web unit tests pass — d04e47c
+- [x] 3.4 Test-plan cookbook documents the shipped pattern and removes Phase 3 deferrals — d04e47c
 
 #### Manual
 
-- [x] 3.5 Live reference URLs reach the intended carrier tracking pages
-- [x] 3.6 Phase 3 row names the change folder and reaches complete only after all Progress items are done
+- [x] 3.5 Live reference URLs reach the intended carrier tracking pages — d04e47c
+- [x] 3.6 Phase 3 row names the change folder and reaches complete only after all Progress items are done — d04e47c
