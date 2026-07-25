@@ -634,7 +634,13 @@ describe('Parcels HTTP (e2e)', () => {
       const owner = await createTestUser();
       const otherUser = await createTestUser();
       const otherAgent = createAuthenticatedAgent(otherUser);
-      const parcel = await createParcel(owner.id);
+      const parcel = await prisma.parcel.update({
+        where: { id: (await createParcel(owner.id)).id },
+        data: {
+          store: 'Owner Store',
+          description: 'Owner description',
+        },
+      });
 
       await otherAgent
         .patch(`/api/parcels/${parcel.id}`)
@@ -646,8 +652,8 @@ describe('Parcels HTTP (e2e)', () => {
       });
       expect(persisted).toMatchObject({
         userId: owner.id,
-        store: parcel.store,
-        description: parcel.description,
+        store: 'Owner Store',
+        description: 'Owner description',
       });
     });
 
