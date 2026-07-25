@@ -14,6 +14,8 @@ import { resolveEnvFilePaths } from '../src/config/env-files';
 import { allegroInPostShipmentFixture } from '../src/extraction/fixtures/email-fixtures';
 import { ExtractionService } from '../src/extraction/extraction.service';
 import { GmailService } from '../src/gmail/gmail.service';
+import { ParcelsModule } from '../src/parcels/parcels.module';
+import { ParcelsService } from '../src/parcels/parcels.service';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { SettingsModule } from '../src/settings/settings.module';
 import { SyncJobRegistry } from '../src/sync/sync-job.registry';
@@ -39,6 +41,7 @@ function assertE2eDatabaseUrl(url: string): void {
 describe('SyncService (e2e)', () => {
   let prisma: PrismaClient;
   let syncService: SyncService;
+  let parcelsService: ParcelsService;
   let registry: SyncJobRegistry;
   let gmailService: {
     listMatchingEmailIds: jest.Mock;
@@ -88,6 +91,7 @@ describe('SyncService (e2e)', () => {
           envFilePath: resolveEnvFilePaths(),
         }),
         PrismaModule,
+        ParcelsModule,
         SettingsModule,
         SyncModule,
       ],
@@ -99,6 +103,7 @@ describe('SyncService (e2e)', () => {
       .compile();
 
     syncService = moduleFixture.get(SyncService);
+    parcelsService = moduleFixture.get(ParcelsService);
     registry = moduleFixture.get(SyncJobRegistry);
   });
 
@@ -274,6 +279,139 @@ describe('SyncService (e2e)', () => {
       store: 'Allegro',
       description: 'Carrier text',
     });
+  });
+
+  it('deduplicates equivalent tracking numbers from two Gmail messages', async () => {
+    const user = await createTestUser();
+    gmailService.listMatchingEmailIds.mockResolvedValue([
+      'dedupe-carrier-message',
+      'dedupe-merchant-message',
+    ]);
+    gmailService.getMessage
+      .mockResolvedValueOnce({
+        ...allegroInPostShipmentFixture,
+        from: 'carrier@example.com',
+        date: '2026-01-05T10:00:00.000Z',
+        subject: 'Carrier accepted the parcel',
+      })
+      .mockResolvedValueOnce({
+        ...allegroInPostShipmentFixture,
+        date: '2026-01-10T10:00:00.000Z',
+        subject: 'Merchant shipped the order',
+      });
+    extractionService.extractParcelFields
+      .mockResolvedValueOnce({
+        store: null,
+        trackingNumber: 'same track 123',
+        carrier: Carrier.DPD,
+        customCarrierLabel: null,
+        description: 'Carrier notice',
+      })
+      .mockResolvedValueOnce({
+        store: 'Literal Merchant',
+        trackingNumber: ' SameTrack123 ',
+        carrier: Carrier.DPD,
+        customCarrierLabel: null,
+        description: 'Merchant description',
+      });
+
+    const started = registry.start(user.id);
+    await syncService.runJob(user.id, started!.jobId);
+
+    const parcels = await prisma.parcel.findMany({
+      where: { userId: user.id },
+    });
+    expect(parcels).toHaveLength(1);
+    expect(parcels[0]).toMatchObject({
+      trackingNumber: 'SAMETRACK123',
+      store: 'Literal Merchant',
+      description: 'Carrier notice',
+      carrier: Carrier.DPD,
+      orderDate: new Date('2026-01-05T00:00:00.000Z'),
+    });
+
+    const ledgerIds = (
+      await prisma.gmailMessage.findMany({
+        where: { userId: user.id },
+        orderBy: { gmailMessageId: 'asc' },
+      })
+    ).map((message) => message.gmailMessageId);
+    expect(ledgerIds).toEqual([
+      'dedupe-carrier-message',
+      'dedupe-merchant-message',
+    ]);
+
+    const linkIds = (
+      await prisma.parcelEmail.findMany({
+        where: { parcelId: parcels[0]!.id },
+        orderBy: { gmailMessageId: 'asc' },
+      })
+    ).map((link) => link.gmailMessageId);
+    expect(linkIds).toEqual([
+      'dedupe-carrier-message',
+      'dedupe-merchant-message',
+    ]);
+  });
+
+  it('preserves user-edited values while filling empty metadata on sync', async () => {
+    const user = await createTestUser();
+    const parcel = await prisma.parcel.create({
+      data: {
+        userId: user.id,
+        trackingNumber: 'USEREDITTRACK123',
+        carrier: Carrier.INPOST,
+        status: ParcelStatus.IN_TRANSIT,
+        source: ParcelSource.MANUAL,
+        orderDate: new Date('2026-01-01T00:00:00.000Z'),
+        store: 'Initial store',
+        description: null,
+        trackingUrl: 'https://example.test/user-tracking-override',
+      },
+    });
+    await parcelsService.updateForUser(user.id, parcel.id, {
+      store: 'User-selected store',
+      carrier: Carrier.DPD,
+    });
+
+    gmailService.listMatchingEmailIds.mockResolvedValue([
+      'user-edit-enrichment-message',
+    ]);
+    gmailService.getMessage.mockResolvedValue({
+      ...allegroInPostShipmentFixture,
+      date: '2026-02-15T09:00:00.000Z',
+    });
+    extractionService.extractParcelFields.mockResolvedValue({
+      store: 'Conflicting extracted store',
+      trackingNumber: ' user edit track 123 ',
+      carrier: Carrier.INPOST,
+      customCarrierLabel: null,
+      description: 'Filled extracted description',
+    });
+
+    const started = registry.start(user.id);
+    await syncService.runJob(user.id, started!.jobId);
+
+    const persisted = await prisma.parcel.findUniqueOrThrow({
+      where: { id: parcel.id },
+    });
+    expect(persisted).toMatchObject({
+      id: parcel.id,
+      trackingNumber: 'USEREDITTRACK123',
+      store: 'User-selected store',
+      description: 'Filled extracted description',
+      carrier: Carrier.DPD,
+      status: ParcelStatus.IN_TRANSIT,
+      source: ParcelSource.MANUAL,
+      trackingUrl: 'https://example.test/user-tracking-override',
+    });
+    expect(await prisma.parcel.count({ where: { userId: user.id } })).toBe(1);
+    expect(
+      await prisma.parcelEmail.findMany({ where: { parcelId: parcel.id } }),
+    ).toEqual([
+      expect.objectContaining({
+        gmailMessageId: 'user-edit-enrichment-message',
+      }),
+    ]);
   });
 
   it('ledgers non-merchant sender without tracking and skips', async () => {

@@ -2,6 +2,7 @@ import { Carrier } from '@prisma/client';
 
 import {
   mergeParcelFieldsFromExtraction,
+  parcelFieldsChanged,
   type ParcelFieldData,
 } from './merge-parcel-fields-from-extraction';
 
@@ -189,5 +190,24 @@ describe('mergeParcelFieldsFromExtraction', () => {
       carrier: Carrier.CUSTOM,
       customCarrierLabel: 'Keep me',
     });
+  });
+});
+
+describe('parcelFieldsChanged', () => {
+  const base = existing({
+    store: 'Allegro',
+    description: 'Phone case',
+    carrier: Carrier.CUSTOM,
+    customCarrierLabel: 'Bike courier',
+  });
+
+  it.each([
+    ['identical fields', {}, false],
+    ['store', { store: 'AliExpress' }, true],
+    ['description', { description: 'USB-C cable' }, true],
+    ['carrier', { carrier: Carrier.INPOST }, true],
+    ['custom carrier label', { customCarrierLabel: 'Local courier' }, true],
+  ] as const)('detects %s', (_name, overrides, expected) => {
+    expect(parcelFieldsChanged(base, { ...base, ...overrides })).toBe(expected);
   });
 });
