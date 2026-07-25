@@ -35,6 +35,15 @@ function assertE2eDatabaseUrl(url: string): void {
   }
 }
 
+function expectSafeClickableUrl(value: string | null): void {
+  if (value === null) {
+    return;
+  }
+
+  const protocol = new URL(value).protocol;
+  expect(protocol === 'http:' || protocol === 'https:').toBe(true);
+}
+
 describe('Parcels HTTP (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaClient;
@@ -147,6 +156,44 @@ describe('Parcels HTTP (e2e)', () => {
       (row) => row.id,
     );
     expect(archivedIds).not.toContain(parcel.id);
+  });
+
+  it("excludes another user's parcels from active and archived lists", async () => {
+    const owner = await createTestUser();
+    const otherUser = await createTestUser();
+    const ownerAgent = createAuthenticatedAgent(owner);
+    const otherAgent = createAuthenticatedAgent(otherUser);
+    const activeParcel = await createParcel(owner.id, {
+      trackingNumber: 'OWNERACTIVE123',
+    });
+    const archivedParcel = await createParcel(owner.id, {
+      status: ParcelStatus.DELIVERED,
+      trackingNumber: 'OWNERARCHIVED123',
+    });
+
+    const ownerActiveIds = (
+      (await ownerAgent.get('/api/parcels?status=active').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    const ownerArchivedIds = (
+      (await ownerAgent.get('/api/parcels?status=archived').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(ownerActiveIds).toContain(activeParcel.id);
+    expect(ownerArchivedIds).toContain(archivedParcel.id);
+
+    const otherActiveIds = (
+      (await otherAgent.get('/api/parcels?status=active').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    const otherArchivedIds = (
+      (await otherAgent.get('/api/parcels?status=archived').expect(200))
+        .body as Array<{ id: string }>
+    ).map((row) => row.id);
+    expect(otherActiveIds).not.toContain(activeParcel.id);
+    expect(otherActiveIds).not.toContain(archivedParcel.id);
+    expect(otherArchivedIds).not.toContain(activeParcel.id);
+    expect(otherArchivedIds).not.toContain(archivedParcel.id);
   });
 
   it('delivers a parcel, moves it to archived, and writes a status event', async () => {
@@ -486,6 +533,38 @@ describe('Parcels HTTP (e2e)', () => {
       });
     });
 
+    it('PATCH /api/parcels/:id rejects unsafe tracking URL override', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await createParcel(user.id);
+
+      const response = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ trackingUrl: 'javascript:alert(1)' })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        errors: [{ field: 'trackingUrl' }],
+      });
+    });
+
+    it('PATCH /api/parcels/:id accepts a safe HTTPS tracking URL override', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const parcel = await createParcel(user.id);
+      const trackingUrl = 'https://example.test/track/parcel';
+
+      const response = await agent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ trackingUrl })
+        .expect(200);
+      const body = response.body as ParcelResponse;
+
+      expect(body.trackingUrlOverride).toBe(trackingUrl);
+      expect(body.trackingUrl).toBe(trackingUrl);
+      expectSafeClickableUrl(body.trackingUrl);
+    });
+
     it('GET /api/parcels/:id returns parcel for owner and 404 for other user', async () => {
       const owner = await createTestUser();
       const otherUser = await createTestUser();
@@ -507,6 +586,33 @@ describe('Parcels HTTP (e2e)', () => {
       await otherAgent.get(`/api/parcels/${parcel.id}`).expect(404);
     });
 
+    it('keeps a legacy unsafe override raw while returning safe clickable URLs', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+      const unsafeOverride = 'javascript:alert(1)';
+      const parcel = await prisma.parcel.update({
+        where: { id: (await createParcel(user.id)).id },
+        data: { trackingUrl: unsafeOverride },
+      });
+
+      const getBody = (await agent.get(`/api/parcels/${parcel.id}`).expect(200))
+        .body as ParcelResponse;
+      const listBody = (
+        await agent.get('/api/parcels?status=active').expect(200)
+      ).body as ParcelResponse[];
+      const listedParcel = listBody.find((row) => row.id === parcel.id);
+
+      expect(listedParcel).toBeDefined();
+      expect(getBody.trackingUrlOverride).toBe(unsafeOverride);
+      expect(listedParcel?.trackingUrlOverride).toBe(unsafeOverride);
+      expect(getBody.trackingUrl).not.toBeNull();
+      expect(listedParcel?.trackingUrl).not.toBeNull();
+      expectSafeClickableUrl(getBody.trackingUrl);
+      expectSafeClickableUrl(listedParcel?.trackingUrl ?? null);
+      expect(new URL(getBody.trackingUrl!).protocol).toBe('https:');
+      expect(new URL(listedParcel!.trackingUrl!).protocol).toBe('https:');
+    });
+
     it('PATCH /api/parcels/:id updates fields', async () => {
       const user = await createTestUser();
       const agent = createAuthenticatedAgent(user);
@@ -521,6 +627,33 @@ describe('Parcels HTTP (e2e)', () => {
         id: parcel.id,
         store: 'Updated Store',
         description: 'New description',
+      });
+    });
+
+    it("PATCH /api/parcels/:id returns 404 for another user's parcel without changing it", async () => {
+      const owner = await createTestUser();
+      const otherUser = await createTestUser();
+      const otherAgent = createAuthenticatedAgent(otherUser);
+      const parcel = await prisma.parcel.update({
+        where: { id: (await createParcel(owner.id)).id },
+        data: {
+          store: 'Owner Store',
+          description: 'Owner description',
+        },
+      });
+
+      await otherAgent
+        .patch(`/api/parcels/${parcel.id}`)
+        .send({ store: 'Hijacked Store', description: 'Changed by other user' })
+        .expect(404);
+
+      const persisted = await prisma.parcel.findUniqueOrThrow({
+        where: { id: parcel.id },
+      });
+      expect(persisted).toMatchObject({
+        userId: owner.id,
+        store: 'Owner Store',
+        description: 'Owner description',
       });
     });
 
