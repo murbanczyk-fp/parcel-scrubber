@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-07-25 (Phase 2 cookbook completed)
+> Last updated: 2026-07-25 (Phase 3 carrier URL cookbook added)
 
 ## 1. Strategy
 
@@ -65,7 +65,7 @@ orchestrator updates Status as artifacts appear on disk.
 |---|------------|-----------------|---------------|------------|--------|---------------|
 | 1 | Critical-path ownership & URL safety | Prove IDOR denial and unsafe tracking-URL rejection at the cheapest strong layer | #1, #2 | unit gaps + HTTP e2e | researched | testing-critical-path-ownership-url-safety |
 | 2 | Merge & dedupe confidence | Prove merge/dedupe side effects and sync enrichment non-overwrite | #3, #4 | unit + service/integration | researched | merge-and-dedupe-confidence |
-| 3 | Carrier URL contract lock | Table-driven contract for generated carrier links | #5 | unit | planned | carrier-url-contract-lock |
+| 3 | Carrier URL contract lock | Table-driven contract for generated carrier links | #5 | unit | complete | carrier-url-contract-lock |
 
 ## 4. Stack
 
@@ -119,8 +119,10 @@ the relevant rollout phase ships; before that, the sub-section reads
   compare its protocol with the literal `http:` / `https:` contract.
 - Controller or service tests backed by mocked Prisma calls do not prove
   ownership isolation. Use real-database HTTP e2e for IDOR boundaries.
-- Carrier-template table-driven coverage remains deferred to §3 Phase 3 /
-  Risk #5.
+- Keep carrier URL expectations as literal test data in
+  `apps/api/test/fixtures/carrier-url-contract-cases.ts`; never derive an
+  expected URL from the production builder. Exercise every row through both
+  `buildCarrierUrl` and the no-override `resolveTrackingUrl` path.
 
 ### 6.2 Adding an HTTP e2e test (API)
 
@@ -142,7 +144,12 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.3 Adding a web unit test
 
-- TBD — not a focus of Phase 1–3; prefer API signal for ownership and URL safety (interview Q5).
+- Co-locate pure web helper tests as `*.spec.ts`. For duplicated carrier URL
+  preview logic, keep an independent table of literal expected URLs beside
+  `preview-generated-tracking-url.spec.ts`; do not import API fixtures or
+  Prisma types into the web workspace.
+- Run the complete suite with `npm run test:web` and lint with
+  `npm run lint:web`.
 
 ### 6.4 Adding a test for parcel ownership / IDOR
 
@@ -171,7 +178,8 @@ the relevant rollout phase ships; before that, the sub-section reads
   legacy value. The clickable `trackingUrl` is the safety boundary: if
   non-null, parse it and independently require `http:` or `https:`.
 - Merge URL validation remains deferred to merge-focused work. Generated
-  carrier-template contracts remain deferred to §3 Phase 3 / Risk #5.
+  carrier templates are covered by the literal API and web contract tables
+  described in §6.1, §6.3, and the Phase 3 notes below.
 
 ### 6.6 Per-rollout-phase notes
 
@@ -235,8 +243,33 @@ the relevant rollout phase ships; before that, the sub-section reads
   `npm run test:e2e -w @parcel-scrubber/api -- parcels.e2e-spec`,
   `npm run test:e2e -w @parcel-scrubber/api -- sync.e2e-spec`, and
   `npm run test -w @parcel-scrubber/api -- merge-parcel-fields-from-extraction.spec`.
-  Generated carrier tracking-link templates remain deferred to §3
-  Phase 3 / Risk #5.
+
+#### Phase 3 — Carrier URL contract lock
+
+- Change: `carrier-url-contract-lock`; risk covered: #5 (a generated link
+  points at the wrong known-carrier domain or pattern).
+- The test-only API table in
+  `apps/api/test/fixtures/carrier-url-contract-cases.ts` contains literal
+  carrier, tracking-number, and exact-URL rows for InPost, Poczta Polska,
+  DPD, and DHL. Both `carrier-url-templates.spec.ts` and
+  `resolve-tracking-url.spec.ts` consume it, locking the builder and the
+  clickable no-override resolver path.
+- The web preview suite mirrors those expected URLs as independent literals
+  in `preview-generated-tracking-url.spec.ts`. Do not share its oracle with
+  API tests: workspace separation makes coordinated template drift visible.
+- Keep normalization, percent encoding, blank input, `CUSTOM`, safe override
+  precedence, and unsafe override fallback in focused edge tests rather than
+  expanding the four-carrier matrix.
+- Focused API command:
+  `npm run test -w @parcel-scrubber/api -- carrier-url-templates.spec resolve-tracking-url.spec`.
+  Web verification: `npm run test:web`. Also run workspace lint plus the
+  repository build, lint, and test gates.
+- External carrier sites are not automated dependencies. Before closing the
+  rollout, open one literal reference URL per carrier, verify the HTTPS
+  destination and tracking-number handoff where supported, and record Poczta
+  Polska's query parameter as best-effort.
+- Anti-pattern: never calculate expected URLs with production builders,
+  runtime template maps, or snapshots of whole parcel DTOs.
 
 ## 7. What We Deliberately Don't Test
 

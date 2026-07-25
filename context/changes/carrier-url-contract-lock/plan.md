@@ -205,21 +205,21 @@ No database, API, persisted-data, or deployment migration is required. This chan
 
 #### Automated
 
-- [x] 2.1 Web preview tests assert exact URLs for all four known carriers
-- [x] 2.2 Web preview tests lock normalization, encoding, blank-input, and CUSTOM behavior
-- [x] 2.3 Complete web unit suite passes
-- [x] 2.4 Web lint passes
+- [x] 2.1 Web preview tests assert exact URLs for all four known carriers — de1a1c4
+- [x] 2.2 Web preview tests lock normalization, encoding, blank-input, and CUSTOM behavior — de1a1c4
+- [x] 2.3 Complete web unit suite passes — de1a1c4
+- [x] 2.4 Web lint passes — de1a1c4
 
 ### Phase 3: Rollout Documentation and Verification
 
 #### Automated
 
-- [ ] 3.1 Repository build passes
-- [ ] 3.2 Repository lint passes
-- [ ] 3.3 All API and web unit tests pass
-- [ ] 3.4 Test-plan cookbook documents the shipped pattern and removes Phase 3 deferrals
+- [x] 3.1 Repository build passes
+- [x] 3.2 Repository lint passes
+- [x] 3.3 All API and web unit tests pass
+- [x] 3.4 Test-plan cookbook documents the shipped pattern and removes Phase 3 deferrals
 
 #### Manual
 
-- [ ] 3.5 Live reference URLs reach the intended carrier tracking pages
-- [ ] 3.6 Phase 3 row names the change folder and reaches complete only after all Progress items are done
+- [x] 3.5 Live reference URLs reach the intended carrier tracking pages
+- [x] 3.6 Phase 3 row names the change folder and reaches complete only after all Progress items are done
