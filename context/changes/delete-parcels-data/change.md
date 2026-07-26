@@ -1,7 +1,7 @@
 ---
 change_id: delete-parcels-data
 title: Delete a user's parcel data from Settings
-status: implementing
+status: implemented
 created: 2026-07-26
 updated: 2026-07-26
 archived_at: null

@@ -446,27 +446,27 @@ the recovery mechanism.
 
 #### Manual
 
-- [x] 1.5 Production Settings POST returns HTTP 200 with all four counts
-- [x] 1.6 Authentication and Gmail scan settings remain intact
-- [x] 1.7 Dev reset route preserves its existing response
+- [x] 1.5 Production Settings POST returns HTTP 200 with all four counts — fc19521
+- [x] 1.6 Authentication and Gmail scan settings remain intact — fc19521
+- [x] 1.7 Dev reset route preserves its existing response — fc19521
 
 ### Phase 2: Settings Danger Zone and Typed Confirmation
 
 #### Automated
 
-- [x] 2.1 Settings client, dialog, and page unit specs pass
-- [x] 2.2 Full web unit suite passes
-- [x] 2.3 Web lint passes
-- [x] 2.4 Web production build succeeds
-- [x] 2.5 Full repository unit suite passes
-- [x] 2.6 Full repository lint passes
-- [x] 2.7 Full repository build succeeds
+- [x] 2.1 Settings client, dialog, and page unit specs pass — fc19521
+- [x] 2.2 Full web unit suite passes — fc19521
+- [x] 2.3 Web lint passes — fc19521
+- [x] 2.4 Web production build succeeds — fc19521
+- [x] 2.5 Full repository unit suite passes — fc19521
+- [x] 2.6 Full repository lint passes — fc19521
+- [x] 2.7 Full repository build succeeds — fc19521
 
 #### Manual
 
-- [x] 2.8 Danger zone is separate from preference Save behavior
-- [x] 2.9 Exact DELETE phrase and pending-state guards work
-- [x] 2.10 Success closes and resets dialog while staying on Settings
-- [x] 2.11 Failure keeps dialog available for retry
-- [x] 2.12 Parcel/Gmail data is cleared while login and settings remain
-- [x] 2.13 Later Sync can re-import matching Gmail messages
+- [x] 2.8 Danger zone is separate from preference Save behavior — fc19521
+- [x] 2.9 Exact DELETE phrase and pending-state guards work — fc19521
+- [x] 2.10 Success closes and resets dialog while staying on Settings — fc19521
+- [x] 2.11 Failure keeps dialog available for retry — fc19521
+- [x] 2.12 Parcel/Gmail data is cleared while login and settings remain — fc19521
+- [x] 2.13 Later Sync can re-import matching Gmail messages — fc19521
