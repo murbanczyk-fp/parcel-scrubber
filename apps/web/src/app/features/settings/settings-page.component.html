@@ -64,4 +64,35 @@
       </form>
     }
   </p-card>
+
+  <p-card styleClass="settings-page__danger-card">
+    <ng-template #header>
+      <h2 class="settings-page__danger-title">Danger zone</h2>
+    </ng-template>
+
+    <div class="settings-page__danger-content">
+      <div>
+        <h3>Delete parcel data</h3>
+        <p>
+          Permanently remove all parcels, status history, and scanned Gmail
+          message records. Your login and Settings will remain.
+        </p>
+      </div>
+      <p-button
+        type="button"
+        label="Delete parcel data"
+        severity="danger"
+        [outlined]="true"
+        data-testid="open-clear-parcel-data"
+        (onClick)="openClearParcelDataDialog()"
+      />
+    </div>
+  </p-card>
+
+  <app-clear-parcel-data-dialog
+    [visible]="clearDialogVisible()"
+    [submitting]="clearingParcelData()"
+    (visibleChange)="onClearDialogVisibleChange($event)"
+    (confirmed)="onClearParcelData()"
+  />
 </section>

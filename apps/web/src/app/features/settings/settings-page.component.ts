@@ -19,6 +19,7 @@ import {
   EffectiveUserSettings,
   PatchUserSettings,
 } from '../../core/settings/settings.types';
+import { ClearParcelDataDialogComponent } from './clear-parcel-data-dialog.component';
 
 function integerValidator(
   control: AbstractControl,
@@ -41,6 +42,7 @@ function integerValidator(
     InputNumberModule,
     ButtonModule,
     MessageModule,
+    ClearParcelDataDialogComponent,
   ],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.scss',
@@ -53,6 +55,8 @@ export class SettingsPageComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly loadError = signal<string | null>(null);
+  protected readonly clearDialogVisible = signal(false);
+  protected readonly clearingParcelData = signal(false);
 
   private savedSnapshot: EffectiveUserSettings | null = null;
 
@@ -152,6 +156,42 @@ export class SettingsPageComponent implements OnInit {
       });
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  protected openClearParcelDataDialog(): void {
+    this.clearDialogVisible.set(true);
+  }
+
+  protected onClearDialogVisibleChange(visible: boolean): void {
+    if (!this.clearingParcelData()) {
+      this.clearDialogVisible.set(visible);
+    }
+  }
+
+  protected async onClearParcelData(): Promise<void> {
+    if (this.clearingParcelData()) {
+      return;
+    }
+
+    this.clearingParcelData.set(true);
+
+    try {
+      await this.settingsService.clearParcelData();
+      this.clearDialogVisible.set(false);
+      this.messages.add({
+        severity: 'success',
+        summary: 'Parcel data deleted',
+        life: 3000,
+      });
+    } catch {
+      this.messages.add({
+        severity: 'error',
+        summary: 'Failed to delete parcel data',
+        life: 3000,
+      });
+    } finally {
+      this.clearingParcelData.set(false);
     }
   }
 

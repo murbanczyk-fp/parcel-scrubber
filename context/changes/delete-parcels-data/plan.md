@@ -439,34 +439,34 @@ the recovery mechanism.
 
 #### Automated
 
-- [x] 1.1 Shared wipe/helper and affected API unit specs pass
-- [x] 1.2 Full API unit suite passes
-- [x] 1.3 API lint passes
-- [x] 1.4 API production build succeeds
+- [x] 1.1 Shared wipe/helper and affected API unit specs pass — 5b3a4a9
+- [x] 1.2 Full API unit suite passes — 5b3a4a9
+- [x] 1.3 API lint passes — 5b3a4a9
+- [x] 1.4 API production build succeeds — 5b3a4a9
 
 #### Manual
 
-- [ ] 1.5 Production Settings POST returns HTTP 200 with all four counts
-- [ ] 1.6 Authentication and Gmail scan settings remain intact
-- [ ] 1.7 Dev reset route preserves its existing response
+- [x] 1.5 Production Settings POST returns HTTP 200 with all four counts
+- [x] 1.6 Authentication and Gmail scan settings remain intact
+- [x] 1.7 Dev reset route preserves its existing response
 
 ### Phase 2: Settings Danger Zone and Typed Confirmation
 
 #### Automated
 
-- [ ] 2.1 Settings client, dialog, and page unit specs pass
-- [ ] 2.2 Full web unit suite passes
-- [ ] 2.3 Web lint passes
-- [ ] 2.4 Web production build succeeds
-- [ ] 2.5 Full repository unit suite passes
-- [ ] 2.6 Full repository lint passes
-- [ ] 2.7 Full repository build succeeds
+- [x] 2.1 Settings client, dialog, and page unit specs pass
+- [x] 2.2 Full web unit suite passes
+- [x] 2.3 Web lint passes
+- [x] 2.4 Web production build succeeds
+- [x] 2.5 Full repository unit suite passes
+- [x] 2.6 Full repository lint passes
+- [x] 2.7 Full repository build succeeds
 
 #### Manual
 
-- [ ] 2.8 Danger zone is separate from preference Save behavior
-- [ ] 2.9 Exact DELETE phrase and pending-state guards work
-- [ ] 2.10 Success closes and resets dialog while staying on Settings
-- [ ] 2.11 Failure keeps dialog available for retry
-- [ ] 2.12 Parcel/Gmail data is cleared while login and settings remain
-- [ ] 2.13 Later Sync can re-import matching Gmail messages
+- [x] 2.8 Danger zone is separate from preference Save behavior
+- [x] 2.9 Exact DELETE phrase and pending-state guards work
+- [x] 2.10 Success closes and resets dialog while staying on Settings
+- [x] 2.11 Failure keeps dialog available for retry
+- [x] 2.12 Parcel/Gmail data is cleared while login and settings remain
+- [x] 2.13 Later Sync can re-import matching Gmail messages

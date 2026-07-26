@@ -1,0 +1,23 @@
+.clear-data-dialog__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.clear-data-dialog__content p {
+  margin: 0;
+}
+
+.clear-data-dialog__warning {
+  color: var(--p-red-500);
+  font-weight: 600;
+}
+
+.clear-data-dialog__label {
+  margin-top: 0.25rem;
+  font-weight: 600;
+}
+
+.clear-data-dialog__content input {
+  width: 100%;
+}

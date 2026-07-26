@@ -1,0 +1,57 @@
+<p-dialog
+  header="Delete parcel data?"
+  [modal]="true"
+  [visible]="visible()"
+  [style]="{ width: 'min(34rem, 95vw)' }"
+  [closable]="!submitting()"
+  [dismissableMask]="!submitting()"
+  [closeOnEscape]="!submitting()"
+  (visibleChange)="onVisibleChange($event)"
+>
+  <div class="clear-data-dialog__content">
+    <p class="clear-data-dialog__warning">
+      This permanently deletes all manual and imported parcels, their status
+      history, and records of scanned Gmail messages.
+    </p>
+    <p>
+      Your login and Settings are preserved. A later Sync may re-import
+      messages that are still within your configured Gmail label and scan
+      period.
+    </p>
+    <p>
+      Type <strong>DELETE</strong> to confirm.
+    </p>
+    <label class="clear-data-dialog__label" for="clearParcelDataPhrase">
+      Confirmation
+    </label>
+    <input
+      id="clearParcelDataPhrase"
+      type="text"
+      pInputText
+      data-testid="clear-parcel-data-phrase"
+      autocomplete="off"
+      [disabled]="submitting()"
+      [ngModel]="confirmationPhrase()"
+      (ngModelChange)="confirmationPhrase.set($event)"
+    />
+  </div>
+
+  <ng-template #footer>
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      [text]="true"
+      [disabled]="submitting()"
+      data-testid="clear-parcel-data-cancel"
+      (onClick)="onCancel()"
+    />
+    <p-button
+      label="Delete parcel data"
+      severity="danger"
+      data-testid="clear-parcel-data-confirm"
+      [disabled]="!canConfirm()"
+      [loading]="submitting()"
+      (onClick)="onConfirm()"
+    />
+  </ng-template>
+</p-dialog>
