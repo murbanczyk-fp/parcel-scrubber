@@ -439,10 +439,10 @@ the recovery mechanism.
 
 #### Automated
 
-- [ ] 1.1 Shared wipe/helper and affected API unit specs pass
-- [ ] 1.2 Full API unit suite passes
-- [ ] 1.3 API lint passes
-- [ ] 1.4 API production build succeeds
+- [x] 1.1 Shared wipe/helper and affected API unit specs pass
+- [x] 1.2 Full API unit suite passes
+- [x] 1.3 API lint passes
+- [x] 1.4 API production build succeeds
 
 #### Manual
 

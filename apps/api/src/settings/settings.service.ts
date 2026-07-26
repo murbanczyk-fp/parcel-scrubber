@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  deleteUserParcelData,
+  type DeleteUserParcelDataResponse,
+} from '../sync/delete-user-parcel-data';
+import {
   EffectiveUserSettings,
   normalizeGmailScanLabel,
   resolveEffectiveSettings,
@@ -24,6 +28,10 @@ function isPatchKey(key: string): key is PatchKey {
 @Injectable()
 export class SettingsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  clearParcelData(userId: string): Promise<DeleteUserParcelDataResponse> {
+    return deleteUserParcelData(this.prisma, userId);
+  }
 
   async getEffectiveSettings(userId: string): Promise<EffectiveUserSettings> {
     const rows = await this.prisma.userSetting.findMany({

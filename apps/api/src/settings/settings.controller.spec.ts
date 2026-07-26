@@ -23,12 +23,14 @@ const sessionUser: SessionUser = {
 describe('SettingsController', () => {
   let controller: SettingsController;
   let settingsService: {
+    clearParcelData: jest.Mock;
     getEffectiveSettings: jest.Mock;
     updateSettings: jest.Mock;
   };
 
   beforeEach(async () => {
     settingsService = {
+      clearParcelData: jest.fn(),
       getEffectiveSettings: jest.fn(),
       updateSettings: jest.fn(),
     };
@@ -44,7 +46,11 @@ describe('SettingsController', () => {
     controller = module.get(SettingsController);
   });
 
-  it('applies JwtAuthGuard to GET and PATCH handlers', () => {
+  it('applies JwtAuthGuard to all handlers', () => {
+    const clearParcelDataHandler = Object.getOwnPropertyDescriptor(
+      SettingsController.prototype,
+      'clearParcelData',
+    )?.value as (...args: unknown[]) => unknown;
     const getSettingsHandler = Object.getOwnPropertyDescriptor(
       SettingsController.prototype,
       'getSettings',
@@ -54,6 +60,10 @@ describe('SettingsController', () => {
       'patchSettings',
     )?.value as (...args: unknown[]) => unknown;
 
+    const clearParcelDataGuards = Reflect.getMetadata(
+      GUARDS_METADATA,
+      clearParcelDataHandler,
+    ) as unknown[];
     const getGuards = Reflect.getMetadata(
       GUARDS_METADATA,
       getSettingsHandler,
@@ -63,8 +73,28 @@ describe('SettingsController', () => {
       patchSettingsHandler,
     ) as unknown[];
 
+    expect(clearParcelDataGuards).toContain(JwtAuthGuard);
     expect(getGuards).toContain(JwtAuthGuard);
     expect(patchGuards).toContain(JwtAuthGuard);
+  });
+
+  describe('clearParcelData', () => {
+    it('returns delete counts for the authenticated user', async () => {
+      const response = {
+        deletedParcelEmails: 2,
+        deletedStatusEvents: 3,
+        deletedParcels: 4,
+        deletedGmailMessages: 5,
+      };
+      settingsService.clearParcelData.mockResolvedValue(response);
+
+      await expect(controller.clearParcelData(sessionUser)).resolves.toEqual(
+        response,
+      );
+      expect(settingsService.clearParcelData).toHaveBeenCalledWith(
+        sessionUser.id,
+      );
+    });
   });
 
   describe('getSettings', () => {
@@ -162,6 +192,8 @@ describe('SettingsController', () => {
         .patch('/settings')
         .send({ gmailScanLabel: 'x' })
         .expect(401);
+
+      await request(server).post('/settings/clear-parcel-data').expect(401);
     });
   });
 });

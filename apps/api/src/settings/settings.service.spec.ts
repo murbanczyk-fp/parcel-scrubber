@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import * as deleteUserParcelDataModule from '../sync/delete-user-parcel-data';
 import { USER_SETTING_KEYS } from '../user-settings';
 import { SettingsValidationError } from './settings-validation.error';
 import { SettingsService } from './settings.service';
@@ -8,26 +9,49 @@ describe('SettingsService', () => {
   let service: SettingsService;
   let findMany: jest.Mock;
   let upsert: jest.Mock;
+  let prisma: { userSetting: { findMany: jest.Mock; upsert: jest.Mock } };
 
   const userId = 'user-1';
 
   beforeEach(async () => {
     findMany = jest.fn();
     upsert = jest.fn();
+    prisma = {
+      userSetting: { findMany, upsert },
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SettingsService,
         {
           provide: PrismaService,
-          useValue: {
-            userSetting: { findMany, upsert },
-          },
+          useValue: prisma,
         },
       ],
     }).compile();
 
     service = module.get(SettingsService);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('clearParcelData', () => {
+    it('delegates the authenticated user identity and returns counts', async () => {
+      const response = {
+        deletedParcelEmails: 2,
+        deletedStatusEvents: 3,
+        deletedParcels: 4,
+        deletedGmailMessages: 5,
+      };
+      const deleteUserParcelData = jest
+        .spyOn(deleteUserParcelDataModule, 'deleteUserParcelData')
+        .mockResolvedValue(response);
+
+      await expect(service.clearParcelData(userId)).resolves.toEqual(response);
+      expect(deleteUserParcelData).toHaveBeenCalledWith(prisma, userId);
+    });
   });
 
   describe('getEffectiveSettings', () => {
