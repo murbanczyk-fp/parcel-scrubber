@@ -15,12 +15,19 @@ describe('SettingsPageComponent', () => {
 
   let loadMock: ReturnType<typeof vi.fn>;
   let saveMock: ReturnType<typeof vi.fn>;
+  let clearParcelDataMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     loadMock = vi.fn().mockResolvedValue(defaults);
     saveMock = vi.fn().mockResolvedValue({
       ...defaults,
       gmailScanLabel: 'Custom',
+    });
+    clearParcelDataMock = vi.fn().mockResolvedValue({
+      deletedParcelEmails: 2,
+      deletedStatusEvents: 3,
+      deletedParcels: 4,
+      deletedGmailMessages: 5,
     });
 
     await TestBed.configureTestingModule({
@@ -34,6 +41,7 @@ describe('SettingsPageComponent', () => {
           useValue: {
             load: loadMock,
             save: saveMock,
+            clearParcelData: clearParcelDataMock,
           },
         },
       ],
@@ -119,5 +127,66 @@ describe('SettingsPageComponent', () => {
     );
     expect(saveButton).toBeTruthy();
     expect(saveButton.componentInstance.disabled).toBe(true);
+  });
+
+  it('opens the clear parcel data dialog from the danger zone', async () => {
+    const fixture = await renderLoadedForm();
+    const openButton = fixture.debugElement.query(
+      By.css('[data-testid="open-clear-parcel-data"]'),
+    );
+
+    openButton.triggerEventHandler('onClick');
+
+    expect(
+      fixture.componentInstance['clearDialogVisible'](),
+    ).toBe(true);
+  });
+
+  it('clears parcel data once and closes the dialog on success', async () => {
+    const fixture = await renderLoadedForm();
+    const component = fixture.componentInstance;
+    const messageService = TestBed.inject(MessageService);
+    const addSpy = vi.spyOn(messageService, 'add');
+    component['clearDialogVisible'].set(true);
+
+    await component['onClearParcelData']();
+
+    expect(clearParcelDataMock).toHaveBeenCalledTimes(1);
+    expect(component['clearDialogVisible']()).toBe(false);
+    expect(addSpy).toHaveBeenCalledWith({
+      severity: 'success',
+      summary: 'Parcel data deleted',
+      life: 3000,
+    });
+  });
+
+  it('keeps the dialog open after failure and allows retry', async () => {
+    clearParcelDataMock
+      .mockRejectedValueOnce(new Error('request failed'))
+      .mockResolvedValueOnce({
+        deletedParcelEmails: 0,
+        deletedStatusEvents: 0,
+        deletedParcels: 0,
+        deletedGmailMessages: 0,
+      });
+    const fixture = await renderLoadedForm();
+    const component = fixture.componentInstance;
+    const messageService = TestBed.inject(MessageService);
+    const addSpy = vi.spyOn(messageService, 'add');
+    component['clearDialogVisible'].set(true);
+
+    await component['onClearParcelData']();
+
+    expect(component['clearDialogVisible']()).toBe(true);
+    expect(addSpy).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Failed to delete parcel data',
+      life: 3000,
+    });
+
+    await component['onClearParcelData']();
+
+    expect(clearParcelDataMock).toHaveBeenCalledTimes(2);
+    expect(component['clearDialogVisible']()).toBe(false);
   });
 });

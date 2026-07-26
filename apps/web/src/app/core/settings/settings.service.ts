@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import {
+  DeleteUserParcelDataResponse,
   EffectiveUserSettings,
   PatchUserSettings,
 } from './settings.types';
@@ -20,6 +21,15 @@ export class SettingsService {
   save(patch: PatchUserSettings): Promise<EffectiveUserSettings> {
     return firstValueFrom(
       this.http.patch<EffectiveUserSettings>('/api/settings', patch),
+    );
+  }
+
+  clearParcelData(): Promise<DeleteUserParcelDataResponse> {
+    return firstValueFrom(
+      this.http.post<DeleteUserParcelDataResponse>(
+        '/api/settings/clear-parcel-data',
+        null,
+      ),
     );
   }
 }

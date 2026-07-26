@@ -1,5 +1,11 @@
 @import '../placeholder-page';
 
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .settings-page__title {
   margin: 0;
   padding: 1.25rem 1.25rem 0;
@@ -37,4 +43,40 @@
 .settings-page__actions {
   display: flex;
   justify-content: flex-start;
+}
+
+:host ::ng-deep .settings-page__danger-card {
+  border: 1px solid var(--p-red-500);
+}
+
+.settings-page__danger-title {
+  margin: 0;
+  padding: 1.25rem 1.25rem 0;
+  color: var(--p-red-500);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.settings-page__danger-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.settings-page__danger-content h3,
+.settings-page__danger-content p {
+  margin: 0;
+}
+
+.settings-page__danger-content p {
+  margin-top: 0.5rem;
+  color: var(--p-text-muted-color);
+}
+
+@media (max-width: 40rem) {
+  .settings-page__danger-content {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

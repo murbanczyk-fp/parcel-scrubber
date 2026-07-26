@@ -52,4 +52,22 @@ describe('SettingsService', () => {
 
     await expect(promise).resolves.toEqual(updated);
   });
+
+  it('clearParcelData POSTs without a request body', async () => {
+    const response = {
+      deletedParcelEmails: 2,
+      deletedStatusEvents: 3,
+      deletedParcels: 4,
+      deletedGmailMessages: 5,
+    };
+
+    const promise = service.clearParcelData();
+
+    const req = httpMock.expectOne('/api/settings/clear-parcel-data');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toBeNull();
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
+  });
 });
