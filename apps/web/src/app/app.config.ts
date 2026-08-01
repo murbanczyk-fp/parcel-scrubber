@@ -22,6 +22,9 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       theme: {
         preset: ParcelScrubberPreset,
+        options: {
+          darkModeSelector: false,
+        },
       },
     }),
     MessageService,
