@@ -331,6 +331,13 @@ export class ParcelsService {
           }
         }
 
+        // Losers must go first: the survivor may adopt a loser's tracking
+        // number, and the partial unique index on (user_id, tracking_number)
+        // is enforced per statement.
+        await tx.parcel.deleteMany({
+          where: { id: { in: loserIds }, userId },
+        });
+
         const { count: survivorUpdateCount } = await tx.parcel.updateMany({
           where: { id: survivor.id, userId },
           data: {
@@ -388,10 +395,6 @@ export class ParcelsService {
         await tx.parcel.updateMany({
           where: { id: survivor.id, userId },
           data: { orderDate },
-        });
-
-        await tx.parcel.deleteMany({
-          where: { id: { in: loserIds }, userId },
         });
 
         return tx.parcel.findFirstOrThrow({

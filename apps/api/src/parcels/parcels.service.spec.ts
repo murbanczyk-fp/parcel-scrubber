@@ -785,6 +785,36 @@ describe('ParcelsService', () => {
       expect(result.messages).toHaveLength(2);
     });
 
+    it('deletes losers before writing a tracking number adopted from a loser', async () => {
+      prisma.parcel.findMany.mockResolvedValue([newerParcel, olderParcel]);
+      prisma.parcel.findFirst.mockResolvedValue(null);
+      prisma.parcel.updateMany.mockResolvedValue({ count: 1 });
+      prisma.parcelEmail.findMany.mockResolvedValue([]);
+      prisma.parcel.findFirstOrThrow.mockResolvedValue({
+        ...olderParcel,
+        trackingNumber: 'OTHERTRACK123',
+        messages: [],
+      });
+
+      await service.mergeForUser('user-1', {
+        parcelIds: ['parcel-newer', 'parcel-older'],
+        fields: { ...mergeFields, trackingNumber: 'OTHERTRACK123' },
+      });
+
+      expect(prisma.parcel.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ['parcel-newer'] }, userId: 'user-1' },
+      });
+      expect(prisma.parcel.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { id: 'parcel-older', userId: 'user-1' },
+        data: expect.objectContaining({
+          trackingNumber: 'OTHERTRACK123',
+        }) as object,
+      });
+      expect(prisma.parcel.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.parcel.updateMany.mock.invocationCallOrder[0],
+      );
+    });
+
     it('uses min parcel orderDate when no messages remain after merge', async () => {
       const withoutMessages = [
         { ...olderParcel, messages: [] },

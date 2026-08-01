@@ -840,6 +840,51 @@ describe('Parcels HTTP (e2e)', () => {
       ).toBeNull();
     });
 
+    it('lets the survivor adopt a tracking number held by a merged-away parcel', async () => {
+      const user = await createTestUser();
+      const agent = createAuthenticatedAgent(user);
+
+      const older = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-02-10'),
+          trackingNumber: 'ADOPTOLDER111',
+          carrier: Carrier.INPOST,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.NEW,
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+        },
+      });
+      const newer = await prisma.parcel.create({
+        data: {
+          userId: user.id,
+          orderDate: new Date('2026-01-05'),
+          trackingNumber: 'ADOPTNEWER222',
+          carrier: Carrier.INPOST,
+          source: ParcelSource.GMAIL,
+          status: ParcelStatus.NEW,
+          createdAt: new Date('2026-02-01T10:00:00.000Z'),
+        },
+      });
+
+      const response = await agent
+        .post('/api/parcels/merge')
+        .send({
+          parcelIds: [newer.id, older.id],
+          fields: { ...mergeFields, trackingNumber: 'ADOPTNEWER222' },
+        })
+        .expect(200);
+
+      const body = response.body as MergeParcelResponse;
+      expect(body.id).toBe(older.id);
+      expect(
+        await prisma.parcel.findUnique({ where: { id: older.id } }),
+      ).toMatchObject({ trackingNumber: 'ADOPTNEWER222' });
+      expect(
+        await prisma.parcel.findUnique({ where: { id: newer.id } }),
+      ).toBeNull();
+    });
+
     it('merges three parcels without losing overlapping message links or ledger rows', async () => {
       const user = await createTestUser();
       const agent = createAuthenticatedAgent(user);
